@@ -1,15 +1,11 @@
-<script setup lang="ts">
-import { RouterView } from 'vue-router';
-</script>
+<script setup lang="ts"></script>
 
 <template>
-  <RouterView />
+  <h1>You did it!</h1>
+  <p>
+    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
+    documentation
+  </p>
 </template>
 
-<style>
-/* 전역 스타일이 필요하면 여기에 작성 */
-body {
-  margin: 0;
-  font-family: 'Noto Sans KR', sans-serif;
-}
-</style>
+<style scoped></style>
