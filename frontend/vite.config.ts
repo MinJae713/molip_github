@@ -2,6 +2,7 @@
 import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import tailwindcss from '@tailwindcss/vite';
 import vueDevTools from 'vite-plugin-vue-devtools';
 
 // https://vite.dev/config/
@@ -15,7 +16,7 @@ const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(file
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
-  plugins: [vue(),
+  plugins: [vue(), tailwindcss(),
   // Storybook 실행 중이 아닐 때만 vueDevTools를 포함합니다.
   !isStorybook && vueDevTools()].filter(Boolean) as any,
   // false 값을 제거하여 플러그인 목록을 정제합니다.
