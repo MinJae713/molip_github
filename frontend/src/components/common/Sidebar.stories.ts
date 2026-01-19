@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3';
 import AppSidebar from './Sidebar.vue';
 
 const meta: Meta<typeof AppSidebar> = {
-    title: 'Common/AppSidebar',
+    title: 'Common/Sidebar',
     component: AppSidebar,
 };
 

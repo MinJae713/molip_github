@@ -75,7 +75,7 @@ interface Props {
 // 값 없을 경우 기본값 설정
 const props = withDefaults(defineProps<Props>(), {
     workspaceName: 'Naver',
-    workspaceLogo: 'https://i.namu.wiki/i/D1NyR0mdLBArSqS6T4OsULacKtn3bOPUGYQNEcLOUeH8hBqSW0FcFZg6gAOEaxf6qGVlTUf0EASXEbGpac4GolNcetSsiDzFTQG-Jq8rUVUM7KOWhSRyDoXrcC6PDOQ8EyLtd9junL9Pb9kF0eMJaw.svg',
+    workspaceLogo: 'https://placehold.co/100x100/4f46e5/ffffff?text=TechCorp',
     currentActiveId: 'courses', // 기본 활성화 아이템
 });
 
@@ -102,9 +102,6 @@ const handleNavigate = (id: string) => {
 
 
 <style scoped>
-/* Tailwind @apply를 사용하려면 main.css나 프로젝트 공통 스타일에 정의되어 있어야 합니다.
-  컴포넌트 독립성을 위해 기본 스타일을 scoped에 추가해둡니다.
-*/
 .sidebar-item {
     display: flex;
     align-items: center;
