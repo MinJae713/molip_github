@@ -11,20 +11,20 @@ interface Workspace {
 }
 
 export const useWorkspaceStore = defineStore('workspace', () => {
-    // [1] 초기화: 로컬 스토리지 확인 (있을 때만 가져옴)
+    // 초기화: 로컬 스토리지 확인 (있을 때만 가져옴)
     const storedMyWorkspaces = localStorage.getItem('my_workspaces')
     const storedCurrentWorkspace = localStorage.getItem('current_workspace')
 
     const myWorkspaces = ref<Workspace[]>(storedMyWorkspaces ? JSON.parse(storedMyWorkspaces) : [])
     
-    // [변경] 초기에는 null 또는 빈 객체로 설정하여 '선택되지 않음'을 명시
+    // 초기에는 null 또는 빈 객체로 설정하여 선택되지 않음을 명시
     const currentWorkspace = ref<Workspace | null>(
         storedCurrentWorkspace ? JSON.parse(storedCurrentWorkspace) : null
     )
 
     const isLoaded = ref(!!storedMyWorkspaces)
 
-    // [함수 1] 전체 워크스페이스 목록만 가져오기 (자동 선택 로직 제거)
+    //전체 워크스페이스 목록만 가져오기
     async function fetchMyWorkspaces(forceUpdate = false) {
         if (isLoaded.value && !forceUpdate) return
 
@@ -42,15 +42,15 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         }
     }
 
-    // [함수 2] 특정 ID로 현재 워크스페이스 수동 설정 (상세 페이지용)
+    // 특정 ID로 현재 워크스페이스 수동 설정 (상세 페이지용)
     async function setCurrentWorkspaceById(id: string | number) {
-        // 1. 이미 목록(myWorkspaces)에 데이터가 있는지 확인
+        // 이미 목록(myWorkspaces)에 데이터가 있는지 확인
         const found = myWorkspaces.value.find(ws => String(ws.id) === String(id))
         
         if (found) {
             currentWorkspace.value = found
         } else {
-            // 2. 목록에 없다면 서버에 단일 정보 요청 (새로고침 대응)
+            // 목록에 없다면 서버에 단일 정보 요청 (새로고침 대응)
             try {
                 const response = await api.get(`/workspaces/${id}`)
                 currentWorkspace.value = response.data
@@ -61,7 +61,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         }
     }
 
-    // [3] 상태 감시 및 자동 저장
+    // 상태 감시 및 자동 저장
     watch(currentWorkspace, (newVal) => {
         if (newVal) {
             localStorage.setItem('current_workspace', JSON.stringify(newVal))

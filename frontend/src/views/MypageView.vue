@@ -63,11 +63,12 @@ onMounted(() => {
     courseStore.fetchMyCourses();
 });
 
+// 진행률이 100%보다 작은 것들만 필터링.
 const ongoingCourses = computed(() => {
     return courseStore.myCourses.filter(course => (course.progress || course.progress) < 100);
 });
 
-// 2. 진행률이 100인 것들만 필터링합니다.
+// 진행률이 100인 것들만 필터링.
 const completedCourses = computed(() => {
     return courseStore.myCourses.filter(course => (course.progress || course.progress) === 100);
 });

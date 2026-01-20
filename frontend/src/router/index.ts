@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-// 1. 레이아웃과 페이지 컴포넌트를 불러옵니다.
 import MainLayout from '@/layouts/MainLayout.vue'
 import OnlyNavbarLayout from '@/layouts/OnlyNavbarLayout.vue'
 import MypageLayout from '@/layouts/MypageLayout.vue'
@@ -17,7 +16,7 @@ const router = createRouter({
       component: MainLayout,
       children: [
         {
-          path: '', // 주소가 '/' 일 때 (기본 페이지)
+          path: '',
           name: 'test',
           component: TestView
         }

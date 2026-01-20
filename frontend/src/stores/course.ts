@@ -13,7 +13,7 @@ export interface Course {
   totalLessons: number;
 }
 
-// [사고의 흐름] 카테고리별 테마를 여기서 관리합니다.
+// 카테고리별 테마를 여기서 관리
 const CATEGORY_THEME_MAP: Record<string, 'indigo' | 'blue' | 'slate'> = {
   'ai': 'indigo',
   'data': 'blue',
@@ -32,7 +32,7 @@ export const useCourseStore = defineStore('course', () => {
       const data = await response.json();
 
       myCourses.value = data.map((course: any) => {
-        // [핵심] 수료 여부(100%)면 무조건 slate로 보여주고, 아니면 카테고리 테마 적용
+        // 수료 여부(100%)면 무조건 slate로 보여주고, 아니면 카테고리 테마 적용
         const isCompleted = course.progress_rate === 100;
         const mappedTheme = isCompleted 
           ? 'slate' 

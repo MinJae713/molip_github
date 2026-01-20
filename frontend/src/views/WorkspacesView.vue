@@ -82,7 +82,7 @@ const fetchMyWorkspaces = async () => {
 
     } catch (error) {
         console.error('데이터 로드 실패:', error);
-        // alert('서버로부터 데이터를 가져오지 못했습니다.'); // 사용자 경험을 위해 조용히 실패하거나 토스트 처리
+        // alert('서버로부터 데이터를 가져오지 못했습니다.');
     } finally {
         isLoading.value = false;
     }
