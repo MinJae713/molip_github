@@ -1,0 +1,178 @@
+{
+  "user": {
+    "id": 1,
+    "name": "김지수",
+    "email": "jisoo.kim@techcorp.com",
+    "profileImage": "https://ui-avatars.com/api/?name=Jisoo+Kim&background=random"
+  },
+  "sidebar_menus": {
+    "study": [
+      { "id": "dashboard", "name": "대시보드", "icon": "dashboard", "path": "#" },
+      { "id": "courses", "name": "교육과정", "icon": "library_books", "path": "#" },
+      { "id": "stats", "name": "학습 통계", "icon": "analytics", "path": "#" }
+    ],
+    "community": [
+      { "id": "notice", "name": "공지사항", "icon": "campaign", "path": "#" },
+      { "id": "qna", "name": "Q&A", "icon": "help_center", "path": "#" }
+    ]
+  },
+  "workspaces": [
+    {
+      "id": 1,
+      "name": "TechCorp HQ",
+      "logo_url": "https://img.icons8.com/color/512/samsung.png",
+      "location": "Seoul, Korea",
+      "description": "전사 공통 교육 및 부서별 역량 강화 프로그램을 위한 메인 워크스페이스입니다. 공지사항 및 기본 교육 자료를 확인할 수 있습니다.",
+      "memberCount": 1420,
+      "courseCount": 5,
+      "join_code": "TC1234",
+      "role": "LEARNER",
+      "status": 2,
+      "typeIcon": "domain",
+      "themeColor": "indigo"
+    },
+    {
+      "id": 2,
+      "name": "Molip Design Studio",
+      "logo_url": "https://i.namu.wiki/i/Zd_OejaDruiYcAZKDQDI4gMN8wxu3lrZSyZ5Rn-1I9tL0_pVpF5C4xHqd7Y1nrre8TA2UVSuzoSqU4SUCdRzpg.svg",
+      "location": "Pangyo, Korea",
+      "description": "디자인 시스템 및 UI/UX 스터디를 위한 창의적인 공간입니다.",
+      "memberCount": 85,
+      "courseCount": 3,
+      "join_code": "MOLIP9",
+      "role": "TRAINER",
+      "status": 1,
+      "typeIcon": "palette",
+      "themeColor": "blue"
+    },
+    {
+      "id": 3,
+      "name": "Global Language Hub",
+      "logo_url": "https://img.icons8.com/color/512/google-logo.png",
+      "location": "Global",
+      "description": "외국어 학습 및 글로벌 비즈니스 커뮤니케이션 역량을 키우는 곳입니다.",
+      "memberCount": 320,
+      "courseCount": 12,
+      "join_code": "HELLO7",
+      "role": null,
+      "status": 0,
+      "typeIcon": "language",
+      "themeColor": "amber"
+    },
+    {
+      "id": 4,
+      "name": "Frontend Masters",
+      "logo_url": "",
+      "location": "Online",
+      "description": "Vue.js, React 등 현대적인 프론트엔드 기술을 심도 있게 다룹니다.",
+      "memberCount": 540,
+      "courseCount": 8,
+      "join_code": "VUEJS3",
+      "role": null,
+      "status": 0,
+      "typeIcon": "terminal",
+      "themeColor": "indigo"
+    }
+  ],
+  "my_workspaces": [
+    {
+      "id": 1,
+      "name": "TechCorp HQ",
+      "join_code": "TC1234",
+      "description": "전사 공통 교육 및 부서별 역량 강화 프로그램을 위한 메인 워크스페이스입니다. 공지사항 및 기본 교육 자료를 확인할 수 있습니다.",
+      "logo_url": "https://img.icons8.com/color/512/samsung.png",
+      "memberCount": 1420,
+      "courseCount": 5,
+      "status": 2,
+      "role": "LEARNER",
+      "location": "Seoul, Korea",
+      "typeIcon": "domain",
+      "themeColor": "indigo"
+    },
+    {
+      "id": 2,
+      "name": "Molip Design Studio",
+      "join_code": "MOLIP9",
+      "description": "디자인 시스템 및 UI/UX 스터디를 위한 창의적인 공간입니다.",
+      "logo_url": "https://i.namu.wiki/i/Zd_OejaDruiYcAZKDQDI4gMN8wxu3lrZSyZ5Rn-1I9tL0_pVpF5C4xHqd7Y1nrre8TA2UVSuzoSqU4SUCdRzpg.svg",
+      "memberCount": 85,
+      "courseCount": 3,
+      "status": 1,
+      "role": "TRAINER",
+      "location": "Pangyo, Korea",
+      "typeIcon": "palette",
+      "themeColor": "blue"
+    },
+    {
+      "id": 3,
+      "name": "Global Language Hub",
+      "logo_url": "https://img.icons8.com/color/512/google-logo.png",
+      "location": "Global",
+      "description": "외국어 학습 및 글로벌 비즈니스 커뮤니케이션 역량을 키우는 곳입니다.",
+      "memberCount": 320,
+      "courseCount": 12,
+      "join_code": "HELLO7",
+      "role": "LEARNER",
+      "status": 1,
+      "typeIcon": "language",
+      "themeColor": "amber"
+    }
+  ],
+  "my_courses": [
+    {
+      "id": 1,
+      "title": "AI 비즈니스 활용 전략",
+      "description": "최신 AI 트렌드와 비즈니스 적용 사례를 통해 실무 역량을 강화합니다.",
+      "tag": "직무 필수",
+      "category": "ai",
+      "progress_rate": 65,
+      "current_lessons": 13,
+      "total_lessons": 20,
+      "last_accessed_at": "2026-01-20T10:00:00"
+    },
+    {
+      "id": 2,
+      "title": "데이터 리터러시 기초",
+      "description": "데이터 기반 의사결정을 위한 기초 통계 및 시각화 도구 활용법.",
+      "tag": "공통 역량",
+      "category": "data",
+      "progress_rate": 32,
+      "current_lessons": 5,
+      "total_lessons": 16,
+      "last_accessed_at": "2026-01-19T15:30:00"
+    },
+    {
+      "id": 3,
+      "title": "2024 정보보안 교육2",
+      "description": "안전한 업무 환경 조성을 위한 연례 필수 정보보안 교육 과정입니다.",
+      "tag": "사내 공통",
+      "category": "security",
+      "progress_rate": 10,
+      "current_lessons": 1,
+      "total_lessons": 10,
+      "last_accessed_at": "2026-01-18T09:00:00"
+    },
+        {
+      "id": 3,
+      "title": "2024 정보보안 교육3",
+      "description": "안전한 업무 환경 조성을 위한 연례 필수 정보보안 교육 과정입니다.",
+      "tag": "사내 공통",
+      "category": "security",
+      "progress_rate": 10,
+      "current_lessons": 1,
+      "total_lessons": 10,
+      "last_accessed_at": "2026-01-18T09:00:00"
+    },
+        {
+      "id": 4,
+      "title": "2024 정보보안 교육4",
+      "description": "안전한 업무 환경 조성을 위한 연례 필수 정보보안 교육 과정입니다.",
+      "tag": "사내 공통",
+      "category": "security",
+      "progress_rate": 100,
+      "current_lessons": 10,
+      "total_lessons": 10,
+      "last_accessed_at": "2026-01-18T09:00:00"
+    }
+  ]
+}

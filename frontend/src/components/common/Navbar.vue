@@ -1,0 +1,111 @@
+<script setup lang="ts">
+/**
+ * 사용자 정보와 헤더 설정을 위한 인터페이스 정의
+ */
+interface UserInfo {
+    name: string;
+    email: string;
+    profileImage: string;
+}
+
+interface Props {
+    user?: UserInfo;
+    hasNotifications?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    hasNotifications: true,
+    user: () => ({
+        name: '',
+        email: '',
+        profileImage: ''
+    })
+});
+
+const emit = defineEmits<{
+    (e: 'notification-click'): void;
+    (e: 'profile-click'): void;
+}>();
+</script>
+
+<template>
+    <header class="bg-dark-navy-900 text-white border-b border-dark-navy-700 h-16 flex-none z-50">
+        <div class="w-full px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
+
+            <div class="flex items-center gap-12">
+                <router-link :to="{ name: 'workspaces' }"
+                    class="flex items-center gap-2 text-indigo-400 w-56 cursor-pointer">
+                    <span class="material-symbols-outlined text-3xl">school</span>
+                    <span class="text-xl font-bold font-display tracking-tight text-white">
+                        EduVerse <span class="text-indigo-400 font-light">Work</span>
+                    </span>
+                </router-link>
+
+                <!-- Navigation Tabs -->
+                <nav class="hidden md:flex items-center gap-1">
+                    <router-link :to="{ name: 'workspaces' }"
+                        class="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+                        active-class="bg-white/10 text-white"
+                        :class="[$route.path.startsWith('/workspaces') ? '' : 'text-slate-400 hover:text-white hover:bg-white/5']">
+                        워크스페이스
+                    </router-link>
+                    <router-link :to="{ name: 'mypage' }" class="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+                        active-class="bg-white/10 text-white"
+                        :class="[$route.path.startsWith('/mypage') ? '' : 'text-slate-400 hover:text-white hover:bg-white/5']">
+                        마이페이지
+                    </router-link>
+                </nav>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button class="text-white hover:text-indigo-200 transition-colors relative p-1 bg-white/5 rounded-full"
+                    @click="emit('notification-click')">
+                    <span class="material-symbols-outlined">notifications</span>
+                    <span v-if="hasNotifications"
+                        class="absolute top-1 right-1 size-2.5 bg-magenta rounded-full border-2 border-dark-navy-900"></span>
+                </button>
+
+                <div class="flex items-center gap-3 pl-4 border-l border-slate-700 cursor-pointer"
+                    @click="emit('profile-click')">
+                    <div class="text-right hidden sm:block">
+                        <div class="text-sm font-bold text-white">{{ user.name }}</div>
+                        <div class="text-xs text-slate-400">{{ user.email }}</div>
+                    </div>
+
+                    <div class="size-9 rounded-full custom-gradient p-[2px]">
+                        <img :src="user.profileImage" :alt="user.name"
+                            class="rounded-full w-full h-full object-cover border-2 border-dark-navy-900" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+</template>
+
+<style scoped>
+.bg-dark-navy-900 {
+    background-color: #0A0F1D;
+}
+
+.border-dark-navy-700 {
+    border-color: #1F2937;
+}
+
+.bg-magenta {
+    background-color: #D946EF;
+}
+
+.font-display {
+    font-family: 'Lexend', 'Noto Sans KR', sans-serif;
+}
+
+/* 프로필 이미지 테두리 그라데이션 (indigo-brand -> magenta) */
+.custom-gradient {
+    background: linear-gradient(to top right, #4F46E5, #D946EF);
+}
+
+/* 이미지가 깨졌을 때 레이아웃 유지용 (선택 사항) */
+img {
+    background-color: #1F2937;
+}
+</style>
