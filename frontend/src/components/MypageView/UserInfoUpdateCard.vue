@@ -51,11 +51,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-interface User {
-    name: string;
-    email: string;
-    profileImage: string;
-}
+import type { User } from '@/types';
 
 const props = defineProps<{ user: User }>();
 

@@ -1,7 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
-// 1. 레이아웃과 페이지 컴포넌트를 불러옵니다.
+import { useWorkspaceStore } from '@/stores/workspace' // 스토어 임포트
 import MainLayout from '@/layouts/MainLayout.vue'
 import TestView from '@/views/TestView.vue'
+import WorkspacesView from '@/views/WorkspacesView.vue'
+import MypageView from '@/views/MypageView.vue'
+import WorkspaceDetailView from '@/views/WorkspaceDetailView.vue'
+import MyCoursesView from '@/views/MyCoursesView.vue'
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,17 +21,72 @@ const router = createRouter({
           path: '', // 주소가 '/' 일 때 (기본 페이지)
           name: 'home',
           component: TestView
-        },
-        // 관리자 대시보드 경로 추가
+        }
+      ]
+    },
+    {
+      path: '/workspaces',
+      component: OnlyNavbarLayout,
+      children: [
         {
-          path: 'workspace/:workspaceId',
-          name: 'AdminDashboard',
-          // Lazy Loading: 페이지가 필요할 때만 불러와서 성능을 최적화합니다.
-          component: () => import('@/views/admin/AdminDashboardView.vue')
+          path: '',
+          name: 'workspaces',
+          component: WorkspacesView
+        }
+      ]
+    },
+    {
+      path: '/mypage',
+      component: MypageLayout,
+      children: [
+        {
+          path: '',
+          name: 'mypage',
+          component: MypageView
+        }
+      ]
+    },
+    {
+      path: '/workspaceDetail/:id',
+      component: MainLayout,
+      children: [
+        {
+          path: '',
+          name: 'workspaceDetail',
+          component: WorkspaceDetailView
         },
+        {
+          path: 'myCourses',
+          name: 'myCourses',
+          component: MyCoursesView
+        }
       ]
     }
   ]
+})
+
+router.beforeEach(async (to, from, next) => {
+  // workspaceDetail 페이지나 그 하위 경로로 진입할 때만 로직 실행
+  if (to.name === 'workspaceDetail' || to.path.includes('/workspaceDetail/')) {
+    const workspaceStore = useWorkspaceStore()
+    const targetId = to.params.id as string
+
+    // 목록이 비어있다면(새로고침 등) 먼저 데이터를 불러옴
+    if (workspaceStore.myWorkspaces.length === 0) {
+      await workspaceStore.fetchMyWorkspaces()
+    }
+
+    // 권한 체크 (스토어에 만든 isAccessible 또는 find 로직 활용)
+    const hasAccess = workspaceStore.isAccessible(targetId)
+    if (!hasAccess) {
+      alert('해당 워크스페이스에 대한 접근 권한이 없습니다.')
+      return next({ name: 'mypage' }) // 권한 없으면 마이페이지로 리다이렉트
+    }
+    // 권한이 있다면 현재 워크스페이스 정보 동기화 후 진입
+    await workspaceStore.setCurrentWorkspaceById(targetId)
+  }
+  
+  next() // 그 외의 페이지는 정상 진입
 })
 
 export default router

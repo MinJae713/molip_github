@@ -1,0 +1,12 @@
+{
+  "/members/me/workspaces": "/my_workspaces",
+  "/members/me/courses": "/my_all_courses",
+  "/members/me/courses/:id": "/my_all_courses/:id",
+  "/workspaces/search?query=:q": "/workspaces?q=:q",
+  "/workspaces/:id/join": "/workspace_registers",
+  "/workspaces/:id/courses": "/workspace_all_courses",
+  "/members/me/course-likes": "/course_likes",
+  "/members/me/course-likes/:id": "/course_likes/:id",
+  "/courses/:courseId/sessions": "/sessions",
+  "/courses/:id/enroll": "/course_enrollments"
+}

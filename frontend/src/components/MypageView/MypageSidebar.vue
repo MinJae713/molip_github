@@ -34,9 +34,6 @@
 </template>
 
 <script setup lang="ts">
-/**
- * 메뉴 아이템의 타입을 정의합니다.
- */
 interface MenuItem {
     id: string;
     name: string;

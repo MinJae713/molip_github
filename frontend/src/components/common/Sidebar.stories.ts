@@ -11,14 +11,12 @@ type Story = StoryObj<typeof AppSidebar>;
 
 export const Default: Story = {
     args: {
-        workspaceName: 'TechCorp HQ',
         currentActiveId: 'courses',
     },
 };
 
 export const DashboardActive: Story = {
     args: {
-        workspaceName: 'EduVerse Admin',
         currentActiveId: 'dashboard',
     },
 };
