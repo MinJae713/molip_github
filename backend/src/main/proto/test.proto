@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+// Java 파일이 생성될 패키지 경로를 지정합니다.
+option java_package = "com.edumax.molip";
+// 생성된 클래스들을 별도 파일로 분리할지 여부 (관리하기 편함)
+option java_multiple_files = true;
+
+package molip;
+
+// 에러 방지를 위한 최소한의 메시지 정의
+message SampleRequest {
+  string message = 1;
+}
+
+message SampleResponse {
+  string reply = 1;
+}
