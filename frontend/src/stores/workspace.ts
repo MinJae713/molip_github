@@ -2,78 +2,107 @@ import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import api from '@/api'
 
-interface Workspace {
-    id: string | number;
-    name: string;
-    logo_url?: string;
-    role?: string;
-    status?: number;
-}
+import type { Workspace, WorkspaceStats } from '@/types';
 
 export const useWorkspaceStore = defineStore('workspace', () => {
-    // 초기화: 로컬 스토리지 확인 (있을 때만 가져옴)
-    const storedMyWorkspaces = localStorage.getItem('my_workspaces')
-    const storedCurrentWorkspace = localStorage.getItem('current_workspace')
+    //상태정보
+    const myWorkspaces = ref<Workspace[]>([]);
+    const currentWorkspace = ref<Workspace | null>(null);
+    const isLoaded = ref(false);
 
-    const myWorkspaces = ref<Workspace[]>(storedMyWorkspaces ? JSON.parse(storedMyWorkspaces) : [])
-    
-    // 초기에는 null 또는 빈 객체로 설정하여 선택되지 않음을 명시
-    const currentWorkspace = ref<Workspace | null>(
-        storedCurrentWorkspace ? JSON.parse(storedCurrentWorkspace) : null
-    )
+    const workspaceStats = ref<WorkspaceStats | null>(null);
 
-    const isLoaded = ref(!!storedMyWorkspaces)
-
-    //전체 워크스페이스 목록만 가져오기
+    // 내가 가입한 워크스테이션 목록 가져오기
     async function fetchMyWorkspaces(forceUpdate = false) {
-        if (isLoaded.value && !forceUpdate) return
+        if (isLoaded.value && !forceUpdate) return;
 
         try {
-            const response = await api.get('/my_workspaces')
-            const allMyWorkspaces = response.data as Workspace[]
-            // 대기(1) 또는 참여중(2)인 워크스페이스만 필터링
-            const filteredWorkspaces = allMyWorkspaces.filter(ws => ws.status && ws.status > 0)
-            
-            myWorkspaces.value = filteredWorkspaces
-            localStorage.setItem('my_workspaces', JSON.stringify(filteredWorkspaces))
-            isLoaded.value = true
+            const response = await api.get('/members/me/workspaces');
+            myWorkspaces.value = response.data;
+            isLoaded.value = true;
         } catch (error) {
-            console.error('Failed to fetch workspace list:', error)
+            console.error('내 워크스테이션 로드 실패:', error);
         }
     }
-
-    // 특정 ID로 현재 워크스페이스 수동 설정 (상세 페이지용)
+    // 이름/코드로 워크스테이션 검색
+    async function searchWorkspaces(query: string): Promise<Workspace[]> {
+        if (!query.trim()) return [];
+        try {
+            const response = await api.get('/workspaces/search', {
+                params: { query }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('워크스페이스 검색 실패:', error);
+            return [];
+        }
+    }
+    // 가입 신청
+    async function joinWorkspace(workspaceId: string | number, role: string, userId: string | number) {
+        try {
+            const payload = {
+                workspaceId,
+                role,
+                member_id: userId,
+                status: 1, // 1: 대기 중
+                applied_at: new Date().toISOString()
+            };
+            await api.post(`/workspaces/${workspaceId}/join`, payload);
+            // 가입 신청 후 내 목록을 다시 불러와서 UI를 갱신할 수 있습니다.
+            await fetchMyWorkspaces(true);
+            return true;
+        } catch (error) {
+            console.error('가입 신청 실패:', error);
+            return false;
+        }
+    }
+    // 특정 워크스페이스로 진입 시 정보 갱신 (ID 기반)
     async function setCurrentWorkspaceById(id: string | number) {
-        // 이미 목록(myWorkspaces)에 데이터가 있는지 확인
-        const found = myWorkspaces.value.find(ws => String(ws.id) === String(id))
-        
+        // 이미 갱신해둔 가입목록에서 현재 워크스테이션 찾기
+        const found = myWorkspaces.value.find(ws => String(ws.id) === String(id));
         if (found) {
-            currentWorkspace.value = found
+            currentWorkspace.value = found;
         } else {
-            // 목록에 없다면 서버에 단일 정보 요청 (새로고침 대응)
+            // 없으면,서버에서 기본 정보 가져오기
             try {
-                const response = await api.get(`/workspaces/${id}`)
-                currentWorkspace.value = response.data
+                const response = await api.get(`/workspaces/${id}`);
+                currentWorkspace.value = response.data;
             } catch (error) {
-                console.error('Failed to fetch detail workspace info:', error)
-                currentWorkspace.value = null // 찾지 못하면 초기화
+                currentWorkspace.value = null;
             }
         }
-    }
-
-    // 상태 감시 및 자동 저장
-    watch(currentWorkspace, (newVal) => {
-        if (newVal) {
-            localStorage.setItem('current_workspace', JSON.stringify(newVal))
-        } else {
-            localStorage.removeItem('current_workspace')
+        // [중요] 정보를 찾았든 못 찾았든, 해당 ID에 대한 통계를 호출!
+        // 진입 시점에 데이터 조각들을 모으는 방식입니다.
+        if (id) {
+            await fetchWorkspaceStats(id);
         }
-    }, { deep: true })
-
-    return { 
-        currentWorkspace, 
-        myWorkspaces, 
-        fetchMyWorkspaces, 
-        setCurrentWorkspaceById 
     }
+    // 프론트단 유효성검사
+    const isAccessible = (id: string | number) => {
+        return myWorkspaces.value.some(ws => 
+            String(ws.id) === String(id) && ws.status === 2
+        );
+    };
+    // 워크스페이스 진입 시 상단 통계 요약정보 호출
+    async function fetchWorkspaceStats(workspaceId: string | number) {
+        try {
+            // json-server의 관계형 쿼리 활용: /workspaces/1/my-stats
+            const response = await api.get(`/workspaces/${workspaceId}/my-stats`);
+            const data = Array.isArray(response.data) ? response.data[0] : response.data;
+            workspaceStats.value = data || null;
+        } catch (error) {
+            console.error('통계 로드 실패:', error);
+            workspaceStats.value = null;
+        }
+    }
+    return {
+        myWorkspaces,
+        currentWorkspace,
+        workspaceStats,
+        fetchMyWorkspaces,
+        searchWorkspaces,
+        joinWorkspace,
+        setCurrentWorkspaceById,
+        isAccessible
+    };
 })

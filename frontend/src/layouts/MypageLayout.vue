@@ -13,7 +13,7 @@ const courseStore = useCourseStore();
 
 onMounted(() => {
     userStore.fetchUserInfo();
-    courseStore.fetchMyCourses();
+    courseStore.fetchMyEnrolledCourses();
 });
 
 const handleNotification = () => {

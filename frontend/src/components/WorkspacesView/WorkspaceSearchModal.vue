@@ -1,23 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import api from '@/api';
+import { ref, watch, computed } from 'vue';
 import { useWorkspaceStore } from '@/stores/workspace';
+import { useUserStore } from '@/stores/user';
 import WorkspaceCard from './WorkspaceCard.vue';
-
-// [1] 데이터 인터페이스 정의
-interface Workspace {
-    id: string | number;
-    name: string;
-    logo_url?: string;
-    location: string;
-    description: string;
-    memberCount: number;
-    role: 'LEARNER' | 'TRAINER';
-    status: number;
-    typeIcon: string;
-    themeColor: 'indigo' | 'blue' | 'amber';
-    join_code?: string; // 초대 코드 필드 추가
-}
+import type { Workspace } from '@/types';
 
 interface Props {
     isOpen?: boolean;
@@ -29,135 +15,113 @@ const props = withDefaults(defineProps<Props>(), {
     initialQuery: '',
 });
 
-const workspaceStore = useWorkspaceStore();
-
 const emit = defineEmits<{
     (e: 'close'): void;
 }>();
 
-// [2] 상태 관리
-const searchQuery = ref(props.initialQuery);
+const workspaceStore = useWorkspaceStore();
+const userStore = useUserStore();
+
+const user = computed(() => userStore.user);
+
+// 상태 관리
+const searchQuery = ref('');
 const searchResults = ref<Workspace[]>([]);
 const isLoading = ref(false);
 const hasSearched = ref(false);
 const errorMessage = ref('');
 
-// [3] API 호출 및 필터링 함수
-const fetchWorkspaces = async (keyword: string) => {
-    // 공백 검색 방지
-    const query = keyword.trim();
+// Step 관리
+const step = ref(1);
+const selectedWorkspace = ref<Workspace | null>(null);
+const selectedRole = ref<'LEARNER' | 'TRAINER'>('LEARNER');
+
+// [상태 리셋 함수]
+const resetModalState = () => {
+    step.value = 1;
+    searchQuery.value = '';
+    searchResults.value = [];
+    hasSearched.value = false;
+    selectedWorkspace.value = null;
+    selectedRole.value = 'LEARNER';
+    errorMessage.value = '';
+};
+
+// [검색 함수]
+const handleSearch = async () => {
+    const query = searchQuery.value.trim();
     if (!query) return;
 
     isLoading.value = true;
     hasSearched.value = true;
     errorMessage.value = '';
-    searchResults.value = [];
 
     try {
-        // [수정점] 검색 로직을 프론트엔드에서 처리하기 위해 전체 데이터를 가져옵니다.
-        // 실제 운영 환경에서는 서버에서 필터링하는 파라미터(q, code 등)를 사용해야 합니다.
-        // 하지만 목업/json-server 환경에서는 OR 조건(이름 포함 OR 코드 일치)을 
-        // 쿼리 파라미터로 완벽히 구현하기 어렵거나 복잡하므로 클라이언트 필터링을 사용합니다.
-
-        const response = await api.get('/workspaces');
-        const allWorkspaces: Workspace[] = response.data;
-
-        // [추가] 내 워크스페이스 상태 확인을 위해 Store 데이터 준비
-        await workspaceStore.fetchCurrentWorkspace(); // 데이터가 없으면 로드
-
-        // [검색 로직]
-        // 1. 이름은 부분 일치 (includes)
-        // 2. 초대 코드는 정확히 일치 (===)
-        const filtered = allWorkspaces.filter(ws => {
-            const nameMatch = ws.name.toLowerCase().includes(query.toLowerCase());
-            // join_code가 있을 경우에만 비교
-            const codeMatch = ws.join_code ? (ws.join_code === query) : false;
-
-            return nameMatch || codeMatch;
-        });
-
-        // [상태 병합] 검색 결과의 워크스페이스가 내 워크스페이스 목록에 있다면 최신 상태(role, status)로 덮어씌움
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        searchResults.value = filtered.map((item: any) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const myWorkspace = workspaceStore.myWorkspaces.find((mw: any) => mw.id === item.id);
-            if (myWorkspace) {
-                return {
-                    ...item,
-                    role: myWorkspace.role,
-                    status: myWorkspace.status
-                };
-            }
-            return item;
-        });
-
+        // 서버에서 가입되지 않은 워크스페이스만 검색 결과로 반환한다고 가정
+        const results = await workspaceStore.searchWorkspaces(query);
+        searchResults.value = results;
     } catch (error) {
-        console.error('Failed to fetch workspaces:', error);
-        errorMessage.value = '데이터를 불러오는 중 문제가 발생했습니다.';
+        console.error('검색 실패:', error);
+        errorMessage.value = '검색 중 오류가 발생했습니다.';
     } finally {
         isLoading.value = false;
     }
 };
 
-const handleApply = async (id: string | number) => {
-    if (!confirm('이 워크스페이스에 참여 신청을 하시겠습니까?')) return;
+// [신청 단계로 이동]
+const handleApply = (id: string | number) => {
+    const target = searchResults.value.find(ws => String(ws.id) === String(id));
+    if (!target) return;
 
-    // 선택된 워크스페이스 정보 찾기
-    const targetWorkspace = searchResults.value.find(ws => ws.id === id);
-    if (!targetWorkspace) return;
+    selectedWorkspace.value = target;
+    selectedRole.value = 'LEARNER';
+    step.value = 2;
+};
 
+// [최종 신청 완료]
+const confirmApplication = async () => {
+    if (!selectedWorkspace.value || !user.value) return;
+
+    if (!confirm(`${selectedRole.value === 'LEARNER' ? '수강생' : '강사'} 권한으로 신청하시겠습니까?`)) return;
+
+    isLoading.value = true;
     try {
-        // [API 명세 - Mock]
-        // POST /workspaces/{id}/apply
-        // 실제로는 별도의 엔드포인트이겠으나, Json-Server에서는 /my_workspaces에 데이터를 추가하는 것으로 시뮬레이션
+        const success = await workspaceStore.joinWorkspace(
+            selectedWorkspace.value.id,
+            selectedRole.value,
+            user.value.id
+        );
 
-        // 1. 이미 존재하는지 확인 (Mock Server 한계상 중복 방지 로직 필요)
-        const checkRes = await api.get(`/my_workspaces?id=${id}`);
-        if (checkRes.data.length > 0) {
-            alert('이미 가입되었거나 신청 대기중인 워크스페이스입니다.');
-            return;
+        if (success) {
+            alert('참여 신청이 완료되었습니다.\n관리자 승인 후 입장 가능합니다.');
+            handleClose();
+        } else {
+            alert('신청 처리 중 문제가 발생했습니다.');
         }
-
-        // 2. 신청 데이터 생성
-        const applyData = {
-            ...targetWorkspace,
-            status: 1, // 대기 상태
-            role: 'LEARNER', // 기본 역할
-            // 필요한 경우 user_id 등 추가
-        };
-
-        await api.post('/my_workspaces', applyData);
-
-        alert('참여 신청이 완료되었습니다.');
-
-        // 검색 결과에서 상태 업데이트 (UI 반영)
-        targetWorkspace.status = 1;
-
     } catch (error) {
-        console.error('Application failed:', error);
-        alert('신청 처리 중 오류가 발생했습니다.');
+        console.error('Join failed:', error);
+        alert('신청 중 오류가 발생했습니다.');
+    } finally {
+        isLoading.value = false;
     }
 };
 
-const handleClose = () => {
+const handleClose = async () => {
     emit('close');
+    // 다시 검색
+    await workspaceStore.fetchMyWorkspaces(true);
 };
 
-const handleSearch = () => {
-    fetchWorkspaces(searchQuery.value);
-};
-
-// [4] Watcher
+// [와치] 모달이 닫힐 때 상태를 초기화하고, 열릴 때 초기 검색어를 처리합니다.
 watch(() => props.isOpen, (newVal) => {
     if (newVal) {
-        searchQuery.value = props.initialQuery;
+        // 모달이 열릴 때 초기 검색어가 있으면 세팅하고 검색 실행
         if (props.initialQuery) {
-            fetchWorkspaces(props.initialQuery);
-        } else {
-            // 초기화
-            searchResults.value = [];
-            hasSearched.value = false;
+            searchQuery.value = props.initialQuery;
+            handleSearch();
         }
+    } else {
+        resetModalState();
     }
 });
 </script>
@@ -168,67 +132,130 @@ watch(() => props.isOpen, (newVal) => {
 
         <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
 
+            <!-- Header -->
             <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between shrink-0">
-                <h2 class="text-xl font-bold text-slate-900">워크스페이스 검색 및 코드 입력</h2>
+                <h2 class="text-xl font-bold text-slate-900">
+                    {{ step === 1 ? '워크스페이스 검색' : '참여 역할 선택' }}
+                </h2>
                 <button @click="handleClose"
                     class="text-slate-400 hover:text-slate-600 transition-colors rounded-full p-1 hover:bg-slate-100">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
 
-            <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
-                <div class="relative mb-8">
-                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                        search
-                    </span>
-                    <input v-model="searchQuery" autofocus :disabled="isLoading"
-                        class="w-full pl-12 pr-4 py-4 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-brand focus:border-indigo-brand text-slate-900 placeholder:text-slate-400 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                        placeholder="이름 또는 초대 코드를 입력하세요" type="text" @keyup.enter="handleSearch" />
+            <!-- Content Area -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar">
+
+                <!-- Step 1: Search -->
+                <div v-if="step === 1" class="p-6">
+                    <div class="relative mb-8">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                            search
+                        </span>
+                        <input v-model="searchQuery" autofocus :disabled="isLoading"
+                            class="w-full pl-12 pr-4 py-4 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-slate-900 placeholder:text-slate-400 outline-none transition-all disabled:opacity-60"
+                            placeholder="이름 또는 초대 코드를 입력하세요" type="text" @keyup.enter="handleSearch" />
+                    </div>
+
+                    <div class="min-h-[200px]">
+                        <div v-if="isLoading"
+                            class="flex flex-col items-center justify-center h-48 space-y-4 text-indigo-600">
+                            <span class="material-symbols-outlined animate-spin text-4xl">progress_activity</span>
+                            <span class="text-sm font-medium">검색 중...</span>
+                        </div>
+
+                        <div v-else-if="errorMessage"
+                            class="flex flex-col items-center justify-center h-48 space-y-2 text-rose-500">
+                            <span class="material-symbols-outlined text-4xl">error</span>
+                            <p>{{ errorMessage }}</p>
+                        </div>
+
+                        <div v-else-if="hasSearched && searchResults.length === 0"
+                            class="flex flex-col items-center justify-center h-48 space-y-2 text-slate-500">
+                            <span class="material-symbols-outlined text-4xl text-slate-300">search_off</span>
+                            <p>검색 결과가 없습니다.</p>
+                        </div>
+
+                        <div v-else class="space-y-4">
+                            <!-- WorkspaceCard에 status=0(Guest)을 강제하여 신청 버튼이 나오도록 유도 -->
+                            <WorkspaceCard v-for="item in searchResults" :key="item.id"
+                                :workspace="{ ...item, status: 0 }" @apply="handleApply" />
+                        </div>
+                    </div>
                 </div>
 
-                <div class="min-h-[200px]">
-
-                    <div v-if="isLoading"
-                        class="flex flex-col items-center justify-center h-48 space-y-4 text-slate-400">
-                        <span
-                            class="material-symbols-outlined animate-spin text-4xl text-indigo-brand">progress_activity</span>
-                        <span class="text-sm font-medium">검색 중입니다...</span>
+                <!-- Step 2: Role Selection -->
+                <div v-else class="p-8 flex flex-col items-center justify-center space-y-8">
+                    <div class="text-center space-y-2">
+                        <div
+                            class="inline-flex items-center justify-center size-16 rounded-full bg-indigo-50 text-indigo-600 mb-2">
+                            <span class="material-symbols-outlined text-3xl">domain</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-900">{{ selectedWorkspace?.name }}</h3>
+                        <p class="text-slate-500">어떤 역할로 참여하시겠습니까?</p>
                     </div>
 
-                    <div v-else-if="errorMessage"
-                        class="flex flex-col items-center justify-center h-48 space-y-2 text-rose-500">
-                        <span class="material-symbols-outlined text-4xl">error</span>
-                        <p>{{ errorMessage }}</p>
-                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-lg">
+                        <button @click="selectedRole = 'LEARNER'"
+                            :class="['relative p-6 rounded-xl border-2 text-left transition-all',
+                                selectedRole === 'LEARNER' ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-100 hover:border-indigo-200 hover:bg-slate-50']">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="p-2 bg-white rounded-lg shadow-sm text-indigo-600">
+                                    <span class="material-symbols-outlined text-2xl">school</span>
+                                </div>
+                                <span v-if="selectedRole === 'LEARNER'"
+                                    class="material-symbols-outlined text-indigo-600">check_circle</span>
+                            </div>
+                            <h4 class="font-bold text-slate-900 mb-1">수강생 (Learner)</h4>
+                            <p class="text-sm text-slate-500">강의를 수강하고 과제를 제출하며 학습을 진행합니다.</p>
+                        </button>
 
-                    <div v-else-if="hasSearched && searchResults.length === 0"
-                        class="flex flex-col items-center justify-center h-48 space-y-2 text-slate-500">
-                        <span class="material-symbols-outlined text-4xl text-slate-300">search_off</span>
-                        <p>검색 결과가 없습니다.</p>
+                        <button @click="selectedRole = 'TRAINER'"
+                            :class="['relative p-6 rounded-xl border-2 text-left transition-all',
+                                selectedRole === 'TRAINER' ? 'border-emerald-600 bg-emerald-50/50' : 'border-slate-100 hover:border-emerald-200 hover:bg-slate-50']">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="p-2 bg-white rounded-lg shadow-sm text-emerald-600">
+                                    <span class="material-symbols-outlined text-2xl">cast_for_education</span>
+                                </div>
+                                <span v-if="selectedRole === 'TRAINER'"
+                                    class="material-symbols-outlined text-emerald-600">check_circle</span>
+                            </div>
+                            <h4 class="font-bold text-slate-900 mb-1">강사 (Trainer)</h4>
+                            <p class="text-sm text-slate-500">강의를 개설하고 수강생들의 진도와 성취도를 관리합니다.</p>
+                        </button>
                     </div>
-
-                    <div v-else class="space-y-4">
-                        <WorkspaceCard v-for="item in searchResults" :key="item.id" v-bind="item"
-                            @apply="handleApply" />
-                    </div>
-
                 </div>
             </div>
 
+            <!-- Footer -->
             <div
                 class="px-6 py-5 bg-slate-50 flex flex-col sm:flex-row-reverse gap-3 shrink-0 border-t border-slate-100">
-                <button @click="handleSearch" :disabled="isLoading"
-                    class="w-full sm:w-auto px-8 py-3 bg-deep-indigo hover:bg-indigo-900 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
-                    <span v-if="isLoading"
-                        class="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                    <span>검색하기</span>
-                </button>
-                <button @click="handleClose"
-                    class="w-full sm:w-auto px-8 py-3 bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold rounded-xl transition-colors">
-                    닫기
-                </button>
-            </div>
+                <template v-if="step === 1">
+                    <button @click="handleSearch" :disabled="isLoading"
+                        class="w-full sm:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                        <span v-if="isLoading"
+                            class="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                        <span>검색하기</span>
+                    </button>
+                    <button @click="handleClose"
+                        class="w-full sm:w-auto px-8 py-3 bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold rounded-xl transition-colors">
+                        취소
+                    </button>
+                </template>
 
+                <template v-else>
+                    <button @click="confirmApplication" :disabled="isLoading"
+                        class="w-full sm:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                        <span v-if="isLoading"
+                            class="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                        <span>신청 완료</span>
+                    </button>
+                    <button @click="step = 1" :disabled="isLoading"
+                        class="w-full sm:w-auto px-8 py-3 bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold rounded-xl transition-colors">
+                        이전으로
+                    </button>
+                </template>
+            </div>
         </div>
     </div>
 </template>

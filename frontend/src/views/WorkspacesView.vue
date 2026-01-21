@@ -10,8 +10,8 @@
                 <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                     <span class="material-symbols-outlined text-indigo-600 text-2xl">search</span>
                 </div>
-                <input v-model="searchQuery" type="text"
-                    class="block w-full pl-14 pr-24 py-5 bg-white border-0 ring-1 ring-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-600 text-lg shadow-sm"
+                <input v-model="searchQuery" type="text" @click="handleSearch"
+                    class="block w-full pl-14 pr-24 py-5 bg-white border-0 ring-1 ring-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-600 text-lg shadow-sm cursor-pointer"
                     placeholder="워크스페이스 이름 또는 초대 코드를 입력하세요" />
                 <div class="absolute inset-y-0 right-2 flex items-center">
                     <button type="submit" :disabled="isLoading"
@@ -25,7 +25,7 @@
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
 
-        <div v-else-if="myWorkspaces.length === 0"
+        <div v-else-if="workspaceStore.myWorkspaces.length === 0"
             class="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-200">
             <span class="material-symbols-outlined text-6xl text-slate-300 mb-4">folder_off</span>
             <p class="text-slate-500 text-lg font-medium">참여 중인 워크스페이스가 없습니다.</p>
@@ -33,7 +33,7 @@
         </div>
 
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <WorkspaceCard v-for="workspace in myWorkspaces" :key="workspace.id" v-bind="workspace"
+            <WorkspaceCard v-for="workspace in workspaceStore.myWorkspaces" :key="workspace.id" :workspace="workspace"
                 @enter="handleEnter" />
         </div>
 
@@ -45,28 +45,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import api from '@/api';
+// import api from '@/api'; // Removed
+import { useWorkspaceStore } from '@/stores/workspace'; // Added
 import WorkspaceCard from '@/components/WorkspacesView/WorkspaceCard.vue';
 import WorkspaceSearchModal from '@/components/WorkspacesView/WorkspaceSearchModal.vue';
 
-interface Workspace {
-    id: number;
-    name: string;
-    logo_url: string;
-    location: string;
-    description: string;
-    memberCount: number;
-    courseCount?: number;
-    role?: 'LEARNER' | 'TRAINER' | null;
-    status: number; // 0: 미참여, 1: 대기, 2: 참여중
-    typeIcon: string;
-    themeColor: 'indigo' | 'blue' | 'amber';
-}
-
-
+import type { Workspace } from '@/types';
 
 const router = useRouter();
-const myWorkspaces = ref<Workspace[]>([]);
+const workspaceStore = useWorkspaceStore(); // Added
+// const myWorkspaces = ref<Workspace[]>([]); // Removed local ref
 const searchQuery = ref('');
 const isLoading = ref(false);
 const isSearchModalOpen = ref(false);
@@ -75,14 +63,11 @@ const isSearchModalOpen = ref(false);
 const fetchMyWorkspaces = async () => {
     try {
         isLoading.value = true;
-
-        // 백엔드(Mock Server)에서 이미 필터링된 "내 워크스페이스" 목록을 가져옴
-        const response = await api.get('/my_workspaces');
-        myWorkspaces.value = response.data;
+        // Store를 통해 데이터 로드 (강제 업데이트)
+        await workspaceStore.fetchMyWorkspaces(true);
 
     } catch (error) {
         console.error('데이터 로드 실패:', error);
-        // alert('서버로부터 데이터를 가져오지 못했습니다.');
     } finally {
         isLoading.value = false;
     }

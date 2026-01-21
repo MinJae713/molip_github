@@ -25,25 +25,12 @@
 </template>
 
 <script setup lang="ts">
-interface workspace {
-    id: number | string;
-    name: string;
-    logo_url?: string;
-    role?: string;
-    status?: number;
-}
+import type { Workspace } from '@/types';
+
 interface Props {
-    workspace: workspace; // 객체 통째로 받기
+    workspace: Workspace; // 객체 통째로 받기
 }
 const props = defineProps<Props>();
-
-const emit = defineEmits<{
-    (e: 'navigate', id: number | string): void;
-}>();
-
-const handleNavigate = (id: number | string) => {
-    emit('navigate', id);
-};
 </script>
 
 

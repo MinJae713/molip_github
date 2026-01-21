@@ -38,16 +38,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-interface Course {
-    id: string | number;
-    title: string;
-    description: string;
-    tag?: string;
-    theme?: 'indigo' | 'blue' | 'slate';
-    progress: number;
-    currentLessons: number;
-    totalLessons: number;
-}
+import type { Course } from '@/types';
 
 interface Props {
     course: Course;
@@ -80,6 +71,12 @@ const styles = computed(() => {
             textAccent: 'text-slate-600',
             barColor: 'bg-slate-500',
             button: 'border-slate-200 text-slate-600 hover:bg-slate-50'
+        },
+        amber: {
+            gradient: 'from-amber-500 to-orange-500',
+            textAccent: 'text-amber-600',
+            barColor: 'bg-amber-500',
+            button: 'border-amber-200 text-amber-600 hover:bg-amber-50'
         }
     };
     return themes[props.course.theme || 'indigo'] || themes.indigo;

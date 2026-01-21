@@ -3,8 +3,7 @@
         <Navbar :user="userStore.user" @notification-click="handleNotification" @profile-click="handleProfile" />
         <div class="flex flex-1 overflow-hidden">
             <!-- 조건부 사이드바 렌더링 -->
-            <Sidebar :workspace-name="workspaceStore.currentWorkspace?.name || 'No Workspace'"
-                :workspace-logo="workspaceStore.currentWorkspace?.logo_url" current-active-id="dashboard" />
+            <Sidebar current-active-id="dashboard" />
 
             <main class="flex-1 overflow-y-auto p-4 sm:p-8">
                 <RouterView />

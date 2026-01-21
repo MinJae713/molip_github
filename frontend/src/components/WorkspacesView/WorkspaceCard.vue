@@ -4,40 +4,41 @@
             <div class="flex items-center gap-4">
                 <div
                     :class="['size-14 rounded-lg border flex items-center justify-center overflow-hidden transition-colors', theme.bg, theme.border]">
-                    <img v-if="logo_url && logo_url !== ''" :src="logo_url" :alt="name"
+                    <img v-if="workspace.logo_url" :src="workspace.logo_url" :alt="workspace.name"
                         class="w-full h-full object-cover" />
                     <span v-else :class="['material-symbols-outlined text-3xl', theme.icon]">
-                        {{ typeIcon }}
+                        {{ workspace.typeIcon || 'domain' }}
                     </span>
                 </div>
                 <div>
                     <h3 class="font-bold text-lg text-slate-900 group-hover:text-indigo-600 transition-colors">
-                        {{ name }}
+                        {{ workspace.name }}
                     </h3>
                     <div class="text-xs text-slate-500 flex items-center gap-1">
                         <span class="material-symbols-outlined text-[14px]">location_on</span>
-                        {{ location }}
+                        {{ workspace.location || 'Unknown' }}
                     </div>
                 </div>
             </div>
             <span
                 :class="['px-3 py-1 whitespace-nowrap text-xs font-bold rounded-full flex items-center gap-1 transition-colors', buttonConfig.badgeClass]">
-                <span :class="['size-2 rounded-full', buttonConfig.dotClass, { 'animate-pulse': status === 2 }]"></span>
+                <span
+                    :class="['size-2 rounded-full', buttonConfig.dotClass, { 'animate-pulse': workspace.status === 2 }]"></span>
                 {{ buttonConfig.text === '입장하기' ? '활동 중' : buttonConfig.text }}
             </span>
         </div>
 
         <p class="text-slate-600 text-sm mb-6 line-clamp-2 min-h-[2.5rem]">
-            {{ description }}
+            {{ workspace.description || 'No description available.' }}
         </p>
 
         <div class="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
             <div class="flex items-center gap-2 text-sm text-slate-500 font-medium">
                 <span class="material-symbols-outlined text-lg">group</span>
-                <span>멤버 {{ memberCount.toLocaleString() }}명</span>
+                <span>멤버 {{ (workspace.memberCount || 0).toLocaleString() }}명</span>
             </div>
 
-            <button @click="handleAction" :disabled="status === 1" :class="[
+            <button @click="handleAction" :disabled="workspace.status === 1" :class="[
                 buttonConfig.colorClass,
                 'text-white text-sm font-bold py-2.5 px-5 rounded-lg transition-all duration-200 shadow-md flex items-center gap-2 group-hover:shadow-lg disabled:opacity-70'
             ]">
@@ -50,19 +51,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import type { Workspace } from '@/types';
 
-// 1. Props 정의 시 기본값 설정을 위해 withDefaults 사용 고려 (선택)
 interface Props {
-    id: string | number;
-    name: string;
-    logo_url?: string; // 로고 URL 추가 (선택적)
-    location: string;
-    description: string;
-    memberCount: number;
-    role?: 'LEARNER' | 'TRAINER' | null;
-    status: number; // 0: 미참여, 1: 대기, 2: 참여중
-    typeIcon: string;
-    themeColor: 'indigo' | 'blue' | 'amber';
+    workspace: Workspace;
 }
 
 const props = defineProps<Props>();
@@ -100,20 +92,20 @@ const buttonConfig = computed(() => {
         },
     };
 
-    return configs[props.status as keyof typeof configs] ?? configs[0];
+    return configs[(props.workspace.status || 0) as keyof typeof configs] ?? configs[0];
 });
 
 // 3. 상태 텍스트는 버튼 텍스트와 분리될 수 있으므로 별도 관리
 const statusText = computed(() => {
-    if (props.status === 2) return '활동 중';
-    if (props.status === 1) return '대기 중';
+    if (props.workspace.status === 2) return '활동 중';
+    if (props.workspace.status === 1) return '대기 중';
     return '미가입';
 });
 
 // 4. 클릭 핸들러 (대기 상태일 때 로직 방지)
 const handleAction = () => {
-    if (props.status === 1) return; // 대기 중일 때는 무시
-    emit(buttonConfig.value.action, props.id);
+    if (props.workspace.status === 1) return; // 대기 중일 때는 무시
+    emit(buttonConfig.value.action, props.workspace.id);
 };
 
 // 테마 색상 맵
@@ -123,8 +115,13 @@ const themeClasses = {
     amber: { bg: 'bg-amber-50', border: 'border-amber-100', icon: 'text-amber-600', badge: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500' },
 };
 
-const theme = computed(() => themeClasses[props.themeColor]);
+const theme = computed(() => {
+    // themeColor가 string이면 as keyof로 단언하거나 기본값 처리 필요
+    const color = (props.workspace.themeColor || 'indigo') as keyof typeof themeClasses;
+    return themeClasses[color] || themeClasses.indigo;
+});
 </script>
+
 
 <style scoped>
 .bg-indigo-brand {
