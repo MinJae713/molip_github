@@ -1,0 +1,31 @@
+#!/bin/sh
+
+echo "--- Commit Hook Running ---"
+# Git이 전달해주는 커밋 메시지 파일 경로
+MSG_FILE="$1"
+
+# 고정 prefix
+PREFIX="S14P11A309-"
+
+# 커밋 메시지 첫 줄
+FIRST_LINE="$(head -n 1 "$MSG_FILE")"
+
+# merge / revert / squash / fixup 커밋은 건드리지 않음
+case "$FIRST_LINE" in
+  Merge\ *|Revert\ *|fixup!\ *|squash!\ *)
+    exit 0
+    ;;
+esac
+
+# 이미 prefix가 있으면 그대로 종료 (중복 방지)
+case "$FIRST_LINE" in
+  "$PREFIX"*) exit 0 ;;
+esac
+
+# prefix 붙여서 메시지 재작성
+{
+  printf "%s%s\n" "$PREFIX" "$FIRST_LINE"
+  tail -n +2 "$MSG_FILE"
+} > "$MSG_FILE.tmp" && mv "$MSG_FILE.tmp" "$MSG_FILE"
+
+exit 0
