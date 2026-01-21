@@ -1,28 +1,17 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import StatusBadge from '@/components/common/StatusBadge.vue';
+import { ref, computed, onMounted } from 'vue';
+import { useAdminCourseStore } from '@/stores/adminCourse';
 import ProgressBar from '@/components/common/ProgressBar.vue';
+import StatusBadge from '@/components/common/StatusBadge.vue';
 
-interface Lecture {
-  id: number;
-  title: string;
-  category: string;
-  instructor: string;
-  studentCount: number;
-  progress: number;
-  status: 'ongoing' | 'completed' | 'upcoming';
-}
+// 1. Pinia store 연결
+const courseStore = useAdminCourseStore();
 
-// 1. 샘플 데이터 (각 상태별로 골고루 배치)
-const lectures = ref<Lecture[]>([
-  { id: 1, title: '파이썬 데이터 분석 실무', category: 'IT/개발', instructor: '김철수 강사', studentCount: 128, progress: 72, status: 'ongoing' },
-  { id: 2, title: '디지털 마케팅 전략 2024', category: '마케팅', instructor: '박영희 강사', studentCount: 85, progress: 95, status: 'ongoing' },
-  { id: 3, title: 'B2B 영업 제안의 정석', category: '영업', instructor: '최민준 강사', studentCount: 210, progress: 45, status: 'ongoing' },
-  { id: 4, title: '생성형 AI 업무 자동화 가이드', category: '기술', instructor: '이지혜 강사', studentCount: 340, progress: 0, status: 'upcoming' },
-  { id: 5, title: '신입사원을 위한 비즈니스 매너', category: 'HR', instructor: '정태양 강사', studentCount: 50, progress: 100, status: 'completed' }
-]);
+onMounted(() => {
+  courseStore.fetchAdminCourses();
+});
 
-// 2. 필터 상태 관리
+// 2. 필터 및 검색 상태
 const activeTab = ref<'all' | 'ongoing' | 'upcoming' | 'completed'>('all');
 const selectedCategory = ref('전체');
 const searchQuery = ref('');
@@ -35,22 +24,30 @@ const tabs = [
   { id: 'completed', label: '종료' }
 ] as const;
 
-// 4. 카테고리 목록 (데이터 기반 자동 추출)
+// 4. 카테고리 목록 (스토어 데이터를 기반으로 자동 생성)
 const categories = computed(() => {
-  const list = lectures.value.map(l => l.category);
+  const list = courseStore.adminCourses.map(c => c.category);
   return ['전체', ...new Set(list)];
 });
 
-// 5. 핵심: 통합 필터링 로직
-const filteredLectures = computed(() => {
-  return lectures.value.filter(lecture => {
-    const matchTab = activeTab.value === 'all' || lecture.status === activeTab.value;
-    const matchCategory = selectedCategory.value === '전체' || lecture.category === selectedCategory.value;
-    const matchSearch = lecture.title.toLowerCase().includes(searchQuery.value.toLowerCase());
-    
+// 5. 필터링된 강의 목록 (lecture -> course로 명칭 통일)
+const filteredCourses = computed(() => {
+  return courseStore.adminCourses.filter(course => {
+    const matchTab = activeTab.value === 'all' || course.status === activeTab.value;
+    const matchCategory = selectedCategory.value === '전체' || course.category === selectedCategory.value;
+    const matchSearch = course.title.toLowerCase().includes(searchQuery.value.toLowerCase());
     return matchTab && matchCategory && matchSearch;
   });
 });
+
+// 6. 상세 보기 핸들러 (행 클릭 시 호출)
+const handleRowClick = async (courseId: any) => {
+  const numericId = Number(courseId);
+  if (isNaN(numericId)) return;
+
+  // 스토어 액션 실행 (404가 나도 catch에서 데이터를 채워줌)
+  await courseStore.fetchCourseDetail(numericId);
+};
 </script>
 
 <template>
@@ -63,7 +60,7 @@ const filteredLectures = computed(() => {
         <h3 class="text-xl font-bold text-slate-800 tracking-tight">강의별 수강현황</h3>
       </div>
       <span class="text-[13px] text-slate-400 font-medium bg-slate-100 px-2 py-1 rounded-md">
-        전체 {{ filteredLectures.length }}개
+        전체 {{ filteredCourses.length }}개
       </span>
     </div>
 
@@ -88,7 +85,9 @@ const filteredLectures = computed(() => {
           v-model="selectedCategory"
           class="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600 bg-white outline-none focus:border-indigo-500"
         >
-          <option v-for="cat in categories" :key="cat" :value="cat">{{ cat === '전체' ? '카테고리 전체' : cat }}</option>
+          <option v-for="cat in categories" :key="cat" :value="cat">
+            {{ cat === '전체' ? '카테고리 전체' : cat }}
+          </option>
         </select>
 
         <div class="relative flex-1 max-w-xs">
@@ -115,18 +114,28 @@ const filteredLectures = computed(() => {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr v-for="lecture in filteredLectures" :key="lecture.id" class="hover:bg-slate-50/80 transition-colors group">
+            <tr 
+              v-for="course in filteredCourses" 
+              :key="course.id" 
+              @click="handleRowClick(course.id)"
+              class="hover:bg-slate-50/80 transition-colors group cursor-pointer"
+            >
               <td class="px-6 py-4">
-                <p class="font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">{{ lecture.title }}</p>
-                <p class="text-[11px] text-slate-400 mt-0.5">{{ lecture.category }}</p>
+                <p class="font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">{{ course.title }}</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">{{ course.category }}</p>
               </td>
-              <td class="px-6 py-4 text-sm text-slate-600">{{ lecture.instructor }}</td>
-              <td class="px-6 py-4 text-sm text-slate-500">{{ lecture.studentCount }}명</td>
-              <td class="px-6 py-4"><ProgressBar :progress="lecture.progress" /></td>
-              <td class="px-6 py-4 text-center"><StatusBadge :variant="lecture.status" /></td>
-              <td class="px-6 py-4 text-right"><span class="text-slate-300 group-hover:text-indigo-400 cursor-pointer">›</span></td>
+              <td class="px-6 py-4 text-sm text-slate-600">{{ course.instructor }}</td>
+              <td class="px-6 py-4 text-sm text-slate-500">{{ course.studentCount }}명</td>
+              <td class="px-6 py-4"><ProgressBar :progress="course.progress" /></td>
+              <td class="px-6 py-4 text-center">
+                <StatusBadge :variant="course.status" />
+              </td>
+              <td class="px-6 py-4 text-right">
+                <span class="text-slate-300 group-hover:text-indigo-400 transition-colors font-bold">›</span>
+              </td>
             </tr>
-            <tr v-if="filteredLectures.length === 0">
+            
+            <tr v-if="filteredCourses.length === 0">
               <td colspan="6" class="py-20 text-center">
                 <p class="text-slate-400 text-sm">해당 조건에 맞는 강의가 없습니다.</p>
               </td>

@@ -17,21 +17,13 @@ const router = createRouter({
           name: 'home',
           component: TestView
         },
-        // 1. 관리자 대시보드 경로 추가
-        // 주소: /workspace/:workspaceId/admin
+        // 관리자 대시보드 경로 추가
         {
-          path: 'workspace/:workspaceId/admin',
+          path: 'workspace/:workspaceId',
           name: 'AdminDashboard',
           // Lazy Loading: 페이지가 필요할 때만 불러와서 성능을 최적화합니다.
           component: () => import('@/views/admin/AdminDashboardView.vue')
         },
-        /* // 2. 나중에 수강생 대시보드를 만든다면 이런 식으로 추가됩니다.
-        {
-          path: 'workspace/:workspaceId/student',
-          name: 'StudentDashboard',
-          component: () => import('@/views/student/StudentDashboardView.vue')
-        }
-        */
       ]
     }
   ]

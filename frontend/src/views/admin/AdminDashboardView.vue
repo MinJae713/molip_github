@@ -2,6 +2,7 @@
 import StatCard from '@/components/dashboard/shared/StatCard.vue';
 import InviteBanner from '@/components/dashboard/admin/InviteCodeBanner.vue';
 import AdminStatTable from '@/components/dashboard/admin/AdminStatTable.vue';
+import CourseDetailModal from '@/components/dashboard/admin/CourseDetailModal.vue';
 
 /**
  * 관리자 대시보드용 요약 통계 데이터
@@ -67,6 +68,7 @@ const adminStats = [
 
     <section>
       <AdminStatTable />
+      <CourseDetailModal />
     </section>
 
   </div>

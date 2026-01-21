@@ -105,7 +105,7 @@ onUnmounted(() => {
               <button
                 type="button"
                 @click="close"
-                class="text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center p-1"
+                class="text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center p-1 cursor-pointer"
                 aria-label="모달 닫기"
               >
                 <span class="material-symbols-outlined">close</span>
