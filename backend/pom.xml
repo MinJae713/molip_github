@@ -126,6 +126,13 @@
 			<artifactId>spring-grpc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+    <!-- Source: https://mvnrepository.com/artifact/com.diffplug.spotless/spotless-maven-plugin -->
+    <dependency>
+      <groupId>com.diffplug.spotless</groupId>
+      <artifactId>spotless-maven-plugin</artifactId>
+      <version>3.1.0</version>
+      <scope>compile</scope>
+    </dependency>
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>
@@ -141,6 +148,17 @@
 
 	<build>
 		<plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+        <version>3.27.0</version>
+        <configuration>
+          <rulesets>
+            <ruleset>${project.basedir}/src/main/resources/pmd-ruleset.xml</ruleset>
+          </rulesets>
+          <failOnViolation>true</failOnViolation>
+        </configuration>
+      </plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -189,6 +207,57 @@
 					</excludes>
 				</configuration>
 			</plugin>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>2.43.0</version>
+
+        <configuration>
+          <java>
+            <!-- 가장 많이 쓰는 포맷터: google-java-format -->
+            <googleJavaFormat>
+              <version>1.19.2</version>
+            </googleJavaFormat>
+
+            <!-- import 정리 -->
+            <removeUnusedImports />
+
+            <!-- 파일 끝 개행 보장 -->
+            <endWithNewline />
+
+            <!-- (선택) 특정 파일/패키지 제외하고 싶으면 아래처럼 -->
+            <!--
+            <targetExclude>src/generated/**</targetExclude>
+            -->
+          </java>
+
+          <!-- (선택) 기타 파일 포맷: yaml, md, gitignore 등 -->
+          <formats>
+            <format>
+              <includes>
+                <include>**/*.md</include>
+                <include>**/*.yml</include>
+                <include>**/*.yaml</include>
+                <include>**/*.properties</include>
+                <include>.gitignore</include>
+              </includes>
+              <trimTrailingWhitespace />
+              <endWithNewline />
+            </format>
+          </formats>
+        </configuration>
+
+        <!-- verify 단계에서 check를 돌려서 CI에서 포맷 위반이면 빌드 실패 -->
+        <executions>
+          <execution>
+            <id>spotless-check</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
 		</plugins>
 	</build>
 

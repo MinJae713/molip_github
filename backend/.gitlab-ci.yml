@@ -1,0 +1,18 @@
+stages:
+  - lint
+
+lint_spotless_pmd:
+  stage: lint
+  image: maven:3.9.9-eclipse-temurin-21
+  script:
+    # Maven Wrapper 사용 (버전 고정, 로컬/CI 일관성)
+    - ./mvnw -B -ntp spotless:check
+    - ./mvnw -B -ntp pmd:check
+  rules:
+    # Merge Request에서만 실행
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - "**/*.java"
+        - "pom.xml"
+        - ".editorconfig"
+        - ".gitlab-ci.yml"

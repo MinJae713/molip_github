@@ -1,0 +1,49 @@
+#!/bin/sh
+
+echo "🔍 Running Spotless check..."
+
+# 어디서 git commit을 치든 repo 루트로 이동
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT" || exit 1
+
+# backend 디렉토리로 이동 (backend의 pom.xml 기준으로 실행되게)
+cd backend || {
+  echo "❌ backend directory not found. Expected: $REPO_ROOT/backend"
+  exit 1
+}
+
+# OS에 따라 Maven Wrapper 선택
+if [ -f "./mvnw.cmd" ]; then
+  ./mvnw.cmd -q spotless:check
+else
+  ./mvnw -q spotless:check
+fi
+
+RESULT=$?
+
+if [ $RESULT -ne 0 ]; then
+  echo "❌ Spotless check failed."
+  echo "👉 Run './mvnw spotless:apply' and commit again."
+  exit 1
+fi
+
+echo "✅ Spotless check passed."
+
+echo "🔍 Running PMD check..."
+
+# PMD 실행
+if [ -f "./mvnw.cmd" ]; then
+  ./mvnw.cmd -q pmd:check
+else
+  ./mvnw -q pmd:check
+fi
+
+RESULT=$?
+
+if [ $RESULT -ne 0 ]; then
+  echo "❌ PMD violations found."
+  echo "👉 Fix PMD issues before committing."
+  exit 1
+fi
+
+echo "✅ PMD check passed."
