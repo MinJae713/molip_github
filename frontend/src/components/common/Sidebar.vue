@@ -138,8 +138,6 @@ const currentActiveId = computed(() => {
     if (path.match(/\/workspaceDetail\/\d+$/)) {
         return 'dashboard';
     }
-
-
     // prop으로 전달된 값 또는 기본값 사용
     return props.currentActiveId;
 });
