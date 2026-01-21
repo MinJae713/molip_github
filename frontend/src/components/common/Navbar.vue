@@ -9,16 +9,20 @@ interface UserInfo {
 }
 
 interface Props {
+    workspaceName?: string;
+    currentPathName?: string;
     user?: UserInfo;
     hasNotifications?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    workspaceName: 'TechCorp HQ',
+    currentPathName: 'Workspace Home',
     hasNotifications: true,
     user: () => ({
-        name: '',
-        email: '',
-        profileImage: ''
+        name: '김지수',
+        email: 'jisoo.kim@techcorp.com',
+        profileImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBiolsf6prQfZQmoZ420xEZd441M2OqmX3ZkCgcZz6CiNM7dWL1j5LkuMWr7C98MkSlOn5khaGV_o6iP8HvgU5kV1ulrcFZ4M_s4sPvoltW4goOg9cU1JZ5MwNh5Jqp3a6O4sh35Gt_K8JOaiejQAWSGcZep5eH2o3TBxeCCemLid8l3JlLO5BXcjQhIR0LMMCRhZb7f4kbU6yd3jFL06u8vBS2gLEppd_BaZP7-ASlf6YuhAMP5EtdxZwJfdsRzYY0kqCpgq_Piw'
     })
 });
 
@@ -33,28 +37,16 @@ const emit = defineEmits<{
         <div class="w-full px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
 
             <div class="flex items-center gap-12">
-                <router-link :to="{ name: 'workspaces' }"
-                    class="flex items-center gap-2 text-indigo-400 w-56 cursor-pointer">
+                <div class="flex items-center gap-2 text-indigo-400 w-56">
                     <span class="material-symbols-outlined text-3xl">school</span>
                     <span class="text-xl font-bold font-display tracking-tight text-white">
                         EduVerse <span class="text-indigo-400 font-light">Work</span>
                     </span>
-                </router-link>
-
-                <!-- Navigation Tabs -->
-                <nav class="hidden md:flex items-center gap-1">
-                    <router-link :to="{ name: 'workspaces' }"
-                        class="px-4 py-2 rounded-lg text-sm font-bold transition-all"
-                        active-class="bg-white/10 text-white"
-                        :class="[$route.path.startsWith('/workspaces') ? '' : 'text-slate-400 hover:text-white hover:bg-white/5']">
-                        워크스페이스
-                    </router-link>
-                    <router-link :to="{ name: 'mypage' }" class="px-4 py-2 rounded-lg text-sm font-bold transition-all"
-                        active-class="bg-white/10 text-white"
-                        :class="[$route.path.startsWith('/mypage') ? '' : 'text-slate-400 hover:text-white hover:bg-white/5']">
-                        마이페이지
-                    </router-link>
-                </nav>
+                </div>
+                <h1 class="hidden md:block text-lg font-bold text-white/90 border-l border-slate-700 pl-6">
+                    {{ workspaceName }} <span class="text-slate-500 mx-2">/</span>
+                    <span class="text-indigo-300">{{ currentPathName }}</span>
+                </h1>
             </div>
 
             <div class="flex items-center gap-4">

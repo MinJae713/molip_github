@@ -408,6 +408,88 @@
       "is_liked": true
     }
   ],
+  "admin_courses": [
+    {
+      "id": 1,
+      "title": "파이썬 데이터 분석 실무",
+      "category": "IT/개발",
+      "instructor": "김철수 강사",
+      "student_count": 128,
+      "progress": 72,
+      "status": "ongoing"
+    },
+    {
+      "id": 2,
+      "title": "디지털 마케팅 전략 2024",
+      "category": "마케팅",
+      "instructor": "박영희 강사",
+      "student_count": 85,
+      "progress": 95,
+      "status": "ongoing"
+    },
+    {
+      "id": 3,
+      "title": "B2B 영업 제안의 정석",
+      "category": "영업",
+      "instructor": "최민준 강사",
+      "student_count": 210,
+      "progress": 45,
+      "status": "ongoing"
+    },
+    {
+      "id": 4,
+      "title": "생성형 AI 업무 자동화 가이드",
+      "category": "기술",
+      "instructor": "이지혜 강사",
+      "student_count": 340,
+      "progress": 0,
+      "status": "upcoming"
+    },
+    {
+      "id": 5,
+      "title": "신입사원을 위한 비즈니스 매너",
+      "category": "HR",
+      "instructor": "정태양 강사",
+      "student_count": 50,
+      "progress": 100,
+      "status": "completed"
+    }
+  ],
+  "course_details": [
+    {
+      "id": 1,
+      "title": "파이썬 데이터 분석 실무",
+      "category": "IT/개발",
+      "instructor": "김철수 강사",
+      "student_count": 128,
+      "progress": 72,
+      "status": "ongoing",
+      "end_date": "2026.12.31",
+      "instructor_detail": {
+        "name": "김철수",
+        "role": "Data Scientist",
+        "email": "chulsoo@techcorp.com",
+        "phone": "010-1234-5678",
+        "profileImage": "https://ui-avatars.com/api/?name=Chulsoo+Kim"
+      },
+      "curriculum": [
+        { "id": 101, "title": "파이썬 기초 문법 익히기", "startTime": "2026-01-01T09:00:00", "endTime": "2026-01-01T12:00:00", "participationRate": 100 },
+        { "id": 102, "title": "Pandas 라이브러리 심화", "startTime": "2026-01-21T14:00:00", "endTime": "2026-01-21T17:00:00", "participationRate": 85 }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "디지털 마케팅 전략 2024",
+      "category": "마케팅",
+      "instructor": "박영희 강사",
+      "student_count": 85,
+      "progress": 95,
+      "status": "ongoing",
+      "end_date": "2026.06.30",
+      "instructor_detail": { "name": "박영희", "role": "Marketing Director", "email": "younghee@techcorp.com", "phone": "010-1111-2222" },
+      "curriculum": []
+    }
+  ],
   "course_likes": [],
   "course_enrollments": []
 }

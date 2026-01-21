@@ -4,16 +4,15 @@
             <div class="flex items-center gap-3 px-3 py-3 bg-indigo-50/50 rounded-xl border border-indigo-100 mb-6">
                 <div
                     class="size-10 bg-white rounded-lg border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden">
-                    <img v-if="displayLogo" :src="displayLogo" :alt="displayName"
+                    <img v-if="workspaceLogo" :src="workspaceLogo" :alt="workspaceName"
                         class="w-full h-full object-contain" />
                     <span v-else class="material-symbols-outlined text-indigo-600">domain</span>
                 </div>
                 <div class="min-w-0">
                     <div class="text-xs font-bold text-indigo-800 mb-0.5">Current Workspace</div>
-                    <div class="text-sm font-bold text-slate-900 truncate">{{ displayName }}</div>
+                    <div class="text-sm font-bold text-slate-900 truncate">{{ workspaceName }}</div>
                 </div>
             </div>
-
             <nav class="space-y-1">
                 <a v-for="item in studyMenus.slice(0, 1)" :key="item.id"
                     :class="['sidebar-item', { active: currentActiveId === item.id }]" href="#"
@@ -116,11 +115,15 @@ watch(() => route.params.id, (newId) => {
 });
 
 interface Props {
+    workspaceName?: string;
+    workspaceLogo?: string;
     currentActiveId?: string;
 }
-
+// 값 없을 경우 기본값 설정
 const props = withDefaults(defineProps<Props>(), {
-    currentActiveId: 'courses',
+    workspaceName: 'Naver',
+    workspaceLogo: 'https://placehold.co/100x100/4f46e5/ffffff?text=TechCorp',
+    currentActiveId: 'courses', // 기본 활성화 아이템
 });
 
 // 현재 활성화된 메뉴 ID를 route 경로에 따라 자동으로 계산
@@ -160,6 +163,7 @@ const handleNavigate = (id: string) => {
 };
 </script>
 
+
 <style scoped>
 .sidebar-item {
     display: flex;
@@ -170,18 +174,23 @@ const handleNavigate = (id: string) => {
     font-size: 0.875rem;
     font-weight: 500;
     color: #475569;
+    /* slate-600 */
     transition: all 0.2s;
     cursor: pointer;
 }
 
 .sidebar-item:hover {
     background-color: #f8fafc;
+    /* slate-50 */
     color: #4f46e5;
+    /* indigo-brand */
 }
 
 .sidebar-item.active {
     background-color: #eef2ff;
+    /* indigo-50 */
     color: #4f46e5;
+    /* indigo-brand */
     font-weight: 700;
 }
 </style>

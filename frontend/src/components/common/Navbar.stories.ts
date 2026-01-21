@@ -11,12 +11,16 @@ type Story = StoryObj<typeof Navbar>;
 
 export const Default: Story = {
   args: {
+    workspaceName: 'TechCorp HQ',
+    currentPathName: 'Workspace Home',
     hasNotifications: true,
   },
 };
 
 export const InstructorView: Story = {
   args: {
+    workspaceName: 'TechCorp HQ',
+    currentPathName: '강사 대시보드',
     user: {
       name: '이준혁',
       email: 'junhyeok.lee@techcorp.com',
