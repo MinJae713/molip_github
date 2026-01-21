@@ -1,12 +1,10 @@
 package com.edumax.molip.domain.review.entity;
 
 import com.edumax.molip.domain.session.entity.Session;
-import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 

@@ -1,5 +1,6 @@
 package com.edumax.molip.domain.session.entity;
 
+import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -37,6 +38,7 @@ public class ExitQuizResult {
   @JoinColumn(name = "exit_quiz_id")
   private ExitQuiz exitQuiz;
 
-  @Column(name = "workspace_member_id", nullable = false)
-  private Long workspaceMemberId;
+  @ManyToOne
+  @JoinColumn(name = "workspace_member_id", nullable = false)
+  private WorkspaceMember workspaceMember;
 }

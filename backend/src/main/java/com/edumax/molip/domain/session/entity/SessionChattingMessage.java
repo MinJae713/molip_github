@@ -1,5 +1,6 @@
 package com.edumax.molip.domain.session.entity;
 
+import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -41,8 +42,9 @@ public class SessionChattingMessage {
   @Column(name = "updated_at")
   private LocalDateTime updatedAt;
 
-  @Column(name = "workspace_member_id", nullable = false)
-  private Long workspaceMemberId;
+  @ManyToOne
+  @JoinColumn(name = "workspace_member_id", nullable = false)
+  private WorkspaceMember workspaceMember;
 
   @ManyToOne(optional = false)
   @JoinColumn(name = "session_chatting_room_id")

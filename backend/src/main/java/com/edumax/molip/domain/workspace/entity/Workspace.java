@@ -1,20 +1,14 @@
 package com.edumax.molip.domain.workspace.entity;
 
 import com.edumax.molip.domain.member.entity.Member;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "Workspace")
@@ -26,17 +20,18 @@ import org.hibernate.annotations.UpdateTimestamp;
 public class Workspace {
 
   @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "workspace_id", nullable = false)
   private Long workspaceId;
 
   @Column(nullable = false, length = 100)
   private String name;
 
-  @Column(length = 255)
+  @Column(length = 300)
   private String description;
 
-  @Column(nullable = false)
-  private Boolean activated;
+  @Column(name = "logo_url", length = 1000)
+  private String logoUrl;
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
@@ -46,7 +41,25 @@ public class Workspace {
   @Column(name = "updated_at")
   private LocalDateTime updatedAt;
 
+  @Column(name = "deleted_at")
+  private LocalDateTime deletedAt;
+
+  @Column(name = "is_searchable", nullable = false)
+  private Boolean isSearchable;
+
   @ManyToOne
   @JoinColumn(name = "member_id", nullable = false)
   private Member member;
+
+  @OneToMany(mappedBy = "workspace")
+  @Builder.Default
+  private List<WorkspaceRegister> workspaceRegisters = new ArrayList<>();
+
+  @OneToMany(mappedBy = "workspace")
+  @Builder.Default
+  private List<InviteCode> inviteCodes = new ArrayList<>();
+
+  @OneToMany(mappedBy = "workspace")
+  @Builder.Default
+  private List<WorkspaceMember> workspaceMembers = new ArrayList<>();
 }
