@@ -2,18 +2,19 @@ package com.edumax.molip.domain.review.entity;
 
 import com.edumax.molip.domain.session.entity.Session;
 import jakarta.persistence.*;
-
 import lombok.*;
 
 @Entity
 @Table(name = "Script")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Script {
 
   @Id
-  @GeneratedValue
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "script_id", nullable = false)
   private Long scriptId;
 
@@ -27,4 +28,3 @@ public class Script {
   @JoinColumn(name = "session_id", nullable = false)
   private Session session;
 }
-

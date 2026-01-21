@@ -1,19 +1,20 @@
 package com.edumax.molip.domain.review.entity;
 
 import jakarta.persistence.*;
-
 import lombok.*;
 
 @Entity
 @Table(name = "AIQuizAnswer")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class AIQuizAnswer {
 
   @Id
-  @GeneratedValue
-  @Column(name = "exit_quiz_answer_id", nullable = false)
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "ai_quiz_answer_id", nullable = false)
   private Long aiQuizAnswerId;
 
   @Column(nullable = false)
@@ -26,4 +27,3 @@ public class AIQuizAnswer {
   @JoinColumn(name = "quiz_id", nullable = false)
   private AiDeadzoneQuiz quiz;
 }
-

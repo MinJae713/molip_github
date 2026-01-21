@@ -2,16 +2,17 @@ package com.edumax.molip.domain.course.entity;
 
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "CourseCertificated")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class CourseCertificated {
 
@@ -41,4 +42,3 @@ public class CourseCertificated {
   @JoinColumn(name = "course_id", nullable = false)
   private Course course;
 }
-

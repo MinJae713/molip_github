@@ -1,5 +1,6 @@
 package com.edumax.molip.domain.session.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -8,18 +9,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.CascadeType;
-
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import org.hibernate.annotations.CreationTimestamp;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Table(name = "SessionChattingRoom")
@@ -43,11 +40,6 @@ public class SessionChattingRoom {
   @JoinColumn(name = "session_id")
   private Session session;
 
-  @OneToMany(
-      mappedBy = "sessionChattingRoom",
-      cascade = CascadeType.ALL,
-      orphanRemoval = true
-  )
+  @OneToMany(mappedBy = "sessionChattingRoom", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<SessionChattingMessage> messages;
 }
-

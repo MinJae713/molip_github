@@ -1,14 +1,15 @@
 package com.edumax.molip.domain.course.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
 @Table(name = "Certification")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Certification {
 
@@ -33,4 +34,3 @@ public class Certification {
   @JoinColumn(name = "course_certificated_id", nullable = false)
   private CourseCertificated courseCertificated;
 }
-

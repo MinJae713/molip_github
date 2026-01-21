@@ -2,27 +2,29 @@ package com.edumax.molip.domain.review.entity;
 
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.*;
-
-import lombok.*;
-
 import java.time.LocalDateTime;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(name = "ReviewChattingMessage")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class ReviewChattingMessage {
 
   @Id
-  @GeneratedValue
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "chatting_message_id", nullable = false)
   private Long chattingMessageId;
 
   @Column(nullable = false, length = 1000)
   private String message;
 
-  @Column(name = "created_at", nullable = false)
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
   @Column(name = "updated_at")
@@ -36,4 +38,3 @@ public class ReviewChattingMessage {
   @JoinColumn(name = "workspace_member_id")
   private WorkspaceMember workspaceMember; // null이면 AI
 }
-

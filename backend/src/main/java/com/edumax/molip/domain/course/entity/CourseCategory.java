@@ -5,8 +5,10 @@ import lombok.*;
 
 @Entity
 @Table(name = "CourseCategory")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class CourseCategory {
 
@@ -18,4 +20,3 @@ public class CourseCategory {
   @Column(name = "course_category_name", nullable = false, length = 50)
   private String courseCategoryName;
 }
-

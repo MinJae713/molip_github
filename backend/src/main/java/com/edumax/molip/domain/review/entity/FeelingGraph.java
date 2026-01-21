@@ -3,32 +3,34 @@ package com.edumax.molip.domain.review.entity;
 import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.*;
-
-import lombok.*;
-
 import java.time.LocalDateTime;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(name = "FeelingGraph")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class FeelingGraph {
 
   @Id
-  @GeneratedValue
-  @Column(name = "feeling_id", nullable = false)
-  private Long feelingId;
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "feeling_graph_id", nullable = false)
+  private Long feelingGraphId;
 
   @Column(nullable = false, length = 31)
   private String name;
 
-  @Column(nullable = false, length = 31)
+  @Column(name = "en_name", nullable = false, length = 31)
   private String enName;
 
   private Integer value;
 
-  @Column(name = "created_at", nullable = false)
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
   @ManyToOne
@@ -39,4 +41,3 @@ public class FeelingGraph {
   @JoinColumn(name = "workspace_member_id", nullable = false)
   private WorkspaceMember workspaceMember;
 }
-

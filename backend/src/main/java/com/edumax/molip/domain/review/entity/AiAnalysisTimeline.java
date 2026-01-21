@@ -3,22 +3,23 @@ package com.edumax.molip.domain.review.entity;
 import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.*;
-
-import lombok.*;
-
 import java.time.LocalDateTime;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(name = "AiAnalysisTimeline")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class AiAnalysisTimeline {
 
   @Id
-  @GeneratedValue
-  @Column(name = "concentrate_id", nullable = false)
-  private Long concentrateId;
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "ai_analysis_timeline_id", nullable = false)
+  private Long aiAnalysisTimeline;
 
   @Column(nullable = false)
   private Integer time;
@@ -26,19 +27,20 @@ public class AiAnalysisTimeline {
   @Column(nullable = false)
   private Boolean deadzone;
 
-  @Column(nullable = false)
-  private Integer value;
+  @Column(name = "concentrate_value", nullable = false)
+  private Integer concentrateValue;
 
-  @Column(nullable = false, length = 31)
-  private String feelingName;
+  @Column(name = "feeling_name", nullable = false, length = 31)
+  private String feelingName; // enum 인가?
 
-  @Column(nullable = false, length = 31)
+  @Column(name = "en_feeling_name", nullable = false, length = 31)
   private String enFeelingName;
 
-  @Column(nullable = false)
-  private Boolean fevertime;
+  @Column(name = "fever_time", nullable = false)
+  private Boolean feverTime;
 
-  @Column(name = "created_at", nullable = false)
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
   @ManyToOne
@@ -49,4 +51,3 @@ public class AiAnalysisTimeline {
   @JoinColumn(name = "workspace_member_id", nullable = false)
   private WorkspaceMember workspaceMember;
 }
-

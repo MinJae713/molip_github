@@ -7,7 +7,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -38,4 +37,3 @@ public class ExitQuizAnswer {
   @JoinColumn(name = "exit_quiz_id")
   private ExitQuiz exitQuiz;
 }
-

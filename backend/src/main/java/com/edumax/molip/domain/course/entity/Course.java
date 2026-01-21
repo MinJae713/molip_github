@@ -5,18 +5,19 @@ import com.edumax.molip.domain.session.entity.CourseLearner;
 import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
 @Entity
 @Table(name = "Course")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Course {
 
@@ -98,4 +99,3 @@ public class Course {
   @Builder.Default
   private List<Session> sessions = new ArrayList<>();
 }
-

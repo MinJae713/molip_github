@@ -2,15 +2,16 @@ package com.edumax.molip.domain.course.entity;
 
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "Zzim")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Zzim {
 
@@ -31,4 +32,3 @@ public class Zzim {
   @JoinColumn(name = "course_id", nullable = false)
   private Course course;
 }
-

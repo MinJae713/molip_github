@@ -3,24 +3,28 @@ package com.edumax.molip.domain.review.entity;
 import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.List;
 
 import lombok.*;
-
-import java.time.LocalDateTime;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(name = "ReviewChattingRoom")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class ReviewChattingRoom {
 
   @Id
-  @GeneratedValue
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "room_id", nullable = false)
   private String roomId;
 
-  @Column(name = "created_at", nullable = false)
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
   @ManyToOne
@@ -30,5 +34,8 @@ public class ReviewChattingRoom {
   @ManyToOne
   @JoinColumn(name = "workspace_member_id", nullable = false)
   private WorkspaceMember workspaceMember;
-}
 
+  /** 복습 채팅 메시지 */
+  @OneToMany(mappedBy = "room")
+  private List<ReviewChattingMessage> reviewChattingMessages;
+}

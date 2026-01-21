@@ -6,17 +6,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "CourseLearnerSession")
@@ -45,20 +42,13 @@ public class CourseLearnerSession {
   @Column(name = "is_attendance", nullable = false)
   private Boolean isAttendance;
 
-  /**
-   * 강의 수강생 (CourseLearner)
-   * FK: workspace_member_course_id
-   */
+  /** 강의 수강생 (CourseLearner) FK: workspace_member_course_id */
   @ManyToOne
   @JoinColumn(name = "workspace_member_course_id", nullable = false)
   private CourseLearner courseLearner;
 
-  /**
-   * 강의 세션
-   * FK: session_id
-   */
+  /** 강의 세션 FK: session_id */
   @ManyToOne
   @JoinColumn(name = "session_id", nullable = false)
   private Session session;
 }
-
