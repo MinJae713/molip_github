@@ -1,2 +1,3 @@
-package com.edumax.molip.domain.member.service;public interface MemberService {
-}
+package com.edumax.molip.domain.member.service;
+
+public interface MemberService {}

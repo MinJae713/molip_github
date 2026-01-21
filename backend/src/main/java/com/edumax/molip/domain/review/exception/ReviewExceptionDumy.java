@@ -1,4 +1,3 @@
-package com.edumax.molip.domain.course.exception;
+package com.edumax.molip.domain.review.exception;
 
-public class CourseExceptionDumy {
-}
+public class ReviewExceptionDumy {}

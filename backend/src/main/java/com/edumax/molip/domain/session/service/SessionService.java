@@ -1,2 +1,3 @@
-package com.edumax.molip.domain.session.service;public interface SessionService {
-}
+package com.edumax.molip.domain.session.service;
+
+public interface SessionService {}

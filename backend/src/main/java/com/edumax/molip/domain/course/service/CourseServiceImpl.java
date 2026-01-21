@@ -1,2 +1,6 @@
-package com.edumax.molip.domain.course.service;public class CourseServiceImpl {
-}
+package com.edumax.molip.domain.course.service;
+
+import org.springframework.stereotype.Service;
+
+@Service
+public class CourseServiceImpl implements CourseService {}

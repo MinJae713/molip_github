@@ -1,0 +1,64 @@
+package com.edumax.molip.domain.session.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "CourseLearnerSession")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class CourseLearnerSession {
+
+  @Id
+  @Column(name = "workspace_member_session_id", nullable = false)
+  private Long workspaceMemberSessionId;
+
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private LocalDateTime createdAt;
+
+  @UpdateTimestamp
+  @Column(name = "updated_at")
+  private LocalDateTime updatedAt;
+
+  @Column(name = "exit_ticket")
+  private Integer exitTicket;
+
+  @Column(name = "is_attendance", nullable = false)
+  private Boolean isAttendance;
+
+  /**
+   * 강의 수강생 (CourseLearner)
+   * FK: workspace_member_course_id
+   */
+  @ManyToOne
+  @JoinColumn(name = "workspace_member_course_id", nullable = false)
+  private CourseLearner courseLearner;
+
+  /**
+   * 강의 세션
+   * FK: session_id
+   */
+  @ManyToOne
+  @JoinColumn(name = "session_id", nullable = false)
+  private Session session;
+}
+
