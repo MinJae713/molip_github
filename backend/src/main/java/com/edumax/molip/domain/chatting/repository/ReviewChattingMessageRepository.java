@@ -1,4 +1,3 @@
 package com.edumax.molip.domain.chatting.repository;
 
-public interface ReviewChattingMessageRepository {
-}
+public interface ReviewChattingMessageRepository {}

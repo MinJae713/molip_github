@@ -1,4 +1,3 @@
 package com.edumax.molip.domain.workspace.repository;
 
-public interface WorkspaceRepository {
-}
+public interface WorkspaceRepository {}

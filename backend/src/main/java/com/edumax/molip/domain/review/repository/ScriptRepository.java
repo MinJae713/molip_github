@@ -1,4 +1,3 @@
 package com.edumax.molip.domain.review.repository;
 
-public interface ScriptRepository {
-}
+public interface ScriptRepository {}

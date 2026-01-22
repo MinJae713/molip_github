@@ -1,4 +1,3 @@
 package com.edumax.molip.domain.workspace.dto.request;
 
-public class WorkspaceRequestDumy {
-}
+public class WorkspaceRequestDumy {}

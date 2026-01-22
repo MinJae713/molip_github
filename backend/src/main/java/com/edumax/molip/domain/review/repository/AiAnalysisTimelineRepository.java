@@ -1,4 +1,3 @@
 package com.edumax.molip.domain.review.repository;
 
-public interface AiAnalysisTimelineRepository {
-}
+public interface AiAnalysisTimelineRepository {}
