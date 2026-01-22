@@ -1,8 +1,9 @@
-package com.edumax.molip.domain.auth.service;
+package com.edumax.molip.domain.member.service;
 
-import com.edumax.molip.domain.auth.entity.Member;
-import com.edumax.molip.domain.auth.exception.DuplicateEmailException;
-import com.edumax.molip.domain.auth.repository.MemberRepository;
+import com.edumax.molip.domain.member.entity.Member;
+import com.edumax.molip.domain.member.exception.DuplicateEmailException;
+import com.edumax.molip.domain.member.repository.MemberRepository;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -10,8 +11,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor

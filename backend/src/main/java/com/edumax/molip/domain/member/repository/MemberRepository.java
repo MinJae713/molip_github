@@ -1,9 +1,8 @@
-package com.edumax.molip.domain.auth.repository;
+package com.edumax.molip.domain.member.repository;
 
-import com.edumax.molip.domain.auth.entity.Member;
-import org.springframework.data.jpa.repository.JpaRepository;
-
+import com.edumax.molip.domain.member.entity.Member;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
   Optional<Member> findByEmail(String email);

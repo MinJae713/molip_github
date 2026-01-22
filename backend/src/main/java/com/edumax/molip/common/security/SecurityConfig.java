@@ -4,10 +4,9 @@ import com.edumax.molip.common.filter.LogFilter;
 import com.edumax.molip.common.jwt.JwtAuthenticationFilter;
 import com.edumax.molip.common.jwt.JwtTokenProvider;
 import com.edumax.molip.common.model.MemberUserDetails;
+import com.edumax.molip.domain.member.entity.Member;
+import com.edumax.molip.domain.member.service.MemberService;
 import java.util.List;
-
-import com.edumax.molip.domain.auth.entity.Member;
-import com.edumax.molip.domain.auth.service.MemberService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -74,10 +73,10 @@ public class SecurityConfig {
                         "/error")
                     .permitAll()
                     .requestMatchers(
-                        "/api/auth/refresh",
-                        "/api/auth/login",
-                        "/api/auth/register",
-                        "/api/auth/logout")
+                        "/api/member/refresh",
+                        "/api/member/login",
+                        "/api/member/register",
+                        "/api/member/logout")
                     .permitAll()
                     .requestMatchers("/uploads/**", "/ws/**")
                     .permitAll()

@@ -1,4 +1,4 @@
-package com.edumax.molip.domain.auth.entity;
+package com.edumax.molip.domain.member.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,14 +10,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "member")

@@ -1,14 +1,15 @@
-package com.edumax.molip.domain.auth.controller;
+package com.edumax.molip.domain.member.controller;
 
 import com.edumax.molip.common.jwt.JwtTokenProvider;
 import com.edumax.molip.common.model.MemberUserDetails;
-import com.edumax.molip.domain.auth.entity.Member;
-import com.edumax.molip.domain.auth.exception.DuplicateEmailException;
-import com.edumax.molip.domain.auth.model.request.LoginRequest;
-import com.edumax.molip.domain.auth.model.response.LoginResponse;
-import com.edumax.molip.domain.auth.service.MemberService;
+import com.edumax.molip.domain.member.entity.Member;
+import com.edumax.molip.domain.member.exception.DuplicateEmailException;
+import com.edumax.molip.domain.member.model.request.LoginRequest;
+import com.edumax.molip.domain.member.model.response.LoginResponse;
+import com.edumax.molip.domain.member.service.MemberService;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -31,11 +32,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Map;
-
 @Slf4j
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/member")
 @RequiredArgsConstructor
 public class AuthController {
   private final AuthenticationManager authenticationManager;
@@ -185,7 +184,7 @@ public class AuthController {
     }
   }
 
-  @PatchMapping("/member/update")
+  @PatchMapping("/update")
   public ResponseEntity<Map<String, String>> updateMember(
       @AuthenticationPrincipal MemberUserDetails member, @RequestBody UpdateRequest request) {
     Member updateMember =
@@ -277,7 +276,7 @@ public class AuthController {
     return ResponseEntity.status(HttpStatus.OK).body(body);
   }
 
-  //  @PostMapping("/member/profile-image")
+  //  @PostMapping("/profile-image")
   //  public ResponseEntity<Map<String, String>> uploadProfileImage(
   //      @AuthenticationPrincipal MemberUserDetails member,
   //      @RequestParam("file") MultipartFile file) {
@@ -297,7 +296,7 @@ public class AuthController {
   //    }
   //  }
 
-  @GetMapping("/member/me")
+  @GetMapping("/me")
   public ResponseEntity<Member> getMyInfo(@AuthenticationPrincipal MemberUserDetails userDetails) {
     if (userDetails == null) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

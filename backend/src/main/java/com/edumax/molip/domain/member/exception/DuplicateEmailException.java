@@ -1,4 +1,4 @@
-package com.edumax.molip.domain.auth.exception;
+package com.edumax.molip.domain.member.exception;
 
 public class DuplicateEmailException extends RuntimeException {
   public DuplicateEmailException(String message) {
