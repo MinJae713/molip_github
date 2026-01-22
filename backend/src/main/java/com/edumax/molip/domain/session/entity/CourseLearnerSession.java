@@ -2,6 +2,8 @@ package com.edumax.molip.domain.session.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -25,8 +27,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 public class CourseLearnerSession {
 
   @Id
-  @Column(name = "workspace_member_session_id", nullable = false)
-  private Long workspaceMemberSessionId;
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "course_learner_session_id", nullable = false)
+  private Long courseLearnerSessionId;
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
@@ -42,9 +45,9 @@ public class CourseLearnerSession {
   @Column(name = "is_attendance", nullable = false)
   private Boolean isAttendance;
 
-  /** 강의 수강생 (CourseLearner) FK: workspace_member_course_id */
+  /** 강의 수강생 (CourseLearner) FK: course_learner_id */
   @ManyToOne
-  @JoinColumn(name = "workspace_member_course_id", nullable = false)
+  @JoinColumn(name = "course_learner_id", nullable = false)
   private CourseLearner courseLearner;
 
   /** 강의 세션 FK: session_id */

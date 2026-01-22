@@ -1,9 +1,10 @@
-package com.edumax.molip.domain.session.entity;
+package com.edumax.molip.domain.chatting.entity;
 
-import jakarta.persistence.CascadeType;
+import com.edumax.molip.domain.session.entity.Session;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
@@ -25,21 +26,20 @@ import org.hibernate.annotations.CreationTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SessionChattingRoom {
+public class  SessionChattingRoom {
 
   @Id
-  @GeneratedValue
   @Column(name = "session_chatting_room_id", length = 36)
-  private String id;
+  private String sessionChattingRoomId;
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @OneToOne(optional = false)
-  @JoinColumn(name = "session_id")
+  @OneToOne
+  @JoinColumn(name = "session_id", nullable = false, unique = true)
   private Session session;
 
-  @OneToMany(mappedBy = "sessionChattingRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(mappedBy = "sessionChattingRoom")
   private List<SessionChattingMessage> messages;
 }

@@ -1,15 +1,15 @@
-package com.edumax.molip.domain.session.entity;
+package com.edumax.molip.domain.chatting.entity;
 
-import jakarta.persistence.CascadeType;
+import com.edumax.molip.domain.session.entity.Session;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,18 +28,18 @@ import org.hibernate.annotations.CreationTimestamp;
 public class QnARoom {
 
   @Id
-  @GeneratedValue
   @Column(name = "qna_room_id", length = 36)
-  private String id;
+  private String qnaRoomId; // 얘만 UUID
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @OneToOne(optional = false)
-  @JoinColumn(name = "session_id")
+  @OneToOne
+  @JoinColumn(name = "session_id", nullable = false, unique = true)
   private Session session;
 
-  @OneToMany(mappedBy = "qnaRoom", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<QnAMessage> messages;
+  @OneToMany(mappedBy = "qnaRoom")
+  @Builder.Default
+  private List<QnAMessage> messages = new ArrayList<>();
 }

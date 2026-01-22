@@ -19,7 +19,7 @@ public class AiAnalysisTimeline {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "ai_analysis_timeline_id", nullable = false)
-  private Long aiAnalysisTimeline;
+  private Long aiAnalysisTimelineId;
 
   @Column(nullable = false)
   private Integer time;
@@ -45,7 +45,7 @@ public class AiAnalysisTimeline {
 
   @ManyToOne
   @JoinColumn(name = "session_id", nullable = false)
-  private Session session;
+  private LearnerAnalysis learnerAnalysis;
 
   @ManyToOne
   @JoinColumn(name = "workspace_member_id", nullable = false)

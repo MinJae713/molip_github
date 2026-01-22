@@ -35,7 +35,7 @@ public class FeelingGraph {
 
   @ManyToOne
   @JoinColumn(name = "session_id", nullable = false)
-  private Session session;
+  private LearnerAnalysis learnerAnalysis;
 
   @ManyToOne
   @JoinColumn(name = "workspace_member_id", nullable = false)

@@ -1,7 +1,5 @@
 package com.edumax.molip.domain.member.entity;
 
-import com.edumax.molip.domain.member.types.MemberGender;
-import com.edumax.molip.domain.member.types.MemberRole;
 import com.edumax.molip.domain.workspace.entity.Workspace;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import com.edumax.molip.domain.workspace.entity.WorkspaceRegister;
@@ -56,12 +54,23 @@ public class Member {
   @Column(length = 6)
   private MemberGender gender;
 
+  public enum MemberGender {
+    MALE,
+    FEMALE,
+    ETC
+  }
+
   @Column(name = "phone_number", length = 13)
   private String phoneNumber;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
   private MemberRole role;
+
+  public enum MemberRole {
+    GENERAL,
+    ADMIN
+  }
 
   @Column(length = 50)
   private String position;
@@ -77,9 +86,9 @@ public class Member {
   @Column(name = "deleted_at")
   private LocalDateTime deletedAt;
 
-  @OneToOne(optional = false)
-  @JoinColumn(name = "provider_id", nullable = false)
-  private AuthProvider authProvider;
+//  @OneToOne(optional = false) 서영님 쪽에서 충돌날 부분 - 일단 빼둡니다
+//  @JoinColumn(name = "provider_id", nullable = false)
+//  private AuthProvider authProvider;
 
   /** 워크스페이스 가입 신청 */
   @OneToMany(mappedBy = "member")
@@ -87,7 +96,7 @@ public class Member {
   private List<WorkspaceRegister> workspaceRegisters = new ArrayList<>();
 
   /** 생성한 워크스페이스 */
-  @OneToMany(mappedBy = "owner")
+  @OneToMany(mappedBy = "member")
   @Builder.Default
   private List<Workspace> workspaces = new ArrayList<>();
 

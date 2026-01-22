@@ -1,5 +1,6 @@
-package com.edumax.molip.domain.review.entity;
+package com.edumax.molip.domain.chatting.entity;
 
+import com.edumax.molip.domain.review.entity.LearnerAnalysis;
 import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.*;
@@ -18,9 +19,8 @@ import org.hibernate.annotations.CreationTimestamp;
 public class ReviewChattingRoom {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "room_id", nullable = false)
-  private String roomId;
+  @Column(name = "review_chatting_room_id", nullable = false, length = 36)
+  private String reviewChattingRoomId; // 얘도 UUID
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
@@ -28,7 +28,7 @@ public class ReviewChattingRoom {
 
   @ManyToOne
   @JoinColumn(name = "session_id", nullable = false)
-  private Session session;
+  private LearnerAnalysis learnerAnalysis;
 
   @ManyToOne
   @JoinColumn(name = "workspace_member_id", nullable = false)

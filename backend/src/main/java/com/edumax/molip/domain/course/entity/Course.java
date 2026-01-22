@@ -1,6 +1,5 @@
 package com.edumax.molip.domain.course.entity;
 
-import com.edumax.molip.domain.course.types.CourseStatus;
 import com.edumax.molip.domain.session.entity.CourseLearner;
 import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
@@ -22,7 +21,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 public class Course {
 
   @Id
-  @GeneratedValue
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "course_id", nullable = false)
   private Long courseId;
 
@@ -55,6 +54,13 @@ public class Course {
   @Column(nullable = false, length = 20)
   private CourseStatus status;
 
+  public enum CourseStatus {
+    PREPARING,
+    INVITE,
+    PROCEED,
+    FINISH
+  }
+
   @Column(nullable = false)
   private Integer period; // 삭제될 수도 있음
 
@@ -66,13 +72,17 @@ public class Course {
   @Column(name = "updated_at")
   private LocalDateTime updatedAt;
 
-  @OneToOne
-  @JoinColumn(name = "course_category_id", nullable = false)
-  private CourseCategory courseCategory;
-
   @ManyToOne
   @JoinColumn(name = "workspace_member_id", nullable = false)
   private WorkspaceMember leaner; // 테이블엔 workspace_member_id로 반영됨
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 50)
+  private CourseCategory category;
+
+  public enum CourseCategory {
+    MARKETING // 보이는 것이 일단 하나라 이거만 넣었습니다..!
+  }
 
   /** 수강 신청 */
   @OneToMany(mappedBy = "course")

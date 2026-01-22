@@ -1,9 +1,10 @@
-package com.edumax.molip.domain.session.entity;
+package com.edumax.molip.domain.quiz.entity;
 
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -24,9 +25,9 @@ import lombok.Setter;
 public class ExitQuizResult {
 
   @Id
-  @GeneratedValue
-  @Column(name = "result_id", nullable = false)
-  private Long id;
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "exit_quiz_result_id", nullable = false)
+  private Long exitQuizResultId;
 
   @Column(name = "result_number")
   private Integer resultNumber;
@@ -34,8 +35,8 @@ public class ExitQuizResult {
   @Column(nullable = false)
   private Boolean result;
 
-  @ManyToOne(optional = false)
-  @JoinColumn(name = "exit_quiz_id")
+  @ManyToOne
+  @JoinColumn(name = "exit_quiz_id", nullable = false)
   private ExitQuiz exitQuiz;
 
   @ManyToOne

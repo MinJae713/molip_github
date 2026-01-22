@@ -9,8 +9,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -30,8 +34,8 @@ public class CourseLearner {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "workspace_member_course_id", nullable = false)
-  private Long id;
+  @Column(name = "course_learner_id", nullable = false)
+  private Long courseLearnerId;
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
@@ -48,4 +52,8 @@ public class CourseLearner {
   @ManyToOne
   @JoinColumn(name = "workspace_member_id", nullable = false)
   private WorkspaceMember workspaceMember;
+
+  @OneToMany(mappedBy = "courseLearner")
+  @Builder.Default
+  private List<CourseLearnerSession> courseLearnerSessions = new ArrayList<>();
 }

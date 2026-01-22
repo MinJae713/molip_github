@@ -40,7 +40,7 @@ public class AiDeadzoneQuiz {
 
   @ManyToOne
   @JoinColumn(name = "session_id", nullable = false)
-  private Session session;
+  private LearnerAnalysis learnerAnalysis;
 
   /** 퀴즈 답안 */
   @OneToMany(mappedBy = "quiz")

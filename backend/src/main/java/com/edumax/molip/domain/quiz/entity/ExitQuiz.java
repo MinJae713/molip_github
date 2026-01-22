@@ -1,14 +1,20 @@
-package com.edumax.molip.domain.session.entity;
+package com.edumax.molip.domain.quiz.entity;
 
+import com.edumax.molip.domain.session.entity.Session;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,9 +33,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 public class ExitQuiz {
 
   @Id
-  @GeneratedValue
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "exit_quiz_id", nullable = false)
-  private Long id;
+  private Long exitQuizId;
 
   @Column(nullable = false, length = 255)
   private String question;
@@ -49,7 +55,18 @@ public class ExitQuiz {
   @JoinColumn(name = "session_id")
   private Session session;
 
-  @OneToOne(optional = false)
-  @JoinColumn(name = "exit_quiz_type_id")
-  private ExitQuizType exitQuizType;
+  @OneToMany(mappedBy = "exitQuiz")
+  @Builder.Default
+  private List<ExitQuizAnswer> exitQuizAnswers = new ArrayList<>();
+
+  @OneToMany(mappedBy = "exitQuiz")
+  @Builder.Default
+  private List<ExitQuizResult> exitQuizResults = new ArrayList<>();
+
+  @Column(nullable = false, length = 50)
+  private ExitQuizType type;
+
+  public enum ExitQuizType {
+    LOCAL, AI_RECOMMEND
+  }
 }

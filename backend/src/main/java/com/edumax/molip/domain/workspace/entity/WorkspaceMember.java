@@ -1,22 +1,21 @@
 package com.edumax.molip.domain.workspace.entity;
 
-import com.edumax.molip.domain.member.entity.Member;
-import com.edumax.molip.domain.session.entity.CourseLearner;
-import com.edumax.molip.domain.session.entity.ExitQuizResult;
-import com.edumax.molip.domain.session.entity.QnAMessage;
-import com.edumax.molip.domain.workspace.types.WorkspaceMemberRole;
-import com.edumax.molip.domain.workspace.types.WorkspaceMemberStatus;
+import com.edumax.molip.domain.chatting.entity.ReviewChattingMessage;
+import com.edumax.molip.domain.chatting.entity.ReviewChattingRoom;
 import com.edumax.molip.domain.course.entity.*;
-import com.edumax.molip.domain.session.entity.SessionChattingMessage;
+import com.edumax.molip.domain.member.entity.Member;
 import com.edumax.molip.domain.review.entity.*;
+import com.edumax.molip.domain.session.entity.CourseLearner;
+import com.edumax.molip.domain.quiz.entity.ExitQuizResult;
+import com.edumax.molip.domain.chatting.entity.QnAMessage;
+import com.edumax.molip.domain.chatting.entity.SessionChattingMessage;
 import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "WorkspaceMember")
@@ -39,9 +38,19 @@ public class WorkspaceMember {
   @Column(nullable = false, length = 20)
   private WorkspaceMemberStatus status;
 
+  public enum WorkspaceMemberStatus {
+    ACTIVE,
+    INACTIVE
+  }
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
   private WorkspaceMemberRole role;
+
+  public enum WorkspaceMemberRole {
+    LEARNER,
+    TRAINER
+  }
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
@@ -68,35 +77,46 @@ public class WorkspaceMember {
    * ======================= */
 
   @OneToMany(mappedBy = "workspaceMember")
+  @Builder.Default
   private List<CourseApply> courseApplies = new ArrayList<>();
 
   @OneToMany(mappedBy = "leaner")
+  @Builder.Default
   private List<Course> courses = new ArrayList<>();
 
   @OneToMany(mappedBy = "workspaceMember")
+  @Builder.Default
   private List<Zzim> zzims = new ArrayList<>();
 
   @OneToMany(mappedBy = "workspaceMember")
+  @Builder.Default
   private List<CourseLearner> courseLearners = new ArrayList<>();
 
   @OneToMany(mappedBy = "workspaceMember")
+  @Builder.Default
   private List<SessionChattingMessage> sessionChattingMessages = new ArrayList<>();
 
   @OneToMany(mappedBy = "workspaceMember")
+  @Builder.Default
   private List<QnAMessage> qnaMessages = new ArrayList<>();
 
   @OneToMany(mappedBy = "workspaceMember")
+  @Builder.Default
   private List<ExitQuizResult> exitQuizResults = new ArrayList<>();
 
   @OneToMany(mappedBy = "workspaceMember")
+  @Builder.Default
   private List<FeelingGraph> feelingGraphs = new ArrayList<>();
 
   @OneToMany(mappedBy = "workspaceMember")
+  @Builder.Default
   private List<AiAnalysisTimeline> aiAnalysisTimelines = new ArrayList<>();
 
   @OneToMany(mappedBy = "workspaceMember")
+  @Builder.Default
   private List<ReviewChattingRoom> reviewChattingRooms = new ArrayList<>();
 
   @OneToMany(mappedBy = "workspaceMember")
+  @Builder.Default
   private List<ReviewChattingMessage> reviewChattingMessages = new ArrayList<>();
 }

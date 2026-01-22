@@ -26,5 +26,5 @@ public class Script {
 
   @ManyToOne
   @JoinColumn(name = "session_id", nullable = false)
-  private Session session;
+  private LearnerAnalysis learnerAnalysis;
 }

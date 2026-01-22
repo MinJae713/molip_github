@@ -1,4 +1,4 @@
-package com.edumax.molip.domain.review.entity;
+package com.edumax.molip.domain.chatting.entity;
 
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.*;
