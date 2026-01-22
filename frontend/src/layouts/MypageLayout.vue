@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { RouterView } from 'vue-router';
-import Navbar from '@/components/common/Navbar.vue';
-import MypageSidebar from '@/components/MypageView/MypageSidebar.vue';
+import Navbar from '@/components/common/CommonComponents/Navbar.vue';
+import MypageSidebar from '@/components/common/MypageView/MypageSidebar.vue';
 import { useUserStore } from '@/stores/user';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { useCourseStore } from '@/stores/course';

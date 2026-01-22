@@ -19,8 +19,8 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router';
 import { useUserStore } from '@/stores/user';
-import Navbar from '@/components/common/Navbar.vue';
-import Sidebar from '@/components/common/Sidebar.vue';
+import Navbar from '@/components/common/CommonComponents/Navbar.vue';
+import Sidebar from '@/components/common/CommonComponents/Sidebar.vue';
 
 const userStore = useUserStore();
 

@@ -47,8 +47,8 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 // import api from '@/api'; // Removed
 import { useWorkspaceStore } from '@/stores/workspace'; // Added
-import WorkspaceCard from '@/components/WorkspacesView/WorkspaceCard.vue';
-import WorkspaceSearchModal from '@/components/WorkspacesView/WorkspaceSearchModal.vue';
+import WorkspaceCard from '@/components/common/WorkspacesView/WorkspaceCard.vue';
+import WorkspaceSearchModal from '@/components/common/WorkspacesView/WorkspaceSearchModal.vue';
 
 import type { Workspace } from '@/types';
 
@@ -83,8 +83,16 @@ const closeSearchModal = () => {
     fetchMyWorkspaces();
 };
 
-const handleEnter = (id: string | number) => {
-    router.push({ name: 'workspaceDetail', params: { id } });
+const handleEnter = (id: string | number, role?: string) => {
+    const userRole = role || 'LEARNER'; // Fallback to 'LEARNER' if role is undefined
+
+    if (userRole === 'TRAINER') {
+        router.push({ name: 'workspaceTrainer', params: { id } });
+    } else if (userRole === 'LEARNER') {
+        router.push({ name: 'workspaceLearner', params: { id } });
+    } else if (userRole === 'ADMIN') {
+        router.push({ name: 'workspaceAdmin', params: { id } });
+    }
 };
 
 onMounted(() => {

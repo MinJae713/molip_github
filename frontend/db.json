@@ -75,6 +75,30 @@
       "status": 2,
       "role": "LEARNER",
       "location": "Seoul, Korea"
+    },
+    {
+      "id": "2",
+      "name": "강사 워크스페이스 테스트",
+      "join_code": "TC1234",
+      "description": "전사 공통 교육 및 부서별 역량 강화 프로그램을 위한 메인 워크스페이스입니다. 공지사항 및 기본 교육 자료를 확인할 수 있습니다.",
+      "logo_url": "https://img.icons8.com/color/512/samsung.png",
+      "memberCount": 1420,
+      "courseCount": 5,
+      "status": 2,
+      "role": "TRAINER",
+      "location": "Seoul, Korea"
+    },
+    {
+      "id": "3",
+      "name": "관리자 워크스페이스 테스트",
+      "join_code": "TC1234",
+      "description": "전사 공통 교육 및 부서별 역량 강화 프로그램을 위한 메인 워크스페이스입니다. 공지사항 및 기본 교육 자료를 확인할 수 있습니다.",
+      "logo_url": "https://img.icons8.com/color/512/samsung.png",
+      "memberCount": 1420,
+      "courseCount": 5,
+      "status": 2,
+      "role": "ADMIN",
+      "location": "Seoul, Korea"
     }
   ],
   "my_all_courses": [
@@ -473,8 +497,20 @@
         "profileImage": "https://ui-avatars.com/api/?name=Chulsoo+Kim"
       },
       "curriculum": [
-        { "id": 101, "title": "파이썬 기초 문법 익히기", "startTime": "2026-01-01T09:00:00", "endTime": "2026-01-01T12:00:00", "participationRate": 100 },
-        { "id": 102, "title": "Pandas 라이브러리 심화", "startTime": "2026-01-21T14:00:00", "endTime": "2026-01-21T17:00:00", "participationRate": 85 }
+        {
+          "id": 101,
+          "title": "파이썬 기초 문법 익히기",
+          "startTime": "2026-01-01T09:00:00",
+          "endTime": "2026-01-01T12:00:00",
+          "participationRate": 100
+        },
+        {
+          "id": 102,
+          "title": "Pandas 라이브러리 심화",
+          "startTime": "2026-01-21T14:00:00",
+          "endTime": "2026-01-21T17:00:00",
+          "participationRate": 85
+        }
       ]
     },
     {
@@ -486,10 +522,20 @@
       "progress": 95,
       "status": "ongoing",
       "end_date": "2026.06.30",
-      "instructor_detail": { "name": "박영희", "role": "Marketing Director", "email": "younghee@techcorp.com", "phone": "010-1111-2222" },
+      "instructor_detail": {
+        "name": "박영희",
+        "role": "Marketing Director",
+        "email": "younghee@techcorp.com",
+        "phone": "010-1111-2222"
+      },
       "curriculum": []
     }
   ],
-  "course_likes": [],
+  "course_likes": [
+    {
+      "courseId": "10",
+      "id": 1
+    }
+  ],
   "course_enrollments": []
 }

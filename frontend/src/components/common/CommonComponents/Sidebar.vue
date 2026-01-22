@@ -83,11 +83,6 @@ const route = useRoute();
 const router = useRouter();
 const workspaceStore = useWorkspaceStore();
 
-/**
- * [사고의 흐름]
- * 1. props로 전달받던 방식에서 Store 직접 참조 방식으로 변경합니다.
- * 2. computed를 사용하여 Store 데이터가 변하면 UI가 즉시 갱신되도록 합니다.
- */
 const displayLogo = computed(() => workspaceStore.currentWorkspace?.logo_url);
 const displayName = computed(() => workspaceStore.currentWorkspace?.name || '워크스페이스 선택 안됨');
 
@@ -126,16 +121,25 @@ const props = withDefaults(defineProps<Props>(), {
     currentActiveId: 'courses', // 기본 활성화 아이템
 });
 
+// 현재 사용자 역할 감지 (route name 기반)
+const currentRole = computed(() => {
+    const name = route.name as string;
+    if (name?.includes('Trainer')) return 'trainer';
+    if (name?.includes('Learner')) return 'learner';
+    return 'learner'; // 기본값
+});
+
 // 현재 활성화된 메뉴 ID를 route 경로에 따라 자동으로 계산
 const currentActiveId = computed(() => {
     const path = route.path;
+    const name = route.name as string;
 
-    // '/workspaceDetail/:id/myCourses' 경로면 'courses' 활성화
-    if (path.includes('/myCourses')) {
+    // courses 경로면 'courses' 활성화
+    if (path.includes('/courses') || name?.includes('Courses')) {
         return 'courses';
     }
-    // '/workspaceDetail/:id' 경로면 'dashboard' 활성화
-    if (path.match(/\/workspaceDetail\/\d+$/)) {
+    // workspace 메인 경로면 'dashboard' 활성화
+    if (name === 'workspaceLearner' || name === 'workspaceTrainer') {
         return 'dashboard';
     }
     // prop으로 전달된 값 또는 기본값 사용
@@ -148,12 +152,20 @@ const emit = defineEmits<{
 
 const handleNavigate = (id: string) => {
     const workspaceId = route.params.id;
+    const role = currentRole.value; // 자동으로 현재 역할 감지
 
     if (id === 'courses' && workspaceId) {
-        // '교육과정' 메뉴 클릭 시 myCourses 경로로 이동
-        router.push({ name: 'myCourses', params: { id: workspaceId } });
+        if (role === 'trainer') {
+            router.push({ name: 'workspaceTrainerCourses', params: { id: workspaceId } });
+        } else {
+            router.push({ name: 'workspaceLearnerCourses', params: { id: workspaceId } });
+        }
     } else if (id === 'dashboard' && workspaceId) {
-        router.push({ name: 'workspaceDetail', params: { id: workspaceId } })
+        if (role === 'trainer') {
+            router.push({ name: 'workspaceTrainer', params: { id: workspaceId } });
+        } else {
+            router.push({ name: 'workspaceLearner', params: { id: workspaceId } });
+        }
     } else {
         // 다른 메뉴는 기존대로 emit 이벤트 발생
         emit('navigate', id);

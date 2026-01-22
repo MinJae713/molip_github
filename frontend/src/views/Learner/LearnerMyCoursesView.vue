@@ -3,8 +3,7 @@
         <!-- Breadcrumb -->
         <nav aria-label="Breadcrumb" class="flex text-sm text-slate-500">
             <ol class="flex items-center space-x-2">
-                <li><router-link :to="{ name: 'workspaceDetail', params: { id: workspaceId } }"
-                        class="hover:text-indigo-600">
+                <li><router-link :to="homeRoute" class="hover:text-indigo-600">
                         홈
                     </router-link></li>
                 <li><span class="material-symbols-outlined text-sm text-slate-400">chevron_right</span></li>
@@ -48,14 +47,24 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { useCourseStore } from '@/stores/course';
-import MyCoursesStats from '@/components/MyCoursesView/MyCoursesStats.vue';
-import MyCourseCard from '@/components/MyCoursesView/MyCourseCard.vue';
+import MyCoursesStats from '@/components/Learner/LearnerMyCoursesView/MyCoursesStats.vue';
+import MyCourseCard from '@/components/Learner/LearnerMyCoursesView/MyCourseCard.vue';
 
 const courseStore = useCourseStore();
 const route = useRoute();
 const activeTab = ref('ongoing');
 
 const workspaceId = computed(() => route.params.id);
+
+// 현재 route에 따라 home 경로 결정
+const homeRoute = computed(() => {
+    const isTrainer = route.name?.toString().includes('Trainer');
+    return {
+        name: isTrainer ? 'workspaceTrainer' : 'workspaceLearner',
+        params: { id: workspaceId.value }
+    };
+});
+
 const tabs = [
     { id: 'ongoing', label: '학습 중인 과정', count: 3 },
     { id: 'liked', label: '찜한 과정', count: 2 },

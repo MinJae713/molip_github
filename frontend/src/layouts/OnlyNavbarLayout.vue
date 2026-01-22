@@ -11,7 +11,7 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue';
-import Navbar from '@/components/common/Navbar.vue';
+import Navbar from '@/components/common/CommonComponents/Navbar.vue';
 import { RouterView } from 'vue-router'; // 페이지 내용이 들어갈 곳
 import { useUserStore } from '@/stores/user';
 import { useWorkspaceStore } from '@/stores/workspace';

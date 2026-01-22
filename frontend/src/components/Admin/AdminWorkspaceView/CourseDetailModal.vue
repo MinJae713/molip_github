@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useAdminCourseStore } from '@/stores/adminCourse';
-import BaseModal from '@/components/common/BaseModal.vue';
-import StatusBadge from '@/components/common/StatusBadge.vue';
+import BaseModal from '@/components/common/CommonComponents/BaseModal.vue';
+import StatusBadge from '@/components/common/CommonComponents/StatusBadge.vue';
 
 const store = useAdminCourseStore();
 
@@ -47,7 +47,7 @@ const getSessionStyles = (status: string) => {
     </div>
 
     <div v-else-if="course" class="space-y-10">
-      
+
       <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-slate-50 rounded-2xl p-6 border border-slate-100 shadow-sm">
           <p class="text-[11px] font-bold text-slate-400 mb-3 uppercase tracking-wider">전체 수강생</p>
@@ -63,10 +63,8 @@ const getSessionStyles = (status: string) => {
               {{ course.averageProgress ?? 0 }}<span class="text-xl font-bold text-slate-300">%</span>
             </p>
             <div class="flex-1 h-2.5 bg-white rounded-full overflow-hidden relative border border-slate-200/50">
-              <div 
-                class="h-full bg-indigo-500 rounded-full transition-all duration-700"
-                :style="{ width: `${course.averageProgress}%` }"
-              ></div>
+              <div class="h-full bg-indigo-500 rounded-full transition-all duration-700"
+                :style="{ width: `${course.averageProgress}%` }"></div>
             </div>
           </div>
         </div>
@@ -82,10 +80,11 @@ const getSessionStyles = (status: string) => {
       <section>
         <div class="flex items-center justify-between mb-4">
           <h4 class="font-bold text-slate-800 flex items-center gap-2 text-lg">
-            <span class="w-8 h-8 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-lg">📋</span> 
+            <span class="w-8 h-8 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-lg">📋</span>
             커리큘럼 및 실시간 참여 현황
           </h4>
-          <span class="text-[10px] font-bold text-slate-300 tracking-widest uppercase">Live Monitoring via Web-RTC</span>
+          <span class="text-[10px] font-bold text-slate-300 tracking-widest uppercase">Live Monitoring via
+            Web-RTC</span>
         </div>
 
         <div class="border border-slate-100 rounded-2xl overflow-hidden shadow-sm bg-white">
@@ -99,22 +98,21 @@ const getSessionStyles = (status: string) => {
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-50">
-              <tr v-for="(session, idx) in course.sessions" :key="session.id" class="group hover:bg-slate-50/30 transition-colors">
+              <tr v-for="(session, idx) in course.sessions" :key="session.id"
+                class="group hover:bg-slate-50/30 transition-colors">
                 <td class="px-6 py-5 text-slate-400 font-medium tracking-tighter">
                   {{ String(idx + 1).padStart(2, '0') }}
                 </td>
                 <td class="px-4 py-5 font-bold text-slate-700">
                   {{ session.title }}
-                  <span v-if="session.status === '라이브'" class="ml-2 px-1.5 py-0.5 bg-indigo-600 text-white text-[9px] rounded-sm font-black uppercase tracking-tighter">Now</span>
+                  <span v-if="session.status === '라이브'"
+                    class="ml-2 px-1.5 py-0.5 bg-indigo-600 text-white text-[9px] rounded-sm font-black uppercase tracking-tighter">Now</span>
                 </td>
                 <td class="px-4 py-5">
                   <div class="flex items-center gap-3">
                     <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div 
-                        class="h-full transition-all duration-500" 
-                        :class="getSessionStyles(session.status).bar"
-                        :style="{ width: `${session.participationRate}%` }"
-                      ></div>
+                      <div class="h-full transition-all duration-500" :class="getSessionStyles(session.status).bar"
+                        :style="{ width: `${session.participationRate}%` }"></div>
                     </div>
                     <span class="text-[12px] font-bold w-10 text-right" :class="getSessionStyles(session.status).text">
                       {{ session.participationRate }}%
@@ -134,12 +132,12 @@ const getSessionStyles = (status: string) => {
       </section>
 
       <section>
-        <div v-if="course.instructorDetail" class="bg-slate-50 rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center">
+        <div v-if="course.instructorDetail"
+          class="bg-slate-50 rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center">
           <div class="flex items-center gap-5">
             <div class="w-16 h-16 rounded-full bg-white border-2 border-white shadow-md overflow-hidden shrink-0">
-              <img v-if="course.instructorDetail.profileImage" 
-                   :src="course.instructorDetail.profileImage" 
-                   class="w-full h-full object-cover" />
+              <img v-if="course.instructorDetail.profileImage" :src="course.instructorDetail.profileImage"
+                class="w-full h-full object-cover" />
               <div v-else class="w-full h-full flex items-center justify-center text-slate-300">
                 <span class="text-3xl">👤</span>
               </div>
@@ -166,11 +164,11 @@ const getSessionStyles = (status: string) => {
         </div>
       </section>
     </div>
-    
+
     <template #footer>
       <div class="flex justify-end pt-2">
-        <button @click="isOpen = false" 
-                class="px-10 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm cursor-pointer">
+        <button @click="isOpen = false"
+          class="px-10 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm cursor-pointer">
           닫기
         </button>
       </div>

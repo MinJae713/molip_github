@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import StatCard from '@/components/dashboard/shared/StatCard.vue';
-import InviteBanner from '@/components/dashboard/admin/InviteCodeBanner.vue';
-import AdminStatTable from '@/components/dashboard/admin/AdminStatTable.vue';
-import CourseDetailModal from '@/components/dashboard/admin/CourseDetailModal.vue';
+import StatCard from '@/components/Admin/AdminWorkspaceView/StatCard.vue';
+import InviteBanner from '@/components/Admin/AdminWorkspaceView/InviteCodeBanner.vue';
+import AdminStatTable from '@/components/Admin/AdminWorkspaceView/AdminStatTable.vue';
+import CourseDetailModal from '@/components/Admin/AdminWorkspaceView/CourseDetailModal.vue';
 
 /**
  * 관리자 대시보드용 요약 통계 데이터
@@ -36,8 +36,9 @@ const adminStats = [
 </script>
 
 <template>
+  <h1 class="text-lg font-bold text-slate-800">관리자 워크스페이스</h1>
   <div class="min-h-screen bg-[#F8FAFC] px-6 lg:px-10 pt-4 pb-10 space-y-6">
-    
+
     <section>
       <InviteBanner />
     </section>
@@ -47,13 +48,9 @@ const adminStats = [
         <span class="material-symbols-outlined text-indigo-500 font-bold">analytics</span>
         <h2 class="text-lg font-bold text-slate-800">워크스페이스 현황 요약</h2>
       </div>
-      
+
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard 
-          v-for="stat in adminStats" 
-          :key="stat.id"
-          v-bind="stat"
-        >
+        <StatCard v-for="stat in adminStats" :key="stat.id" v-bind="stat">
           <template #badge>
             <div :class="[
               'px-2 py-1 rounded-md text-[11px] font-bold',

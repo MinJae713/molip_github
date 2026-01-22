@@ -121,9 +121,9 @@ import { useWorkspaceStore } from '@/stores/workspace';
 import { useCourseStore } from '@/stores/course';
 import { storeToRefs } from 'pinia';
 import type { Course, Session } from '@/types';
-import StatCard from '@/components/WorkspaceDetailView/StatCard.vue';
-import DashboardCourseCard from '@/components/WorkspaceDetailView/DashboardCourseCard.vue';
-import CourseCurriculumModal from '@/components/WorkspaceDetailView/CourseCurriculumModal.vue';
+import StatCard from '@/components/Learner/LearnerWorkspace/StatCard.vue';
+import DashboardCourseCard from '@/components/Learner/LearnerWorkspace/DashboardCourseCard.vue';
+import CourseCurriculumModal from '@/components/Learner/LearnerWorkspace/CourseCurriculumModal.vue';
 
 const route = useRoute();
 const workspaceStore = useWorkspaceStore();

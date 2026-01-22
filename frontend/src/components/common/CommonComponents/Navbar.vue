@@ -37,12 +37,13 @@ const emit = defineEmits<{
         <div class="w-full px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
 
             <div class="flex items-center gap-12">
-                <div class="flex items-center gap-2 text-indigo-400 w-56">
+                <router-link to="/workspaces"
+                    class="flex items-center gap-2 text-indigo-400 w-56 cursor-pointer hover:text-indigo-300 transition-colors">
                     <span class="material-symbols-outlined text-3xl">school</span>
                     <span class="text-xl font-bold font-display tracking-tight text-white">
                         EduVerse <span class="text-indigo-400 font-light">Work</span>
                     </span>
-                </div>
+                </router-link>
                 <h1 class="hidden md:block text-lg font-bold text-white/90 border-l border-slate-700 pl-6">
                     {{ workspaceName }} <span class="text-slate-500 mx-2">/</span>
                     <span class="text-indigo-300">{{ currentPathName }}</span>

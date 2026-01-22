@@ -1,14 +1,25 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useWorkspaceStore } from "@/stores/workspace"; // 스토어 임포트
+
+//기본 레이아웃 설정
 import MainLayout from "@/layouts/MainLayout.vue";
 import OnlyNavbarLayout from "@/layouts/OnlyNavbarLayout.vue";
 import MypageLayout from "@/layouts/MypageLayout.vue";
 
-import TestView from "@/views/TestView.vue";
-import WorkspacesView from "@/views/WorkspacesView.vue";
-import MypageView from "@/views/MypageView.vue";
-import WorkspaceDetailView from "@/views/WorkspaceDetailView.vue";
-import MyCoursesView from "@/views/MyCoursesView.vue";
+//테스트용
+import TestView from "@/views/Common/TestView.vue";
+
+// 공통 라우트
+import WorkspacesView from "@/views/Common/WorkspacesView.vue";
+import MypageView from "@/views/Common/MypageView.vue";
+
+// 강사 라우트
+import TrainerWorkspace from "@/views/Trainer/TrainerWorkspace.vue";
+// 관리자 라우트
+import AdminWorkspaceView from "@/views/Admin/AdminWorkspaceView.vue";
+// 학습자 라우트
+import LearnerWorkspace from "@/views/Learner/LearnerWorkspace.vue";
+import LearnerMyCoursesView from "@/views/Learner/LearnerMyCoursesView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -48,27 +59,63 @@ const router = createRouter({
       ],
     },
     {
-      path: "/workspaceDetail/:id",
+      path: "/workspace/:id/learner",
       component: MainLayout,
       children: [
         {
           path: "",
-          name: "workspaceDetail",
-          component: WorkspaceDetailView,
+          name: "workspaceLearner",
+          component: LearnerWorkspace,
         },
         {
-          path: "myCourses",
-          name: "myCourses",
-          component: MyCoursesView,
+          path: "courses",
+          name: "workspaceLearnerCourses",
+          component: LearnerMyCoursesView,
         },
       ],
+    },
+    {
+      path: "/workspace/:id/admin",
+      component: MainLayout,
+      children: [
+        {
+          path: "",
+          name: "workspaceAdmin",
+          component: AdminWorkspaceView,
+        },
+      ],
+    },
+    {
+      path: "/workspace/:id/trainer",
+      component: MainLayout,
+      children: [
+        {
+          path: "",
+          name: "workspaceTrainer",
+          component: TrainerWorkspace,
+        },
+      ],
+    },
+    // 하위 호환성을 위한 기존 라우트 (리다이렉트)
+    {
+      path: "/workspaceDetail/:id",
+      redirect: (to) => {
+        // 기본적으로 learner로 리다이렉트
+        return { name: "workspaceLearner", params: { id: to.params.id } };
+      },
     },
   ],
 });
 
 router.beforeEach(async (to, from, next) => {
-  // workspaceDetail 페이지나 그 하위 경로로 진입할 때만 로직 실행
-  if (to.name === "workspaceDetail" || to.path.includes("/workspaceDetail/")) {
+  // workspace 페이지 (learner 또는 trainer)로 진입할 때만 로직 실행
+  const isWorkspaceRoute =
+    to.name === "workspaceLearner" ||
+    to.name === "workspaceTrainer" ||
+    to.name === "workspaceLearnerCourses" ||
+    to.name === "workspaceTrainerCourses";
+
+  if (isWorkspaceRoute) {
     const workspaceStore = useWorkspaceStore();
     const targetId = to.params.id as string;
 

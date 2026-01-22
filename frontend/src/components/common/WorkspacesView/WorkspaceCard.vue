@@ -31,7 +31,6 @@
         <p class="text-slate-600 text-sm mb-6 line-clamp-2 min-h-[2.5rem]">
             {{ workspace.description || 'No description available.' }}
         </p>
-
         <div class="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
             <div class="flex items-center gap-2 text-sm text-slate-500 font-medium">
                 <span class="material-symbols-outlined text-lg">group</span>
@@ -56,10 +55,9 @@ import type { Workspace } from '@/types';
 interface Props {
     workspace: Workspace;
 }
-
 const props = defineProps<Props>();
 const emit = defineEmits<{
-    (e: 'enter' | 'apply', id: string | number): void;
+    (e: 'enter' | 'apply', id: string | number, role?: string): void;
 }>();
 
 // 2. 버튼 설정 최적화 및 아이콘 동적 할당
@@ -105,7 +103,7 @@ const statusText = computed(() => {
 // 4. 클릭 핸들러 (대기 상태일 때 로직 방지)
 const handleAction = () => {
     if (props.workspace.status === 1) return; // 대기 중일 때는 무시
-    emit(buttonConfig.value.action, props.workspace.id);
+    emit(buttonConfig.value.action, props.workspace.id, props.workspace.role);
 };
 
 // 테마 색상 맵

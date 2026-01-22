@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useAdminCourseStore } from '@/stores/adminCourse';
-import ProgressBar from '@/components/common/ProgressBar.vue';
-import StatusBadge from '@/components/common/StatusBadge.vue';
+import ProgressBar from '@/components/common/CommonComponents/ProgressBar.vue';
+import StatusBadge from '@/components/common/CommonComponents/StatusBadge.vue';
 
 // 1. Pinia store 연결
 const courseStore = useAdminCourseStore();
@@ -66,37 +66,26 @@ const handleRowClick = async (courseId: any) => {
 
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <div class="flex border-b border-slate-200 bg-white px-4">
-        <button 
-          v-for="tab in tabs" 
-          :key="tab.id"
-          @click="activeTab = tab.id"
-          :class="[
-            'py-4 px-4 text-sm font-bold transition-all relative',
-            activeTab === tab.id ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'
-          ]"
-        >
+        <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id" :class="[
+          'py-4 px-4 text-sm font-bold transition-all relative',
+          activeTab === tab.id ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'
+        ]">
           {{ tab.label }}
           <div v-if="activeTab === tab.id" class="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
         </button>
       </div>
 
       <div class="p-4 flex items-center gap-3 bg-slate-50/30 border-b border-slate-100">
-        <select 
-          v-model="selectedCategory"
-          class="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600 bg-white outline-none focus:border-indigo-500"
-        >
+        <select v-model="selectedCategory"
+          class="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600 bg-white outline-none focus:border-indigo-500">
           <option v-for="cat in categories" :key="cat" :value="cat">
             {{ cat === '전체' ? '카테고리 전체' : cat }}
           </option>
         </select>
 
         <div class="relative flex-1 max-w-xs">
-          <input 
-            v-model="searchQuery"
-            type="text" 
-            placeholder="강의명 검색..." 
-            class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500"
-          />
+          <input v-model="searchQuery" type="text" placeholder="강의명 검색..."
+            class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500" />
           <span class="absolute left-3 top-2.5 text-slate-400 text-xs">🔍</span>
         </div>
       </div>
@@ -114,19 +103,17 @@ const handleRowClick = async (courseId: any) => {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr 
-              v-for="course in filteredCourses" 
-              :key="course.id" 
-              @click="handleRowClick(course.id)"
-              class="hover:bg-slate-50/80 transition-colors group cursor-pointer"
-            >
+            <tr v-for="course in filteredCourses" :key="course.id" @click="handleRowClick(course.id)"
+              class="hover:bg-slate-50/80 transition-colors group cursor-pointer">
               <td class="px-6 py-4">
                 <p class="font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">{{ course.title }}</p>
                 <p class="text-[11px] text-slate-400 mt-0.5">{{ course.category }}</p>
               </td>
               <td class="px-6 py-4 text-sm text-slate-600">{{ course.instructor }}</td>
               <td class="px-6 py-4 text-sm text-slate-500">{{ course.studentCount }}명</td>
-              <td class="px-6 py-4"><ProgressBar :progress="course.progress" /></td>
+              <td class="px-6 py-4">
+                <ProgressBar :progress="course.progress" />
+              </td>
               <td class="px-6 py-4 text-center">
                 <StatusBadge :variant="course.status" />
               </td>
@@ -134,7 +121,7 @@ const handleRowClick = async (courseId: any) => {
                 <span class="text-slate-300 group-hover:text-indigo-400 transition-colors font-bold">›</span>
               </td>
             </tr>
-            
+
             <tr v-if="filteredCourses.length === 0">
               <td colspan="6" class="py-20 text-center">
                 <p class="text-slate-400 text-sm">해당 조건에 맞는 강의가 없습니다.</p>

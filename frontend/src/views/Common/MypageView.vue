@@ -51,9 +51,9 @@ import { useWorkspaceStore } from '@/stores/workspace';
 import { useCourseStore } from '@/stores/course';
 import type { Course } from '@/types';
 
-import UserInfoUpdateCard from '@/components/MypageView/UserInfoUpdateCard.vue';
-import WorkSpaceCardSmall from '@/components/MypageView/WorkSpaceCardSmall.vue';
-import CourseProgressCard from '@/components/MypageView/CourseProgressCard.vue';
+import UserInfoUpdateCard from '@/components/common/MypageView/UserInfoUpdateCard.vue';
+import WorkSpaceCardSmall from '@/components/common/MypageView/WorkSpaceCardSmall.vue';
+import CourseProgressCard from '@/components/common/MypageView/CourseProgressCard.vue';
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -80,7 +80,17 @@ const handleProfileImageUpdate = async (file: File) => {
 };
 
 const goToWorkspace = (id: number | string) => {
-    router.push({ name: 'workspaceDetail', params: { id } });
+    // Find the workspace to get its role
+    const workspace = workspaceStore.myWorkspaces.find(ws => ws.id === id);
+    const role = workspace?.role || 'LEARNER';
+
+    if (role === 'TRAINER') {
+        router.push({ name: 'workspaceTrainer', params: { id } });
+    } else if (role === 'LEARNER') {
+        router.push({ name: 'workspaceLearner', params: { id } });
+    } else if (role === 'ADMIN') {
+        router.push({ name: 'workspaceAdmin', params: { id } });
+    }
 };
 
 const openSearchModal = () => {
