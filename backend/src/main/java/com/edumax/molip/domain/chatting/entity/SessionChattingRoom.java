@@ -3,8 +3,6 @@ package com.edumax.molip.domain.chatting.entity;
 import com.edumax.molip.domain.session.entity.Session;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
@@ -26,7 +24,7 @@ import org.hibernate.annotations.CreationTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class  SessionChattingRoom {
+public class SessionChattingRoom {
 
   @Id
   @Column(name = "session_chatting_room_id", length = 36)

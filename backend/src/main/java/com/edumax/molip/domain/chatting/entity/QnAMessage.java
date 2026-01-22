@@ -39,7 +39,8 @@ public class QnAMessage {
   private QnaMessageType type;
 
   public enum QnaMessageType {
-    QUESTION, ANSWER
+    QUESTION,
+    ANSWER
   }
 
   @Column(nullable = false, length = 1000)

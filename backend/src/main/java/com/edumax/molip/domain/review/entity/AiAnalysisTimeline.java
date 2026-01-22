@@ -1,6 +1,5 @@
 package com.edumax.molip.domain.review.entity;
 
-import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

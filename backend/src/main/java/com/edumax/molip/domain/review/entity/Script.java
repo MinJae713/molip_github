@@ -1,6 +1,5 @@
 package com.edumax.molip.domain.review.entity;
 
-import com.edumax.molip.domain.session.entity.Session;
 import jakarta.persistence.*;
 import lombok.*;
 

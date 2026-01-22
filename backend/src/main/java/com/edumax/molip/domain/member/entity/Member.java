@@ -10,9 +10,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -86,9 +84,9 @@ public class Member {
   @Column(name = "deleted_at")
   private LocalDateTime deletedAt;
 
-//  @OneToOne(optional = false) 서영님 쪽에서 충돌날 부분 - 일단 빼둡니다
-//  @JoinColumn(name = "provider_id", nullable = false)
-//  private AuthProvider authProvider;
+  //  @OneToOne(optional = false) 서영님 쪽에서 충돌날 부분 - 일단 빼둡니다
+  //  @JoinColumn(name = "provider_id", nullable = false)
+  //  private AuthProvider authProvider;
 
   /** 워크스페이스 가입 신청 */
   @OneToMany(mappedBy = "member")
