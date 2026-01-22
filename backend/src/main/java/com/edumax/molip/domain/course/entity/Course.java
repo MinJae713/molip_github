@@ -108,4 +108,9 @@ public class Course {
   @OneToMany(mappedBy = "course")
   @Builder.Default
   private List<Session> sessions = new ArrayList<>();
+
+  /** 공통 첨부 파일 */
+  @OneToMany(mappedBy = "course")
+  @Builder.Default
+  private List<CommonAttachment> commonAttachments = new ArrayList<>();
 }
