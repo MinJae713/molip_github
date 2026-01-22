@@ -43,6 +43,21 @@ export interface User {
     profileImage: string;
 }
 
+// 특정 워크스페이스 내에서의 멤버 정보 (Relationship)
+export interface WorkspaceMember extends User {
+    workspace_id: number | string;
+    role: 'Admin' | 'Instructor' | 'Learner'; // 워크스페이스별 역할
+    status: 'ACTIVE' | 'INACTIVE';            // 워크스페이스별 상태
+    joinedAt: string;
+    lastLogin: string;
+    // 이미지 상세 정보에 필요한 통계
+    stats?: {
+        progress: number;
+        courseCount: number;
+        quizAverage: number;
+    };
+}
+
 export interface WorkspaceStats {
     id: number;
     workspace_id: number;

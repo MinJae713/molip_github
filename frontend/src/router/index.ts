@@ -17,6 +17,8 @@ import MypageView from "@/views/Common/MypageView.vue";
 import TrainerWorkspace from "@/views/Trainer/TrainerWorkspace.vue";
 // 관리자 라우트
 import AdminWorkspaceView from "@/views/Admin/AdminWorkspaceView.vue";
+import WorkspaceSettingsView from "@/views/Admin/WorkspaceSettingsView.vue";
+import MemberManagementView from "@/views/Admin/MemberManagementView.vue";
 // 학습자 라우트
 import LearnerWorkspace from "@/views/Learner/LearnerWorkspace.vue";
 import LearnerMyCoursesView from "@/views/Learner/LearnerMyCoursesView.vue";
@@ -83,6 +85,26 @@ const router = createRouter({
           name: "workspaceAdmin",
           component: AdminWorkspaceView,
         },
+        {
+          path: 'settings',
+          name: 'AdminWorkspaceSettings',
+          component: WorkspaceSettingsView,
+        },
+        {
+          path: 'members',
+          name: 'MemberManagement',
+          component: MemberManagementView
+        },
+        {
+          path: 'applications',
+          name: 'JoinApplications',
+          component: () => import('@/views/Common/TestView.vue'), // 임시 연결
+        },
+        {
+          path: 'invite-codes',
+          name: 'InviteCodeCenter',
+          component: () => import('@/views/Common/TestView.vue'), // 임시 연결
+        }
       ],
     },
     {

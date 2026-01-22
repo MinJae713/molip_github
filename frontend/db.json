@@ -11,6 +11,17 @@
       "name": "김지수",
       "email": "jisoo.kim@techcorp.com",
       "profileImage": "https://ui-avatars.com/api/?name=Jisoo+Kim&background=random"
+    },
+    {
+      "id": 1,
+      "workspace_id": 1,
+      "name": "이정훈",
+      "email": "jh.lee@techcorp.com",
+      "role": "Admin",
+      "status": "ACTIVE",
+      "joinedAt": "2023.11.12",
+      "lastLogin": "2024.05.21 14:32",
+      "profileImage": "https://ui-avatars.com/api/?name=Jeonghoon+Kim&background=random"
     }
   ],
   "workspaces": [
@@ -40,10 +51,10 @@
     },
     {
       "id": "3",
-      "name": "Global Language Hub",
+      "name": "Global Language Hubddㅇㅇ",
       "logo_url": "https://img.icons8.com/color/512/google-logo.png",
       "location": "Global",
-      "description": "외국어 학습 및 글로벌 비즈니스 커뮤니케이션 역량을 키우는 곳입니다.",
+      "description": "외국어 학습 및 글로벌 비즈니스 커뮤니케이션 역량을 키우는 곳입니다.ddㅇㅇ",
       "memberCount": 320,
       "courseCount": 12,
       "join_code": "HELLO7",
@@ -537,5 +548,13 @@
       "id": 1
     }
   ],
-  "course_enrollments": []
+  "course_enrollments": [
+    {
+      "courseId": "1",
+      "memberId": "1",
+      "status": 1,
+      "applied_at": "2026-01-22T05:00:12.711Z",
+      "id": 1
+    }
+  ]
 }

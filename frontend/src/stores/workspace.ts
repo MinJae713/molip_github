@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { defineStore } from 'pinia'
 import api from '@/api'
 
@@ -11,6 +11,11 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     const isLoaded = ref(false);
 
     const workspaceStats = ref<WorkspaceStats | null>(null);
+
+    // 현재 워크스페이스에서의 내 역할
+    const currentRole = computed(() => {
+        return currentWorkspace.value?.role ?? null;
+    });
 
     // 내가 가입한 워크스테이션 목록 가져오기
     async function fetchMyWorkspaces(forceUpdate = false) {
@@ -95,14 +100,48 @@ export const useWorkspaceStore = defineStore('workspace', () => {
             workspaceStats.value = null;
         }
     }
+    // 1. 워크스페이스 정보 수정 (관리자용)
+    async function updateWorkspace(id: string | number, payload: Partial<Workspace>) {
+        try {
+            const response = await api.patch(`/workspaces/${id}`, payload);
+            // 내 목록과 현재 워크스페이스 정보 최신화
+            if (currentWorkspace.value && String(currentWorkspace.value.id) === String(id)) {
+                currentWorkspace.value = { ...currentWorkspace.value, ...response.data };
+            }
+            await fetchMyWorkspaces(true); // 목록 갱신
+            return true;
+        } catch (error) {
+            console.error('워크스페이스 수정 실패:', error);
+            throw error; // UI단에서 에러 처리를 위해 throw
+        }
+    }
+
+    // 2. 워크스페이스 삭제 (관리자용)
+    async function deleteWorkspace(id: string | number) {
+        try {
+            await api.delete(`/workspaces/${id}`);
+            myWorkspaces.value = myWorkspaces.value.filter(ws => String(ws.id) !== String(id));
+            if (currentWorkspace.value && String(currentWorkspace.value.id) === String(id)) {
+                currentWorkspace.value = null;
+            }
+            return true;
+        } catch (error) {
+            console.error('워크스페이스 삭제 실패:', error);
+            return false;
+        }
+    }
+
     return {
         myWorkspaces,
         currentWorkspace,
+        currentRole,
         workspaceStats,
         fetchMyWorkspaces,
         searchWorkspaces,
         joinWorkspace,
         setCurrentWorkspaceById,
-        isAccessible
+        isAccessible,
+        updateWorkspace,
+        deleteWorkspace
     };
 })

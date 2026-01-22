@@ -40,6 +40,27 @@
                     <span class="material-symbols-outlined text-[20px]">{{ item.icon }}</span>
                     {{ item.name }}
                 </a>
+                <!-- 관리자 메뉴 -->
+                <div v-if="currentRole === 'admin'">
+                    <div class="mt-4 mb-1 px-3">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
+                        워크스페이스 관리
+                        </span>
+                    </div>
+
+                    <a
+                        v-for="item in adminMenus"
+                        :key="item.id"
+                        :class="['sidebar-item', { active: currentActiveId === item.id }]"
+                        href="#"
+                        @click.prevent="handleNavigate(item.id)"
+                    >
+                        <span class="material-symbols-outlined text-[20px]">
+                        {{ item.icon }}
+                        </span>
+                        {{ item.name }}
+                    </a>
+                </div>
             </nav>
         </div>
 
@@ -79,6 +100,12 @@ const communityMenus: MenuItem[] = [
     { id: "qna", name: "Q&A", icon: "help_center", path: "#" }
 ];
 
+const adminMenus: MenuItem[] = [
+    { id: 'admin-settings', name: '워크스페이스 설정', icon: 'settings', path: 'workspaceAdminSettings' },
+    { id: 'admin-members', name: '참여진 관리', icon: 'group', path: 'workspaceAdminMembers' },
+    { id: 'admin-requests', name: '가입 신청 관리', icon: 'person_add', path: 'workspaceAdminRequests' },
+    { id: 'admin-invite', name: '초대코드 센터', icon: 'vpn_key', path: 'workspaceAdminInvite' },
+];
 const route = useRoute();
 const router = useRouter();
 const workspaceStore = useWorkspaceStore();
@@ -124,6 +151,7 @@ const props = withDefaults(defineProps<Props>(), {
 // 현재 사용자 역할 감지 (route name 기반)
 const currentRole = computed(() => {
     const name = route.name as string;
+    if (name?.includes('Admin')) return 'admin';
     if (name?.includes('Trainer')) return 'trainer';
     if (name?.includes('Learner')) return 'learner';
     return 'learner'; // 기본값
