@@ -1,11 +1,11 @@
 package com.edumax.molip.domain.workspace.entity;
 
+import com.edumax.molip.domain.member.entity.Member;
 import com.edumax.molip.domain.chatting.entity.QnAMessage;
 import com.edumax.molip.domain.chatting.entity.ReviewChattingMessage;
 import com.edumax.molip.domain.chatting.entity.ReviewChattingRoom;
 import com.edumax.molip.domain.chatting.entity.SessionChattingMessage;
 import com.edumax.molip.domain.course.entity.*;
-import com.edumax.molip.domain.member.entity.Member;
 import com.edumax.molip.domain.quiz.entity.ExitQuizResult;
 import com.edumax.molip.domain.review.entity.*;
 import com.edumax.molip.domain.session.entity.CourseLearner;
