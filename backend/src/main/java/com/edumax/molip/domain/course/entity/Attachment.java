@@ -33,7 +33,11 @@ public abstract class Attachment {
   private AttachmentSizeUnit sizeUnit;
 
   public enum AttachmentSizeUnit {
-    B, MB, KB, GB, TB
+    B,
+    MB,
+    KB,
+    GB,
+    TB
   }
 
   @Column(name = "upload_date", nullable = false)
@@ -44,7 +48,11 @@ public abstract class Attachment {
   private AttachmentExtensionType extensionType;
 
   public enum AttachmentExtensionType {
-    JPG, PNG, PDF, ZIP, DOCX
+    JPG,
+    PNG,
+    PDF,
+    ZIP,
+    DOCX
   }
 
   @Enumerated(EnumType.STRING)
@@ -52,11 +60,11 @@ public abstract class Attachment {
   private AttachmentType type;
 
   public enum AttachmentType {
-    COMMON, SESSION
+    COMMON,
+    SESSION
   }
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 }
-

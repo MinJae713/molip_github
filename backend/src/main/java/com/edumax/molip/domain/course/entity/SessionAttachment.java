@@ -18,4 +18,3 @@ public class SessionAttachment extends Attachment {
   @JoinColumn(name = "session_id", nullable = false)
   private Session session;
 }
-

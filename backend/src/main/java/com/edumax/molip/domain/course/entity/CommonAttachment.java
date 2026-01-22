@@ -25,4 +25,3 @@ public class CommonAttachment extends Attachment {
   @JoinColumn(name = "course_id", nullable = false)
   private Course course;
 }
-
