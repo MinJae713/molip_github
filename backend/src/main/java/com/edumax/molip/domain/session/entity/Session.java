@@ -3,6 +3,7 @@ package com.edumax.molip.domain.session.entity;
 import com.edumax.molip.domain.chatting.entity.QnARoom;
 import com.edumax.molip.domain.chatting.entity.SessionChattingRoom;
 import com.edumax.molip.domain.course.entity.Course;
+import com.edumax.molip.domain.course.entity.SessionAttachment;
 import com.edumax.molip.domain.quiz.entity.ExitQuiz;
 import com.edumax.molip.domain.review.entity.LearnerAnalysis;
 import jakarta.persistence.Column;
@@ -95,6 +96,10 @@ public class Session {
   @OneToMany(mappedBy = "session")
   @Builder.Default
   private List<ExitQuiz> exitQuizzes = new ArrayList<>();
+
+  @OneToMany(mappedBy = "session")
+  @Builder.Default
+  private List<SessionAttachment> sessionAttachments = new ArrayList<>();
 
   /* =======================
    * 1 : 1

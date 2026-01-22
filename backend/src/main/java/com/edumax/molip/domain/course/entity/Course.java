@@ -2,6 +2,7 @@ package com.edumax.molip.domain.course.entity;
 
 import com.edumax.molip.domain.session.entity.CourseLearner;
 import com.edumax.molip.domain.session.entity.Session;
+import com.edumax.molip.domain.workspace.entity.Workspace;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -108,4 +109,13 @@ public class Course {
   @OneToMany(mappedBy = "course")
   @Builder.Default
   private List<Session> sessions = new ArrayList<>();
+
+  /** 공통 첨부 파일 */
+  @OneToMany(mappedBy = "course")
+  @Builder.Default
+  private List<CommonAttachment> commonAttachments = new ArrayList<>();
+
+  @ManyToOne
+  @JoinColumn(name = "workspace_id", nullable = false)
+  private Workspace workspace;
 }
