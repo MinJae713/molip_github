@@ -1,5 +1,6 @@
 package com.edumax.molip.domain.workspace.entity;
 
+import com.edumax.molip.domain.course.entity.Course;
 import com.edumax.molip.domain.member.entity.Member;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -61,4 +62,8 @@ public class Workspace {
   @OneToMany(mappedBy = "workspace")
   @Builder.Default
   private List<WorkspaceMember> workspaceMembers = new ArrayList<>();
+
+  @OneToMany(mappedBy = "workspace")
+  @Builder.Default
+  private List<Course> courses = new ArrayList<>();
 }
