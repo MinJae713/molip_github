@@ -1,7 +1,8 @@
 package com.edumax.molip.common.model;
 
-import com.edumax.molip.auth.entity.Member;
 import java.util.Set;
+
+import com.edumax.molip.domain.auth.entity.Member;
 import lombok.*;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

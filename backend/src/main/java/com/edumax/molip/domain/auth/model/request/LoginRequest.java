@@ -1,4 +1,4 @@
-package com.edumax.molip.auth.model.request;
+package com.edumax.molip.domain.auth.model.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

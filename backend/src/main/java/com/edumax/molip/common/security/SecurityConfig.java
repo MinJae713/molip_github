@@ -1,12 +1,13 @@
 package com.edumax.molip.common.security;
 
-import com.edumax.molip.auth.entity.Member;
-import com.edumax.molip.auth.service.MemberService;
 import com.edumax.molip.common.filter.LogFilter;
 import com.edumax.molip.common.jwt.JwtAuthenticationFilter;
 import com.edumax.molip.common.jwt.JwtTokenProvider;
 import com.edumax.molip.common.model.MemberUserDetails;
 import java.util.List;
+
+import com.edumax.molip.domain.auth.entity.Member;
+import com.edumax.molip.domain.auth.service.MemberService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

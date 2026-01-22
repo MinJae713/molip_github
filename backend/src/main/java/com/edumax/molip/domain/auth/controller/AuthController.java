@@ -1,15 +1,14 @@
-package com.edumax.molip.auth.controller;
+package com.edumax.molip.domain.auth.controller;
 
-import com.edumax.molip.auth.entity.Member;
-import com.edumax.molip.auth.exception.DuplicateEmailException;
-import com.edumax.molip.auth.model.request.LoginRequest;
-import com.edumax.molip.auth.model.response.LoginResponse;
-import com.edumax.molip.auth.service.MemberService;
 import com.edumax.molip.common.jwt.JwtTokenProvider;
 import com.edumax.molip.common.model.MemberUserDetails;
+import com.edumax.molip.domain.auth.entity.Member;
+import com.edumax.molip.domain.auth.exception.DuplicateEmailException;
+import com.edumax.molip.domain.auth.model.request.LoginRequest;
+import com.edumax.molip.domain.auth.model.response.LoginResponse;
+import com.edumax.molip.domain.auth.service.MemberService;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -22,8 +21,17 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Map;
 
 @Slf4j
 @RestController

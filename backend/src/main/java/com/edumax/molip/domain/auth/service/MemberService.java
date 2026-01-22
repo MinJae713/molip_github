@@ -1,10 +1,8 @@
-package com.edumax.molip.auth.service;
+package com.edumax.molip.domain.auth.service;
 
-import com.edumax.molip.auth.entity.Member;
-import com.edumax.molip.auth.entity.Member.AuthProvider;
-import com.edumax.molip.auth.exception.DuplicateEmailException;
-import com.edumax.molip.auth.repository.MemberRepository;
-import java.time.Duration;
+import com.edumax.molip.domain.auth.entity.Member;
+import com.edumax.molip.domain.auth.exception.DuplicateEmailException;
+import com.edumax.molip.domain.auth.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -12,6 +10,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
@@ -41,7 +41,7 @@ public class MemberService {
   }
 
   @Transactional
-  public void registerMember(Member member, AuthProvider authProvider) {
+  public void registerMember(Member member, Member.AuthProvider authProvider) {
     Member memberResult =
         memberRepository.findByEmailAndDeletedAtIsNull(member.getEmail()).orElse(null);
 

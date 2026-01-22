@@ -1,4 +1,4 @@
-package com.edumax.molip.auth.model.response;
+package com.edumax.molip.domain.auth.model.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
