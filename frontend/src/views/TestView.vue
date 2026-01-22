@@ -9,6 +9,10 @@
         </div>
     </div>
 </template>
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import * as THREE from 'three';

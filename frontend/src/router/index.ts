@@ -14,7 +14,10 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+<<<<<<< Updated upstream
       // 2. 부모 라우트: 모든 페이지를 감싸는 레이아웃입니다.
+=======
+>>>>>>> Stashed changes
       path: "/",
       component: MainLayout,
       // 3. 자식 라우트: MainLayout 내부의 <RouterView />에 렌더링될 페이지들입니다.
