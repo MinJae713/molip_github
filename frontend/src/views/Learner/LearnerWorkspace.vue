@@ -57,51 +57,14 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Filter Dropdown (Mock UI) -->
-                    <div class="relative group">
-                        <button
-                            class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                            <span class="material-symbols-outlined text-lg">filter_list</span>
-                            <span>필터</span>
-                            <span class="material-symbols-outlined text-slate-400 text-sm">expand_more</span>
-                        </button>
-                        <div
-                            class="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-xl z-20 hidden group-hover:block filter-dropdown-content p-4">
-                            <!-- Mock Filter UI -->
-                            <div class="space-y-4">
-                                <div>
-                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">기간 선택 (최종
-                                        수강일
-                                        기준)</p>
-                                    <div class="flex flex-col gap-2">
-                                        <div class="flex items-center gap-2">
-                                            <input v-model="filterStartDate"
-                                                class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-600"
-                                                type="date" />
-                                            <span class="text-slate-400">-</span>
-                                            <input v-model="filterEndDate"
-                                                class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-600"
-                                                type="date" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
-                                    <button @click="resetDateFilter"
-                                        class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-700">초기화</button>
-                                    <button @click="applyDateFilter"
-                                        class="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">적용하기</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
             <!-- Course Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" v-if="filteredCourses.length > 0">
-                <DashboardCourseCard v-for="course in filteredCourses" :key="course.id" :course="course"
-                    @open-curriculum="openCurriculumModal" @enroll-course="handleEnrollCourse" />
+                <DashboardCourseCard v-for="course in filteredCourses" :key="course.course_id" :course="course"
+                    @open-curriculum="openCurriculumModal" @enroll-course="handleEnrollCourse"
+                    @enter-course="handleEnterCourse" />
             </div>
             <div v-else class="text-center py-20 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                 <p class="text-slate-500">등록된 강의가 없습니다.</p>
@@ -116,7 +79,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { useCourseStore } from '@/stores/course';
 import { storeToRefs } from 'pinia';
@@ -126,6 +89,7 @@ import DashboardCourseCard from '@/components/Learner/LearnerWorkspace/Dashboard
 import CourseCurriculumModal from '@/components/Learner/LearnerWorkspace/CourseCurriculumModal.vue';
 
 const route = useRoute();
+const router = useRouter();
 const workspaceStore = useWorkspaceStore();
 const courseStore = useCourseStore();
 
@@ -145,7 +109,7 @@ const selectedCourse = ref<Course>({} as Course);
 const mockSessions = ref<Session[]>([]);
 
 const openCurriculumModal = async (courseId: string | number) => {
-    const course = workspaceCourses.value.find(c => String(c.id) === String(courseId));
+    const course = workspaceCourses.value.find(c => String(c.course_id) === String(courseId));
     if (course) {
         selectedCourse.value = course;
 
@@ -162,7 +126,7 @@ const closeModal = () => {
 };
 
 const handleEnrollCourse = async (courseId: string | number) => {
-    const course = workspaceCourses.value.find(c => String(c.id) === String(courseId));
+    const course = workspaceCourses.value.find(c => String(c.course_id) === String(courseId));
     if (!course) return;
 
     if (!confirm(`"${course.title}" 강의를 수강 신청하시겠습니까?`)) return;
@@ -172,9 +136,28 @@ const handleEnrollCourse = async (courseId: string | number) => {
     if (success) {
         alert('✅ 수강 신청이 완료되었습니다!\n관리자 승인 후 수강이 가능합니다.');
         // TODO: 강의 목록 갱신하여 상태를 pending_approval로 변경
+        // 목록 새로고침
+        const workspaceId = route.params.id;
+        const normalizedId = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
+        if (normalizedId) {
+            await courseStore.fetchCoursesByWorkspace(normalizedId);
+        }
     } else {
         alert('❌ 수강 신청 중 오류가 발생했습니다.\n다시 시도해주세요.');
     }
+};
+
+const handleEnterCourse = (courseId: string | number) => {
+    const currentWorkspaceId = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id;
+    if (!currentWorkspaceId) return;
+
+    router.push({
+        name: 'workspaceLearnerClassroom',
+        params: {
+            id: currentWorkspaceId,
+            courseId: courseId
+        }
+    });
 };
 
 const handleRegister = () => {
@@ -206,7 +189,7 @@ const filteredCourses = computed(() => {
     // Filter by date range (last_accessed_at 기준)
     if (filterStartDate.value || filterEndDate.value) {
         result = result.filter(course => {
-            if (!course.currentLessons || course.currentLessons === 0) {
+            if (!course.current_lessons || course.current_lessons === 0) {
                 // 수강하지 않은 강의는 날짜 필터에서 제외하지 않음
                 return true;
             }
@@ -235,10 +218,10 @@ const filteredCourses = computed(() => {
     // Sort (Simple implementation)
     switch (sortOption.value) {
         case 'newest':
-            result.sort((a, b) => Number(b.id) - Number(a.id));
+            result.sort((a, b) => Number(b.course_id) - Number(a.course_id));
             break;
         case 'oldest':
-            result.sort((a, b) => Number(a.id) - Number(b.id));
+            result.sort((a, b) => Number(a.course_id) - Number(b.course_id));
             break;
         case 'deadline':
             result.sort((a, b) => (a.d_day || 999) - (b.d_day || 999));

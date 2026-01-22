@@ -17,18 +17,19 @@
 </template>
 
 <script setup lang="ts">
-import { RouterView } from 'vue-router';
+import { RouterView, useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import Navbar from '@/components/common/CommonComponents/Navbar.vue';
 import Sidebar from '@/components/common/CommonComponents/Sidebar.vue';
 
 const userStore = useUserStore();
+const router = useRouter();
 
 // Mock user data - useUserStore에서 가져올 수 있도록 구성
 const user = {
     name: '김지수',
     email: 'jisoo.kim@techcorp.com',
-    profileImage: 'https://ui-avatars.com/api/?name=Jisoo+Kim&background=random'
+    profile_image_url: 'https://ui-avatars.com/api/?name=Jisoo+Kim&background=random'
 };
 
 const handleNotification = () => {
@@ -37,6 +38,7 @@ const handleNotification = () => {
 
 const handleProfile = () => {
     console.log('프로필 클릭됨');
+    router.push('/mypage');
 };
 </script>
 

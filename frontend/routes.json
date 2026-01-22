@@ -1,12 +1,19 @@
 {
+  "/members/me/courses/attendance-rate": "/attendance_rate",
+  "/workspace/:workspaceId/learner/classroom/:courseId": "/sessions_list?course_id=:courseId",
+  "/workspaces/search": "/workspaces",
+
   "/members/me/workspaces": "/my_workspaces",
-  "/members/me/courses": "/my_all_courses",
+  "/members/me/course-likes/:id": "/course_likes/:id",
+  "/members/me/course-likes": "/course_likes",
+
   "/members/me/courses/:id": "/my_all_courses/:id",
-  "/workspaces/search?query=:q": "/workspaces?q=:q",
+  "/members/me/courses": "/my_all_courses",
+
   "/workspaces/:id/join": "/workspace_registers",
   "/workspaces/:id/courses": "/workspace_all_courses",
-  "/members/me/course-likes": "/course_likes",
-  "/members/me/course-likes/:id": "/course_likes/:id",
+
   "/courses/:courseId/sessions": "/sessions",
-  "/courses/:id/enroll": "/course_enrollments"
+  "/courses/:id/enroll": "/course_enrollments",
+  "/courses/:id": "/workspace_all_courses/:id"
 }

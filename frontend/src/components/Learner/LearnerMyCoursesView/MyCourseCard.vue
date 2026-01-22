@@ -1,19 +1,19 @@
 <template>
     <div
         class="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-card hover:border-indigo-200 transition-all duration-300 flex flex-col h-full relative overflow-hidden">
-        <!-- 상단 강조 바 (필수 과정만) -->
-        <div v-if="course.is_mandatory" class="h-1.5 w-full bg-gradient-to-r from-indigo-500 to-cyan-400"></div>
-        <div v-else class="h-1.5 w-full bg-slate-200"></div>
+        <!-- 상단 강조 바 (모든 코스 공통 그라데이션) -->
+        <div class="h-1.5 w-full bg-gradient-to-r from-indigo-500 to-cyan-400">
+        </div>
         <div class="p-6 flex-1 flex flex-col">
             <!-- 헤더: 태그 + 더보기 버튼 -->
             <div class="flex justify-between items-start mb-4">
                 <span :class="[
                     'px-2.5 py-1 text-[11px] font-bold rounded-full border uppercase tracking-wide',
-                    course.is_mandatory
+                    displayCourse('is_mandatory')
                         ? 'bg-indigo-50 text-indigo-600 border-indigo-100'
                         : 'bg-slate-100 text-slate-600 border-slate-200'
                 ]">
-                    {{ course.tag }}
+                    {{ displayCourse('tag') }}
                 </span>
                 <button class="text-slate-400 hover:text-slate-600">
                     <span class="material-symbols-outlined">more_vert</span>
@@ -21,68 +21,79 @@
             </div>
             <!-- 강의 제목 및 설명 -->
             <div class="mb-2">
-                <span class="text-xs font-bold text-slate-400 block mb-1">{{ course.category }}</span>
+                <span class="text-xs font-bold text-slate-400 block mb-1">{{ displayCourse('category') }}</span>
                 <h3 class="text-xl font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors">
-                    {{ course.title }}
+                    {{ displayCourse('title') }}
                 </h3>
             </div>
-            <p class="text-sm text-slate-500 line-clamp-2 mb-6">{{ course.description }}</p>
+            <p class="text-sm text-slate-500 line-clamp-2 mb-6">{{ displayCourse('description') }}</p>
             <!-- 하단 영역 -->
             <div class="mt-auto">
                 <!-- 진도율 -->
                 <div class="mb-5">
                     <div class="flex justify-between items-end mb-2">
                         <span class="text-xs font-bold text-slate-700">진도율</span>
-                        <span class="text-lg font-bold text-indigo-600">{{ course.progress }}%</span>
+                        <span class="text-lg font-bold text-indigo-600">{{ displayCourse('progress_rate') || 0
+                            }}%</span>
                     </div>
                     <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                         <div class="bg-indigo-600 h-full rounded-full"
-                            :class="{ 'progress-bar-striped animate-pulse': course.has_live_session }"
-                            :style="{ width: `${course.progress}%` }">
+                            :style="{ width: `${displayCourse('progress_rate') || 0}%` }">
                         </div>
                     </div>
                     <div class="flex justify-between mt-2 text-xs text-slate-500">
-                        <span>{{ course.currentLessons }}/{{ course.totalLessons }} 세션 완료</span>
-                        <span>잔여 {{ course.remaining_hours }}시간</span>
+                        <span>{{ displayCourse('current_lessons') || 0 }}/{{ displayCourse('total_lessons') || 0 }} 세션
+                            완료</span>
+                        <span v-if="displayCourse('duration')">{{ displayCourse('duration') }}</span>
+                        <span v-else-if="displayCourse('d_day')">D-{{ displayCourse('d_day') }}</span>
                     </div>
                 </div>
                 <!-- 다음 일정 -->
-                <div class="bg-slate-50 rounded-lg p-3 border border-slate-100 mb-5 flex items-start gap-3">
+                <div v-if="displayCourse('next_schedule')"
+                    class="bg-slate-50 rounded-lg p-3 border border-slate-100 mb-5 flex items-start gap-3">
                     <div :class="[
                         'mt-0.5',
-                        course.next_schedule.type === 'live' ? 'text-red-500 animate-pulse' :
-                            course.next_schedule.type === 'assignment' ? 'text-indigo-500' :
-                                'text-emerald-500'
+                        displayCourse('next_schedule').type === 'live' ? 'text-red-500 animate-pulse' :
+                            displayCourse('next_schedule').type === 'vod' ? 'text-indigo-500' : 'text-emerald-500'
                     ]">
                         <span class="material-symbols-outlined text-[18px]">
-                            {{ course.next_schedule.icon }}
+                            {{ displayCourse('next_schedule').icon || 'event' }}
                         </span>
                     </div>
                     <div>
-                        <div class="text-xs font-bold text-slate-900">{{ course.next_schedule.title }}</div>
-                        <div class="text-xs text-slate-500 mt-0.5">{{ course.next_schedule.time }}</div>
+                        <div class="text-xs font-bold text-slate-900">{{ displayCourse('next_schedule').title }}</div>
+                        <div class="text-xs text-slate-500 mt-0.5">{{ displayCourse('next_schedule').time }}</div>
                     </div>
                 </div>
-                <!-- 입장 버튼 -->
-                <a :class="[
-                    'w-full py-2.5 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2',
-                    course.progress > 80
-                        ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md hover:shadow-lg'
-                        : course.has_live_session
-                            ? 'bg-white border border-indigo-600 text-indigo-600 hover:bg-indigo-600 hover:text-white group-hover:shadow-md'
-                            : 'bg-white border border-slate-300 text-slate-700 hover:border-indigo-600 hover:text-indigo-600'
-                ]" href="#" @click.prevent="$emit('enter-course', course.id)">
+                <!-- 상태별 버튼 -->
+                <button v-if="displayCourse('enrollment_status') === 'pending_approval'"
+                    class="w-full py-2.5 text-sm font-bold rounded-lg bg-gray-200 text-gray-900 border border-gray-300 cursor-not-allowed flex items-center justify-center gap-2"
+                    disabled>
+                    승인 대기중
+                    <span class="material-symbols-outlined text-[18px]">hourglass_empty</span>
+                </button>
+
+                <button v-else-if="displayCourse('enrollment_status') === 'recruiting'"
+                    class="w-full py-2.5 text-sm font-bold rounded-lg bg-emerald-600 text-white border border-emerald-500 hover:bg-emerald-700 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                    @click.prevent="$emit('enroll-course', displayCourse('course_id'))">
+                    수강신청하기
+                    <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                </button>
+
+                <button v-else-if="displayCourse('enrollment_status') === 'active'"
+                    class="w-full py-2.5 text-sm font-bold rounded-lg bg-indigo-600 text-white border border-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                    @click.prevent="$emit('enter-course', displayCourse('course_id'))">
                     강의실 입장
-                    <span class="material-symbols-outlined text-[18px]">
-                        {{ course.progress > 80 ? 'login' : 'arrow_forward' }}
-                    </span>
-                </a>
+                    <span class="material-symbols-outlined text-[18px]">login</span>
+                </button>
             </div>
         </div>
     </div>
 </template>
 <script setup lang="ts">
+import { ref, onMounted } from 'vue';
 import type { Course } from '@/types';
+import { useCourseStore } from '@/stores/course';
 
 interface Props {
     course: Course;
@@ -90,7 +101,32 @@ interface Props {
 const props = defineProps<Props>();
 defineEmits<{
     (e: 'enter-course', courseId: string | number): void;
+    (e: 'enroll-course', courseId: string | number): void;
 }>();
+
+const courseStore = useCourseStore();
+const nowCouse = ref<any>(null);
+
+onMounted(async () => {
+    if (props.course.course_id) {
+        // 코스 번호로 상세 정보 가져오기
+        const detailedData = await courseStore.fetchCourseInfo(props.course.course_id);
+        if (detailedData) {
+            nowCouse.value = detailedData;
+        }
+    }
+});
+
+/**
+ * 표시할 데이터를 결정하는 헬퍼 (패치된 데이터 우선, 아니면 props 데이터)
+ */
+const displayCourse = (field: string) => {
+    if (nowCouse.value && nowCouse.value[field] !== undefined) {
+        return nowCouse.value[field];
+    }
+    return (props.course as any)[field];
+};
+
 </script>
 <style scoped>
 .progress-bar-striped {

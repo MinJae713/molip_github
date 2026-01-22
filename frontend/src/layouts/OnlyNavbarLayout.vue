@@ -12,12 +12,13 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import Navbar from '@/components/common/CommonComponents/Navbar.vue';
-import { RouterView } from 'vue-router'; // 페이지 내용이 들어갈 곳
+import { RouterView, useRouter } from 'vue-router'; // 페이지 내용이 들어갈 곳
 import { useUserStore } from '@/stores/user';
 import { useWorkspaceStore } from '@/stores/workspace';
 
 const userStore = useUserStore();
 const workspaceStore = useWorkspaceStore();
+const router = useRouter();
 
 onMounted(() => {
     userStore.fetchUserInfo();
@@ -29,6 +30,7 @@ const handleNotification = () => {
 
 const handleProfile = () => {
     console.log('프로필 클릭됨');
+    router.push('/mypage');
 };
 </script>
 
