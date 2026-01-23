@@ -32,7 +32,8 @@ public class WorkspaceController {
 
   @GetMapping("/{workspace_id}")
   public ResponseEntity<FindWorkspaceByIdResponse> findWorkspaceById(
-      @PathVariable(name = "workspace_id") Long workspaceId, @AuthenticationPrincipal MemberUserDetails member) {
+      @PathVariable(name = "workspace_id") Long workspaceId,
+      @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(workspaceService.findWorkspaceById(workspaceId));
   }
 
@@ -45,13 +46,15 @@ public class WorkspaceController {
 
   @GetMapping("/{workspace_id}/my-stats")
   public ResponseEntity<FindMyStatsResponse> findMyStats(
-      @PathVariable(name = "workspace_id") Long workspaceId, @AuthenticationPrincipal MemberUserDetails member) {
+      @PathVariable(name = "workspace_id") Long workspaceId,
+      @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(workspaceService.findMyStats(workspaceId));
   }
 
   @GetMapping("/{workspace_id}/courses")
   public ResponseEntity<FindWorkspaceCoursesByIdResponse> findWorkspaceCoursesById(
-      @PathVariable(name = "workspace_id") Long workspaceId, @AuthenticationPrincipal MemberUserDetails member) {
+      @PathVariable(name = "workspace_id") Long workspaceId,
+      @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(workspaceService.findWorkspaceCoursesById(workspaceId));
   }
 }
