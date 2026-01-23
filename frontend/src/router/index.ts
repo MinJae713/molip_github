@@ -19,9 +19,11 @@ import TrainerWorkspace from "@/views/Trainer/TrainerWorkspace.vue";
 import AdminWorkspaceView from "@/views/Admin/AdminWorkspaceView.vue";
 import WorkspaceSettingsView from "@/views/Admin/WorkspaceSettingsView.vue";
 import MemberManagementView from "@/views/Admin/MemberManagementView.vue";
+import JoinRequestView from "@/views/Admin/JoinRequestView.vue";
 // 학습자 라우트
 import LearnerWorkspace from "@/views/Learner/LearnerWorkspace.vue";
 import LearnerMyCoursesView from "@/views/Learner/LearnerMyCoursesView.vue";
+import InviteCodeView from "@/views/Admin/InviteCodeView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -96,14 +98,14 @@ const router = createRouter({
           component: MemberManagementView
         },
         {
-          path: 'applications',
-          name: 'JoinApplications',
-          component: () => import('@/views/Common/TestView.vue'), // 임시 연결
+          path: 'requests',
+          name: 'JoinRequest',
+          component: JoinRequestView
         },
         {
           path: 'invite-codes',
           name: 'InviteCodeCenter',
-          component: () => import('@/views/Common/TestView.vue'), // 임시 연결
+          component: InviteCodeView
         }
       ],
     },

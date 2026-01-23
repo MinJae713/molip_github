@@ -22,6 +22,36 @@
       "joinedAt": "2023.11.12",
       "lastLogin": "2024.05.21 14:32",
       "profileImage": "https://ui-avatars.com/api/?name=Jeonghoon+Kim&background=random"
+    },
+    {
+      "id": 10,
+      "name": "김지수",
+      "email": "js.kim@techcorp.com",
+      "profileImage": "https://ui-avatars.com/api/?name=Jisoo+Kim&background=random"
+    },
+    {
+      "id": 11,
+      "name": "박건우",
+      "email": "kw.park@global.inc",
+      "profileImage": "https://ui-avatars.com/api/?name=Gunwoo+Park&background=random"
+    },
+    {
+      "id": 12,
+      "name": "한나래",
+      "email": "narae.han@creative.co.kr",
+      "profileImage": "https://ui-avatars.com/api/?name=Narae+Han&background=random"
+    },
+    {
+      "id": 13,
+      "name": "윤도현",
+      "email": "dh.yoon@techcorp.com",
+      "profileImage": "https://ui-avatars.com/api/?name=Dohyun+Yoon&background=random"
+    },
+    {
+      "id": 14,
+      "name": "정성훈",
+      "email": "sh.jung@startup.io",
+      "profileImage": "https://ui-avatars.com/api/?name=Sunghoon+Jung&background=random"
     }
   ],
   "workspaces": [
@@ -287,6 +317,54 @@
       "status": 1,
       "applied_at": "2026-01-21T05:44:11.304Z",
       "id": 4
+    },
+    {
+      "id": 5,
+      "workspaceId": "3",
+      "workspace_id": "3",
+      "member_id": 10,
+      "role": "LEARNER",
+      "status": 1,
+      "applied_at": "2026-01-23T10:00:00.000Z"
+    },
+    {
+      "id": 6,
+      "workspaceId": "3",
+      "workspace_id": "3",
+      "member_id": 11,
+      "role": "LEARNER",
+      "status": 0,
+      "applied_at": "2026-01-22T05:17:20.046Z"
+    },
+    {
+      "id": 7,
+      "workspaceId": "3",
+      "workspace_id": "3",
+      "member_id": 12,
+      "role": "LEARNER",
+      "status": 1,
+      "applied_at": "2026-01-21T05:28:50.264Z",
+      "approved_at": "2026-01-22T09:00:00.000Z"
+    },
+    {
+      "id": 8,
+      "workspaceId": "3",
+      "workspace_id": "3",
+      "member_id": 13,
+      "role": "TRAINER",
+      "status": 2,
+      "applied_at": "2026-01-21T05:44:11.304Z",
+      "rejected_at": "2026-01-22T10:30:00.000Z",
+      "reject_reason": "사내 보안 정책상 파트너사 직원은 별도의 승인 절차가 필요합니다."
+    },
+    {
+      "id": 9,
+      "workspaceId": "3",
+      "workspace_id": "3",
+      "member_id": 14,
+      "role": "LEARNER",
+      "status": 0,
+      "applied_at": "2026-01-20T08:15:00.000Z"
     }
   ],
   "workspace_all_courses": [
