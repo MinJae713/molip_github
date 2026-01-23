@@ -1,8 +1,57 @@
 package com.edumax.molip.domain.workspace.controller;
 
+import com.edumax.molip.common.model.MemberUserDetails;
+import com.edumax.molip.domain.workspace.dto.request.JoinWorkspaceRequest;
+import com.edumax.molip.domain.workspace.dto.response.FindMyStatsResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceByIdResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceCoursesByIdResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindWorkspacesResponse;
+import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
+import com.edumax.molip.domain.workspace.service.WorkspaceService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/workspace")
-public class WorkspaceController {}
+@RequestMapping("/api/workspaces")
+@RequiredArgsConstructor
+public class WorkspaceController {
+  private final WorkspaceService workspaceService;
+
+  @GetMapping
+  public ResponseEntity<FindWorkspacesResponse> findWorkspaces(
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.findWorkspaces());
+  }
+
+  @GetMapping("/{workspace_id}")
+  public ResponseEntity<FindWorkspaceByIdResponse> findWorkspaceById(
+      @PathVariable(name = "workspace_id") Long workspaceId, @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.findWorkspaceById(workspaceId));
+  }
+
+  @PostMapping("/{workspace_id}/join")
+  public ResponseEntity<JoinWorkspaceResponse> joinWorkspace(
+      @RequestBody JoinWorkspaceRequest joinWorkspaceRequest,
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.joinWorkspace(joinWorkspaceRequest));
+  }
+
+  @GetMapping("/{workspace_id}/my-stats")
+  public ResponseEntity<FindMyStatsResponse> findMyStats(
+      @PathVariable(name = "workspace_id") Long workspaceId, @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.findMyStats(workspaceId));
+  }
+
+  @GetMapping("/{workspace_id}/courses")
+  public ResponseEntity<FindWorkspaceCoursesByIdResponse> findWorkspaceCoursesById(
+      @PathVariable(name = "workspace_id") Long workspaceId, @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.findWorkspaceCoursesById(workspaceId));
+  }
+}
