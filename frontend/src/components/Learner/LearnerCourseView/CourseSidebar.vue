@@ -39,8 +39,7 @@
                 <div>
                     <h4 class="font-bold text-slate-900">박민우 박사</h4>
                     <p class="text-xs text-indigo-600 font-medium mb-1">AI Ethics Lab 소장</p>
-                    <p class="text-xs text-slate-500 leading-snug">KAIST AI 대학원 졸업, 전 삼성전자 AI 연구원, 현 국가 AI 윤리 위원회 자문위원
-                    </p>
+                    <p class="text-xs text-slate-500 leading-snug">현재 ERD에 해당 내용 없음! 컴포넌트 제거? 추가?</p>
                 </div>
             </div>
             <button
@@ -71,22 +70,6 @@
                     <span>실시간 강의 2회 이상 참여</span>
                 </li>
             </ul>
-        </div>
-
-        <!-- Learning Materials -->
-        <div class="bg-indigo-900 rounded-xl p-5 text-white relative overflow-hidden">
-            <div class="absolute -top-10 -right-10 size-40 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none">
-            </div>
-            <h3 class="font-bold mb-2 relative z-10 flex items-center gap-2">
-                <span class="material-symbols-outlined">folder_open</span>
-                학습 자료실
-            </h3>
-            <p class="text-indigo-200 text-xs mb-4 relative z-10">강의 교안 및 참고 자료를 다운로드하세요.</p>
-            <button
-                class="w-full py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2 backdrop-blur-sm relative z-10">
-                <span class="material-symbols-outlined text-[18px]">download</span>
-                자료 전체 다운로드
-            </button>
         </div>
     </div>
 </template>

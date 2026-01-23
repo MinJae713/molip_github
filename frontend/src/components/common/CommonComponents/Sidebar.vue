@@ -130,6 +130,10 @@ const currentActiveId = computed(() => {
     if (name === 'workspaceLearner' || name === 'workspaceTrainer') {
         return 'dashboard';
     }
+    // classroom 경로면 'courses' 활성화
+    if (path.includes('/classroom') || name?.includes('Classroom')) {
+        return 'courses';
+    }
 });
 
 const emit = defineEmits<{

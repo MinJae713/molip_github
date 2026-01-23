@@ -41,7 +41,7 @@ const emit = defineEmits<{
                     class="flex items-center gap-2 text-indigo-400 w-56 cursor-pointer hover:text-indigo-300 transition-colors">
                     <span class="material-symbols-outlined text-3xl">school</span>
                     <span class="text-xl font-bold font-display tracking-tight text-white">
-                        EduVerse <span class="text-indigo-400 font-light">Work</span>
+                        Molip<span class="text-indigo-400 font-light"> Space</span>
                     </span>
                 </router-link>
 

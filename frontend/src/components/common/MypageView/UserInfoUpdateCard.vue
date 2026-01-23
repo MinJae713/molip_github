@@ -5,7 +5,7 @@
                 <div class="relative group cursor-pointer" @click="triggerFileInput">
                     <div
                         class="size-28 rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-magenta p-1 shadow-md transition-transform active:scale-95">
-                        <img :src="previewImage || props.user.profileImage" alt="Profile"
+                        <img :src="previewImage || props.user.profile_image_url" alt="Profile"
                             class="rounded-full w-full h-full object-cover border-4 border-white bg-white" />
                     </div>
                     <div
@@ -41,7 +41,6 @@
                             readonly />
                     </div>
                     <p class="text-[11px] text-slate-400 mt-1"> 이름과 이메일 변경은 관리자에게 문의하세요.</p>
-                    <p class="text-[11px] text-slate-400 mt-1"> 프로필 사진은 변경 즉시 시스템에 적용됩니다.</p>
                 </div>
             </div>
         </div>

@@ -15,5 +15,7 @@
 
   "/courses/:courseId/sessions": "/sessions",
   "/courses/:id/enroll": "/course_enrollments",
-  "/courses/:id": "/workspace_all_courses/:id"
+  "/courses/:id/materials": "/course_materials?course_id=:id",
+  "/courses/:id": "/workspace_all_courses/:id",
+  "/sessions/:id/materials": "/session_materials?session_id=:id"
 }

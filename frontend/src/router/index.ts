@@ -18,9 +18,9 @@ import TrainerWorkspace from "@/views/Trainer/TrainerWorkspace.vue";
 // 관리자 라우트
 import AdminWorkspaceView from "@/views/Admin/AdminWorkspaceView.vue";
 // 학습자 라우트
-import LearnerWorkspace from "@/views/Learner/LearnerWorkspace.vue";
 import LearnerMyCoursesView from "@/views/Learner/LearnerMyCoursesView.vue";
 import LearnerClassroomView from "@/views/Learner/LearnerClassroomView.vue";
+import LearnerLiveSessionView from "@/views/Learner/LearnerLiveSessionView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -109,6 +109,11 @@ const router = createRouter({
         // 기본적으로 learner로 리다이렉트
         return { name: "workspaceLearner", params: { id: to.params.id } };
       },
+    },
+    {
+      path: "/live-session/:sessionId",
+      name: "learnerLiveSession",
+      component: LearnerLiveSessionView,
     },
   ],
 });

@@ -608,21 +608,6 @@
       "is_liked": true
     },
     {
-      "id": "8",
-      "courseId": "8",
-      "workspace_id": "1",
-      "title": "Python 금융 데이터 분석",
-      "description": "Pandas와 Matplotlib을 활용해 주가 데이터를 분석하고 시각화합니다.",
-      "tag": "추천",
-      "category": "data",
-      "progress_rate": 0,
-      "current_lessons": 4,
-      "total_lessons": 20,
-      "is_mandatory": false,
-      "d_day": 20,
-      "is_liked": true
-    },
-    {
       "id": "6",
       "course_id": 6,
       "workspace_id": "1",
@@ -638,6 +623,18 @@
       "is_mandatory": false,
       "d_day": 10,
       "is_liked": true
+    },
+    {
+      "courseId": "8",
+      "id": "LNYIERD"
+    },
+    {
+      "courseId": "8",
+      "id": "Yh3I8CL"
+    },
+    {
+      "courseId": "10",
+      "id": "lR0Eh6k"
     }
   ],
   "course_enrollments": [
@@ -661,6 +658,13 @@
       "status": 1,
       "applied_at": "2026-01-22T05:28:19.284Z",
       "id": 3
+    },
+    {
+      "courseId": "9",
+      "memberId": "1",
+      "status": 1,
+      "applied_at": "2026-01-23T06:08:44.207Z",
+      "id": 4
     }
   ],
   "attendance_rate": [
@@ -682,12 +686,13 @@
       "start_at": "09:00:00",
       "date": "2026-01-22",
       "end_at": "12:00:00",
-      "attendance_excused": 80.0,
+      "attendance_excused": 80,
       "created_at": "2026-01-22T18:30:00.000Z",
       "updated_at": "2026-01-22T18:30:00.000Z",
       "janus_room_id": "112132",
       "pin": "pin_num1",
-      "course_id": 1
+      "course_id": 1,
+      "state": "ended"
     },
     {
       "session_id": 2,
@@ -697,12 +702,80 @@
       "start_at": "09:00:00",
       "date": "2026-01-23",
       "end_at": "12:00:00",
-      "attendance_excused": 80.0,
+      "attendance_excused": 80,
       "created_at": "2026-01-22T18:30:00.000Z",
       "updated_at": "2026-01-22T18:30:00.000Z",
-      "janus_room_id": "112133",
-      "pin": "pin_num2",
-      "course_id": 1
+      "janus_room_id": "",
+      "pin": "",
+      "course_id": 1,
+      "state": "live"
+    },
+    {
+      "session_id": 3,
+      "title": "title 테스트 강의세션 3번 강의",
+      "description": "description 테스트 강의세션 3번의 설명",
+      "session_number": 3,
+      "start_at": "09:00:00",
+      "date": "2026-01-24",
+      "end_at": "12:00:00",
+      "attendance_excused": 80,
+      "created_at": "2026-01-22T18:30:00.000Z",
+      "updated_at": "2026-01-22T18:30:00.000Z",
+      "janus_room_id": "",
+      "pin": "",
+      "course_id": 1,
+      "state": "upcoming"
+    }
+  ],
+  "course_materials": [
+    {
+      "id": 101,
+      "fileId": 101,
+      "course_id": 1,
+      "fileName": "강의 전체 계획서Setup.pdf",
+      "fileSize": "2.3 MB",
+      "fileUrl": "#",
+      "fileType": "pdf",
+      "uploadAt": "2026-01-10"
+    },
+    {
+      "id": 102,
+      "fileId": 102,
+      "course_id": 1,
+      "fileName": "학습 가이드북.docx",
+      "fileSize": "1.5 MB",
+      "fileUrl": "#",
+      "fileType": "docx",
+      "uploadAt": "2026-01-11"
+    }
+  ],
+  "session_materials": [
+    {
+      "id": 201,
+      "fileId": 201,
+      "session_id": 1,
+      "fileName": "Session1_Intro.pptx",
+      "fileSize": "5.2 MB",
+      "fileUrl": "#",
+      "fileType": "pptx"
+    },
+    {
+      "id": 202,
+      "fileId": 202,
+      "session_id": 1,
+      "fileName": "Session1_Lab.zip",
+      "fileSize": "15 MB",
+      "fileUrl": "#",
+      "fileType": "zip"
+    },
+    {
+      "id": 301,
+      "fileId": 301,
+      "session_id": 2,
+      "fileName": "Summary_Notes.txt",
+      "fileSize": "12 KB",
+      "fileUrl": "#",
+      "fileType": "txt"
     }
   ]
 }

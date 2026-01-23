@@ -15,7 +15,7 @@
                 < </ol>
         </nav>
         <!-- Header -->
-        <ClassroomHeader />
+        <courseHeader />
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <!-- Left Column: Curriculum -->
             <div class="xl:col-span-2 space-y-6">
@@ -43,23 +43,26 @@
             </div>
             <!-- Right Column: Sidebar Widgets -->
             <div class="space-y-6">
-                <ClassroomSidebar />
+                <CourseSidebar />
             </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import ClassroomHeader from '@/components/Learner/Classroom/ClassroomHeader.vue';
-import CurriculumList from '@/components/Learner/Classroom/CurriculumItem.vue';
-import ClassroomSidebar from '@/components/Learner/Classroom/ClassroomSidebar.vue';
+import CourseHeader from '@/components/Learner/LearnerCourseView/CourseHeader.vue';
+import CurriculumList from '@/components/Learner/LearnerCourseView/CourseCurriculumItem.vue';
+import CourseSidebar from '@/components/Learner/LearnerCourseView/CourseSidebar.vue';
+// 강의자료 다운로드 모달
+import MaterialDownloadModal from '@/components/Learner/LearnerCourseView/MaterialDownloadModal.vue';
 
+import { ref } from 'vue';
+import type { Course, Session } from '@/types';
 import { useRoute } from 'vue-router';
 import { useCourseStore } from '@/stores/course';
 import { useSessionStore } from '@/stores/session';
 
 import { onMounted } from 'vue';
-import { ConsoleLogger } from 'storybook/internal/node-logger';
 
 const courseStore = useCourseStore()
 const sessionStore = useSessionStore()
@@ -75,9 +78,21 @@ onMounted(() => {
     }
     if ((courseId && typeof courseId === 'string') && (workspaceId && typeof workspaceId === 'string')) {
         sessionStore.fetchSessionsList(courseId, workspaceId);
-        console.log("불러오기 성공~!");
     }
 });
+
+// 모달 상태
+const isModalOpen = ref(false);
+
+// 모달 열기
+const openCurriculumModal = () => {
+    isModalOpen.value = true;
+};
+// 모달 닫기
+const closeModal = () => {
+    isModalOpen.value = false;
+};
+
 
 // In the future, we will fetch course details based on route.params.courseId
 </script>

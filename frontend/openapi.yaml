@@ -6,8 +6,12 @@ info:
 servers:
   - url: http://localhost:3000
     description: Mock JSON Server
+
 paths:
-  /user:
+  # ==========================================
+  # User & Authentication
+  # ==========================================
+  /members/me:
     get:
       summary: 내 정보 조회
       description: 현재 로그인한 사용자의 프로필 정보를 반환합니다.
@@ -18,13 +22,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+
+  # ==========================================
+  # Workspaces
+  # ==========================================
   /workspaces:
     get:
       summary: 전체 워크스페이스 목록 조회 및 검색
-      description: 플랫폼 내의 모든 워크스페이스를 조회합니다. `q` 파라미터를 통해 검색할 수 있습니다.
+      description: 플랫폼 내의 모든 워크스페이스를 조회합니다. `query` 파라미터를 통해 검색할 수 있습니다.
       parameters:
         - in: query
-          name: q
+          name: query
           schema:
             type: string
           description: 검색어 (워크스페이스 이름 또는 초대 코드)
@@ -37,7 +45,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Workspace"
-  /my_workspaces:
+
+  /members/me/workspaces:
     get:
       summary: 내 워크스페이스 목록 조회
       description: 내가 가입했거나 참여 신청 대기 중인 워크스페이스 목록을 반환합니다.
@@ -50,118 +59,423 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Workspace"
-    post:
-      summary: 워크스페이스 참여 신청 (Mock)
-      description: |
-        특정 워크스페이스에 참여를 신청합니다.
-        *참고: 실제 백엔드에서는 `POST /workspaces/{id}/apply` 형태가 권장되지만, 현재 json-server 목업 환경에서는 `/my_workspaces` 리소스에 데이터를 추가하는 방식으로 구현되어 있습니다.*
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Workspace"
-      responses:
-        "201":
-          description: 신청 성공 (생성됨)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Workspace"
-  /sidebar_menus:
+
+  /workspaces/{id}:
     get:
-      summary: 사이드바 메뉴 구조 조회
-      description: 워크스페이스 사이드바에 표시될 동적 메뉴 구조를 반환합니다.
+      summary: 워크스페이스 상세 조회
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
       responses:
         "200":
           description: 성공
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  study:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/MenuItem"
-                  community:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/MenuItem"
+                $ref: "#/components/schemas/Workspace"
+
+  /workspaces/{id}/join:
+    post:
+      summary: 워크스페이스 참여 신청
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                workspaceId:
+                  type: string
+                role:
+                  type: string
+                member_id:
+                  type: string
+                status:
+                  type: integer
+                applied_at:
+                  type: string
+                  format: date-time
+      responses:
+        "201":
+          description: 신청 성공
+
+  /workspaces/{id}/my-stats:
+    get:
+      summary: 내 워크스페이스 통계 조회
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceStats"
+
+  # ==========================================
+  # Courses
+  # ==========================================
+  /workspaces/{workspaceId}/courses:
+    get:
+      summary: 워크스페이스별 강의 목록 조회
+      parameters:
+        - in: path
+          name: workspaceId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Course"
+
+  /members/me/courses:
+    get:
+      summary: 내 수강 강의 목록 조회
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Course"
+
+  /courses/{id}:
+    get:
+      summary: 강의 상세 정보 조회
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+
+  /courses/{id}/enroll:
+    post:
+      summary: 수강 신청
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: 신청 성공
+
+  /courses/{id}/sessions:
+    get:
+      summary: 강의 세션 목록 조회
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Session"
+
+  /members/me/courses/attendance-rate:
+    get:
+      summary: 월별 출석률 조회
+      parameters:
+        - in: query
+          name: year
+          schema:
+            type: integer
+        - in: query
+          name: month
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    attendance_rate:
+                      type: integer
+
+  # ==========================================
+  # Learning Materials
+  # ==========================================
+  /courses/{id}/materials:
+    get:
+      summary: 강의(공통) 자료 조회
+      description: 특정 강의에 귀속된 공통 학습 자료 목록을 반환합니다.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Course ID
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Material"
+
+  /sessions/{id}/materials:
+    get:
+      summary: 세션별 자료 조회
+      description: 특정 세션에 귀속된 학습 자료 목록을 반환합니다.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Session ID
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Material"
+
+  # ==========================================
+  # Course Likes
+  # ==========================================
+  /members/me/course-likes:
+    get:
+      summary: 찜한 강의 목록 조회
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Course"
+    post:
+      summary: 강의 찜하기
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                courseId:
+                  type: string
+      responses:
+        "201":
+          description: 찜 성공
+
+  /members/me/course-likes/{id}:
+    delete:
+      summary: 강의 찜 취소
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 취소 성공
+
 components:
   schemas:
     User:
       type: object
       properties:
-        id:
+        member_id:
           type: integer
-          example: 1
         name:
           type: string
-          example: "김지수"
         email:
           type: string
-          example: "jisoo.kim@techcorp.com"
-        profileImage:
+        profile_image_url:
           type: string
-          example: "https://ui-avatars.com/..."
+
     Workspace:
       type: object
       properties:
-        id:
+        workspace_id:
           type: integer
-          example: 1
         name:
           type: string
-          example: "TechCorp HQ"
         logo_url:
           type: string
           nullable: true
-          example: "https://..."
         location:
           type: string
-          example: "Seoul, Korea"
         description:
           type: string
-          example: "전사 공통 교육..."
         memberCount:
           type: integer
-          example: 1420
         courseCount:
           type: integer
-          example: 5
         join_code:
           type: string
-          example: "TC1234"
         role:
           type: string
-          enum: [LEARNER, TRAINER]
+          enum: [LEARNER, TRAINER, ADMIN]
           nullable: true
-          example: "LEARNER"
         status:
           type: integer
-          description: "0: 미참여, 1: 승인 대기, 2: 참여 중"
-          enum: [0, 1, 2]
-          example: 2
         themeColor:
           type: string
-          enum: [indigo, blue, amber]
-          example: "indigo"
         typeIcon:
           type: string
-          example: "domain"
-    MenuItem:
+
+    WorkspaceStats:
       type: object
       properties:
         id:
+          type: integer
+        workspace_id:
+          type: integer
+        progress:
+          type: object
+          properties:
+            value:
+              type: integer
+            trend:
+              type: string
+            trend_type:
+              type: string
+        sessions:
+          type: object
+          properties:
+            value:
+              type: integer
+            next_session:
+              type: string
+              nullable: true
+        completed:
+          type: object
+          properties:
+            value:
+              type: integer
+            total:
+              type: integer
+
+    Course:
+      type: object
+      properties:
+        course_id:
+          type: integer
+        workspace_id:
+          type: integer
+        title:
           type: string
-          example: "dashboard"
-        name:
+        description:
           type: string
-          example: "대시보드"
-        icon:
+        category:
           type: string
-          example: "dashboard"
-        path:
+        sub_category:
           type: string
-          example: "#"
+        tag:
+          type: string
+        progress_rate:
+          type: integer
+        current_lessons:
+          type: integer
+        total_lessons:
+          type: integer
+        is_mandatory:
+          type: boolean
+        is_liked:
+          type: boolean
+        d_day:
+          type: integer
+          nullable: true
+        status:
+          type: string
+        enrollment_status:
+          type: string
+
+    Session:
+      type: object
+      properties:
+        session_id:
+          type: integer
+        course_id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [live, vod, quiz, assignment]
+        state:
+          type: string
+          enum: [live, ended, upcoming]
+        date:
+          type: string
+          format: date
+        start_at:
+          type: string
+          format: time
+        end_at:
+          type: string
+          format: time
+        duration:
+          type: string
+
+    Material:
+      type: object
+      properties:
+        fileId:
+          type: integer
+        fileName:
+          type: string
+        fileSize:
+          type: string
+        fileUrl:
+          type: string
+        fileType:
+          type: string
+        uploadAt:
+          type: string
+          format: date

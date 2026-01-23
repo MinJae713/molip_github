@@ -33,6 +33,7 @@ export interface Course {
   course_status?: "PREPARING" | "INVITE" | "PROCEED" | "FINISH";
   request_date?: string;
   tag?: string;
+  status?: any;
 }
 
 export interface User {
@@ -81,4 +82,14 @@ export interface Session {
   type: "live" | "vod" | "quiz" | "assignment";
   is_completed?: boolean;
   order: number;
+  state: "live" | "ended" | "upcoming";
+}
+
+export interface Material {
+  fileId: number | string;
+  fileName: string;
+  fileSize: string;
+  fileUrl: string;
+  fileType: string;
+  uploadAt?: string;
 }
