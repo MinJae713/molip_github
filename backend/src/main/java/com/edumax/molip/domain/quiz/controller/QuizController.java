@@ -1,8 +1,20 @@
 package com.edumax.molip.domain.quiz.controller;
 
+import com.edumax.molip.domain.quiz.service.GrpcClientService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/quiz")
-public class QuizController {}
+@RequiredArgsConstructor
+@RequestMapping("/api/quiz")
+public class QuizController {
+  private final GrpcClientService grpcClientService;
+
+  @GetMapping("/test/ping")
+  public String test(@RequestParam String msg) {
+    return grpcClientService.sendPing(msg);
+  }
+}
