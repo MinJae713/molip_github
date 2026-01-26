@@ -1,16 +1,11 @@
 export interface Workspace {
-  workspace_id: string | number; // changed from id
-  name: string;
-  logo_url?: string;
-  role?: string;
-  status?: number;
-  location?: string;
-  description?: string;
-  memberCount?: number;
-  courseCount?: number;
-  join_code?: string;
-  typeIcon?: string;
-  themeColor?: string;
+  workspace_id: 1;
+  name: "Admin Workspace 1";
+  logo_url: "null"; // S3 로고 이미지 URL (이미 반영됨)
+  description: "시스템 관리자 운영 공간";
+  memberCount: 4;
+  courseCount: 5;
+  my_status: null; // 검색 가능 여부 워크스페이스
 }
 
 export interface Course {
@@ -41,6 +36,8 @@ export interface User {
   name: string;
   email: string;
   profile_image_url: string;
+  role?: string;
+  auth?: string;
 }
 
 export interface WorkspaceStats {
@@ -92,4 +89,10 @@ export interface Material {
   fileUrl: string;
   fileType: string;
   uploadAt?: string;
+}
+
+export interface VideoRoom {
+  janus_room_id: number;
+  roomAlive: boolean;
+  pin: string;
 }

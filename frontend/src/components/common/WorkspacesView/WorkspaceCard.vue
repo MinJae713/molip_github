@@ -6,24 +6,17 @@
                     :class="['size-14 rounded-lg border flex items-center justify-center overflow-hidden transition-colors', theme.bg, theme.border]">
                     <img v-if="workspace.logo_url" :src="workspace.logo_url" :alt="workspace.name"
                         class="w-full h-full object-cover" />
-                    <span v-else :class="['material-symbols-outlined text-3xl', theme.icon]">
-                        {{ workspace.typeIcon || 'domain' }}
-                    </span>
                 </div>
                 <div>
                     <h3 class="font-bold text-lg text-slate-900 group-hover:text-indigo-600 transition-colors">
                         {{ workspace.name }}
                     </h3>
-                    <div class="text-xs text-slate-500 flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[14px]">location_on</span>
-                        {{ workspace.location || 'Unknown' }}
-                    </div>
                 </div>
             </div>
             <span
                 :class="['px-3 py-1 whitespace-nowrap text-xs font-bold rounded-full flex items-center gap-1 transition-colors', buttonConfig.badgeClass]">
                 <span
-                    :class="['size-2 rounded-full', buttonConfig.dotClass, { 'animate-pulse': workspace.status === 2 }]"></span>
+                    :class="['size-2 rounded-full', buttonConfig.dotClass, { 'animate-pulse': workspace.my_status === 2 }]"></span>
                 {{ buttonConfig.text === '입장하기' ? '활동 중' : buttonConfig.text }}
             </span>
         </div>
@@ -37,7 +30,7 @@
                 <span>멤버 {{ (workspace.memberCount || 0).toLocaleString() }}명</span>
             </div>
 
-            <button @click="handleAction" :disabled="workspace.status === 1" :class="[
+            <button @click="handleAction" :disabled="workspace.my_status === 1" :class="[
                 buttonConfig.colorClass,
                 'text-white text-sm font-bold py-2.5 px-5 rounded-lg transition-all duration-200 shadow-md flex items-center gap-2 group-hover:shadow-lg disabled:opacity-70'
             ]">
@@ -90,20 +83,20 @@ const buttonConfig = computed(() => {
         },
     };
 
-    return configs[(props.workspace.status || 0) as keyof typeof configs] ?? configs[0];
+    return configs[(props.workspace.my_status || 0) as keyof typeof configs] ?? configs[0];
 });
 
 // 3. 상태 텍스트는 버튼 텍스트와 분리될 수 있으므로 별도 관리
 const statusText = computed(() => {
-    if (props.workspace.status === 2) return '활동 중';
-    if (props.workspace.status === 1) return '대기 중';
+    if (props.workspace.my_status === 2) return '활동 중';
+    if (props.workspace.my_status === 1) return '대기 중';
     return '미가입';
 });
 
 // 4. 클릭 핸들러 (대기 상태일 때 로직 방지)
 const handleAction = () => {
-    if (props.workspace.status === 1) return; // 대기 중일 때는 무시
-    emit(buttonConfig.value.action, props.workspace.id, props.workspace.role);
+    if (props.workspace.my_status === 1) return; // 대기 중일 때는 무시
+    emit(buttonConfig.value.action, props.workspace.workspace_id, props.workspace.my_role);
 };
 
 // 테마 색상 맵
@@ -115,7 +108,7 @@ const themeClasses = {
 
 const theme = computed(() => {
     // themeColor가 string이면 as keyof로 단언하거나 기본값 처리 필요
-    const color = (props.workspace.themeColor || 'indigo') as keyof typeof themeClasses;
+    const color = 'indigo'
     return themeClasses[color] || themeClasses.indigo;
 });
 </script>

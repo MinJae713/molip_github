@@ -53,11 +53,7 @@
 import CourseHeader from '@/components/Learner/LearnerCourseView/CourseHeader.vue';
 import CurriculumList from '@/components/Learner/LearnerCourseView/CourseCurriculumItem.vue';
 import CourseSidebar from '@/components/Learner/LearnerCourseView/CourseSidebar.vue';
-// 강의자료 다운로드 모달
-import MaterialDownloadModal from '@/components/Learner/LearnerCourseView/MaterialDownloadModal.vue';
 
-import { ref } from 'vue';
-import type { Course, Session } from '@/types';
 import { useRoute } from 'vue-router';
 import { useCourseStore } from '@/stores/course';
 import { useSessionStore } from '@/stores/session';
@@ -81,17 +77,6 @@ onMounted(() => {
     }
 });
 
-// 모달 상태
-const isModalOpen = ref(false);
-
-// 모달 열기
-const openCurriculumModal = () => {
-    isModalOpen.value = true;
-};
-// 모달 닫기
-const closeModal = () => {
-    isModalOpen.value = false;
-};
 
 
 // In the future, we will fetch course details based on route.params.courseId

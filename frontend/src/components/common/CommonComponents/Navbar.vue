@@ -16,13 +16,13 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    workspaceName: 'TechCorp HQ',
-    currentPathName: 'Workspace Home',
-    hasNotifications: true,
+    workspaceName: '',
+    currentPathName: '',
+    hasNotifications: false,
     user: () => ({
-        name: '김지수',
-        email: 'jisoo.kim@techcorp.com',
-        profile_image_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBiolsf6prQfZQmoZ420xEZd441M2OqmX3ZkCgcZz6CiNM7dWL1j5LkuMWr7C98MkSlOn5khaGV_o6iP8HvgU5kV1ulrcFZ4M_s4sPvoltW4goOg9cU1JZ5MwNh5Jqp3a6O4sh35Gt_K8JOaiejQAWSGcZep5eH2o3TBxeCCemLid8l3JlLO5BXcjQhIR0LMMCRhZb7f4kbU6yd3jFL06u8vBS2gLEppd_BaZP7-ASlf6YuhAMP5EtdxZwJfdsRzYY0kqCpgq_Piw'
+        name: '',
+        email: '',
+        profile_image_url: ''
     })
 });
 
@@ -30,6 +30,19 @@ const emit = defineEmits<{
     (e: 'notification-click'): void;
     (e: 'profile-click'): void;
 }>();
+
+import { useRouter } from 'vue-router';
+import { useUserStore } from '@/stores/user';
+
+const router = useRouter();
+const userStore = useUserStore();
+
+const handleLogout = () => {
+    if (confirm('로그아웃 하시겠습니까?')) {
+        userStore.logout();
+        router.push('/');
+    }
+};
 </script>
 
 <template>
@@ -60,7 +73,13 @@ const emit = defineEmits<{
                 </nav>
             </div>
 
-            <div class="flex items-center gap-4">
+            <!-- 로그인 된 경우 -->
+            <div v-if="userStore.isAuthenticated" class="flex items-center gap-4">
+                <button @click="handleLogout"
+                    class="text-sm font-medium text-slate-300 hover:text-white transition-colors mr-2">
+                    로그아웃
+                </button>
+
                 <button class="text-white hover:text-indigo-200 transition-colors relative p-1 bg-white/5 rounded-full"
                     @click="emit('notification-click')">
                     <span class="material-symbols-outlined">notifications</span>
@@ -75,11 +94,20 @@ const emit = defineEmits<{
                         <div class="text-xs text-slate-400">{{ user.email }}</div>
                     </div>
 
-                    <div class="size-9 rounded-full custom-gradient p-[2px]">
-                        <img :src="user.profile_image_url" :alt="user.name"
+                    <div
+                        class="size-9 rounded-full custom-gradient p-[2px] flex items-center justify-center bg-indigo-500 text-white">
+                        <img v-if="user.profile_image_url" :src="user.profile_image_url" :alt="user.name"
                             class="rounded-full w-full h-full object-cover border-2 border-dark-navy-900" />
+                        <span v-else class="material-symbols-outlined text-xl">person</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- 로그인 안 된 경우 -->
+            <div v-else class="flex items-center gap-4">
+                <router-link to="/" class="text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-colors">
+                    로그인
+                </router-link>
             </div>
         </div>
     </header>

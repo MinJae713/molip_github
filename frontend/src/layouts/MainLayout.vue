@@ -1,12 +1,10 @@
 <template>
     <div class="flex flex-col h-screen bg-slate-50">
-
-        <Navbar workspace-name="TechCorp HQ" current-path-name="Workspace Home" :user="user"
-            @notification-click="handleNotification" @profile-click="handleProfile" />
-
+        <Navbar workspace-name={{ workspaceStore.currentWorkspace?.name }} current-path-name="Workspace Home"
+            :user="userStore.user" @notification-click="handleNotification" @profile-click="handleProfile" />
         <div class="flex flex-1 overflow-hidden">
 
-            <Sidebar workspace-name="TechCorp HQ" current-active-id="dashboard" />
+            <Sidebar workspace-name={{ workspaceStore.currentWorkspace?.name }} current-active-id="dashboard" />
 
             <main class="flex-1 overflow-y-auto p-4 sm:p-8">
                 <RouterView />
@@ -19,18 +17,19 @@
 <script setup lang="ts">
 import { RouterView, useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
+import { useWorkspaceStore } from '@/stores/workspace';
 import Navbar from '@/components/common/CommonComponents/Navbar.vue';
 import Sidebar from '@/components/common/CommonComponents/Sidebar.vue';
 
+import { onMounted } from 'vue';
+
 const userStore = useUserStore();
+const workspaceStore = useWorkspaceStore();
 const router = useRouter();
 
-// Mock user data - useUserStore에서 가져올 수 있도록 구성
-const user = {
-    name: '김지수',
-    email: 'jisoo.kim@techcorp.com',
-    profile_image_url: 'https://ui-avatars.com/api/?name=Jisoo+Kim&background=random'
-};
+onMounted(() => {
+    userStore.fetchUserInfo();
+});
 
 const handleNotification = () => {
     console.log('알림 클릭됨');

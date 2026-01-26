@@ -129,6 +129,10 @@ const typeBadgeClass = computed(() => {
 // 모달 상태
 const isModalOpen = ref(false);
 
+const openModal = () => {
+    isModalOpen.value = true;
+};
+
 const emit = defineEmits<{
     (e: 'close'): void;
     (e: 'update:modelValue', value: boolean): void;

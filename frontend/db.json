@@ -71,43 +71,34 @@
   ],
   "my_workspaces": [
     {
-      "id": "1",
       "workspace_id": 1,
       "name": "학생 워크스페이스",
-      "join_code": "LEARNER1234",
-      "description": "학생 워크스페이스 설명문구입니다. 학생 워크스페이스 설명문구입니다. 학생 워크스페이스 설명문구입니다. 학생 워크스페이스 설명문구입니다. ",
       "logo_url": "https://img.icons8.com/color/512/samsung.png",
-      "memberCount": 9999,
-      "courseCount": 5,
-      "status": 2,
-      "role": "LEARNER",
-      "location": "Mangalore, India"
+      "description": "학생 워크스페이스 설명문구입니다. 학생 워크스페이스 설명문구입니다. 학생 워크스페이스 설명문구입니다.",
+      "memberCount": 1000,
+      "courseCount": 1044,
+      "my_status": 2,
+      "my_role": "LEARNER"
     },
     {
-      "id": "2",
       "workspace_id": 2,
       "name": "강사 워크스페이스",
-      "join_code": "TRAINER1234",
-      "description": "강사 워크스페이스 설명문구입니다. 강사 워크스페이스 설명문구입니다. 강사 워크스페이스 설명문구입니다. 강사 워크스페이스 설명문구입니다. ",
       "logo_url": "https://img1.daumcdn.net/thumb/R1280x0.fwebp/?fname=http://t1.daumcdn.net/brunch/service/user/5rH/image/LHUiJV1nog0BqnOJ8Mtj5UbNTjQ",
+      "description": "강사 워크스페이스 설명문구입니다. 강사 워크스페이스 설명문구입니다. 강사 워크스페이스 설명문구입니다.",
       "memberCount": 123123,
       "courseCount": 5,
-      "status": 2,
-      "role": "TRAINER",
-      "location": "Seoul, Korea"
+      "my_status": 2,
+      "my_role": "TRAINER"
     },
     {
-      "id": "3",
       "workspace_id": 3,
       "name": "관리자 워크스페이스",
-      "join_code": "ADMIN1234",
-      "description": "관리자 워크스페이스 설명문구입니다. 관리자 워크스페이스 설명문구입니다. 관리자 워크스페이스 설명문구입니다. 관리자 워크스페이스 설명문구입니다. ",
       "logo_url": "https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdna%2FcdppWF%2FbtrRLMpVhFv%2FAAAAAAAAAAAAAAAAAAAAAOnC_C2f7BXyN1g3pO6fcky1Mi16_kmboXmZ22Xrig1T%2Fimg.png%3Fcredential%3DyqXZFxpELC7KVnFOS48ylbz2pIh7yKj8%26expires%3D1769871599%26allow_ip%3D%26allow_referer%3D%26signature%3D9jJE%252FXKP%252FU7hYCT6BRxl57%252FHwHc%253D",
+      "description": "관리자 워크스페이스 설명문구입니다. 관리자 워크스페이스 설명문구입니다. 관리자 워크스페이스 설명문구입니다.",
       "memberCount": 123123,
       "courseCount": 5,
-      "status": 2,
-      "role": "ADMIN",
-      "location": "Seoul, Korea"
+      "my_status": 2,
+      "my_role": "ADMIN"
     }
   ],
   "my_all_courses": [
@@ -229,14 +220,14 @@
       "is_liked": true
     }
   ],
+  "student_workspace_stats": [],
   "my-stats": [
     {
-      "id": "1",
-      "workspaceId": "1",
+      "user_id": "1",
+      "workspace_id": "1",
+      "role": "LEARNER",
       "progress": {
-        "value": 15,
-        "trend": "지난 주 대비 +5%",
-        "trend_type": "up"
+        "value": 19
       },
       "sessions": {
         "value": 2,
@@ -248,15 +239,16 @@
       }
     },
     {
-      "id": "2",
-      "workspaceId": "2",
+      "user_id": "2",
+      "workspace_id": "2",
+      "role": "TRAINER",
       "progress": {
         "value": 45,
         "trend": "지난 주 대비 +12%",
-        "trend_type": "up"
+        "trend_type": "add_circle"
       },
       "sessions": {
-        "value": 0,
+        "value": 115,
         "next_session": null
       },
       "completed": {
@@ -490,6 +482,57 @@
       "d_day": 7,
       "is_liked": true,
       "status": "active"
+    },
+    {
+      "id": "11",
+      "course_id": 1,
+      "workspace_id": "2",
+      "status": "active",
+      "title": "AI 비즈니스 활용 전략",
+      "description": "최신 AI 트렌드와 비즈니스 적용 사례를 통해 실무 역량을 강화합니다.",
+      "tag": "직무 필수",
+      "category": "ai",
+      "progress_rate": 65,
+      "current_lessons": 13,
+      "total_lessons": 20,
+      "last_accessed_at": "2026-01-20T10:00:00",
+      "is_mandatory": true,
+      "d_day": 5,
+      "is_liked": false
+    },
+    {
+      "id": "12",
+      "course_id": 2,
+      "workspace_id": "2",
+      "status": "active",
+      "title": "Vue3 + TypeScript 실전 아키텍처",
+      "description": "대규모 프로젝트를 위한 Vue3 컴포넌트 설계와 타입스크립트 활용법을 배웁니다.",
+      "tag": "인기",
+      "category": "dev",
+      "progress_rate": 90,
+      "current_lessons": 18,
+      "total_lessons": 20,
+      "last_accessed_at": "2026-01-21T09:30:00",
+      "is_mandatory": false,
+      "d_day": 2,
+      "is_liked": true
+    },
+    {
+      "id": "13",
+      "course_id": 3,
+      "workspace_id": "2",
+      "title": "데이터 분석을 위한 SQL 마스터",
+      "description": "복잡한 쿼리 작성부터 성능 최적화까지, 현업 데이터 분석의 핵심을 파악합니다.",
+      "tag": "핵심 역량",
+      "category": "data",
+      "progress_rate": 30,
+      "current_lessons": 6,
+      "total_lessons": 20,
+      "last_accessed_at": "2026-01-18T15:00:00",
+      "is_mandatory": true,
+      "d_day": 12,
+      "is_liked": false,
+      "status": "active"
     }
   ],
   "admin_courses": [
@@ -633,8 +676,8 @@
       "id": "Yh3I8CL"
     },
     {
-      "courseId": "10",
-      "id": "lR0Eh6k"
+      "courseId": "9",
+      "id": "UDbUe5P"
     }
   ],
   "course_enrollments": [

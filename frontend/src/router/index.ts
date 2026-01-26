@@ -12,30 +12,39 @@ import TestView from "@/views/Common/TestView.vue";
 // 공통 라우트
 import WorkspacesView from "@/views/Common/WorkspacesView.vue";
 import MypageView from "@/views/Common/MypageView.vue";
+import LoginView from "@/views/Common/LoginView.vue";
 
 // 강사 라우트
 import TrainerWorkspace from "@/views/Trainer/TrainerWorkspace.vue";
+import TrainerMyCoursesView from "@/views/Trainer/TrainerMyCoursesView.vue";
 // 관리자 라우트
 import AdminWorkspaceView from "@/views/Admin/AdminWorkspaceView.vue";
 // 학습자 라우트
 import LearnerMyCoursesView from "@/views/Learner/LearnerMyCoursesView.vue";
 import LearnerClassroomView from "@/views/Learner/LearnerClassroomView.vue";
 import LearnerLiveSessionView from "@/views/Learner/LearnerLiveSessionView.vue";
+import LearnerWorkspace from "@/views/Learner/LearnerWorkspace.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: "/",
-      component: MainLayout,
-      // 3. 자식 라우트: MainLayout 내부의 <RouterView />에 렌더링될 페이지들입니다.
+      component: OnlyNavbarLayout,
       children: [
         {
           path: "",
-          name: "test",
-          component: TestView,
+          name: "loginPage",
+          component: LoginView,
+          meta: { guestOnly: true },
         },
       ],
+    },
+    {
+      path: "/login",
+      name: "login",
+      component: LoginView,
+      meta: { guestOnly: true },
     },
     {
       path: "/workspaces",
@@ -45,6 +54,7 @@ const router = createRouter({
           path: "",
           name: "workspaces",
           component: WorkspacesView,
+          meta: { requiresAuth: true },
         },
       ],
     },
@@ -56,6 +66,7 @@ const router = createRouter({
           path: "",
           name: "mypage",
           component: MypageView,
+          meta: { requiresAuth: true },
         },
       ],
     },
@@ -67,6 +78,7 @@ const router = createRouter({
           path: "",
           name: "workspaceLearner",
           component: LearnerWorkspace,
+          meta: { requiresAuth: true },
         },
         {
           path: "courses",
@@ -88,6 +100,7 @@ const router = createRouter({
           path: "",
           name: "workspaceAdmin",
           component: AdminWorkspaceView,
+          meta: { requiresAuth: true },
         },
       ],
     },
@@ -99,6 +112,12 @@ const router = createRouter({
           path: "",
           name: "workspaceTrainer",
           component: TrainerWorkspace,
+          meta: { requiresAuth: true },
+        },
+        {
+          path: "courses",
+          name: "workspaceTrainerCourses",
+          component: TrainerMyCoursesView,
         },
       ],
     },
@@ -114,12 +133,31 @@ const router = createRouter({
       path: "/live-session/:sessionId",
       name: "learnerLiveSession",
       component: LearnerLiveSessionView,
+      meta: { requiresAuth: true },
     },
   ],
 });
 
 router.beforeEach(async (to, from, next) => {
-  // workspace 페이지 (learner 또는 trainer)로 진입할 때만 로직 실행
+  const token = localStorage.getItem("accessToken");
+
+  // 1. 비로그인 접근 제어 (requiresAuth)
+  // meta.requiresAuth가 true이거나, 명시되지 않은 페이지도 기본적으로 보호하고 싶다면 조건 수정
+  if (to.matched.some((record) => record.meta.requiresAuth)) {
+    if (!token) {
+      // alert("로그인이 필요합니다."); // UX 선택사항
+      return next({ name: "loginPage" });
+    }
+  }
+
+  // 2. 로그인된 사용자 접근 제어 (guestOnly)
+  if (to.matched.some((record) => record.meta.guestOnly)) {
+    if (token) {
+      return next({ name: "workspaces" });
+    }
+  }
+
+  // 3. 기존 워크스페이스 권한 체크 로직
   const isWorkspaceRoute =
     to.name === "workspaceLearner" ||
     to.name === "workspaceTrainer" ||

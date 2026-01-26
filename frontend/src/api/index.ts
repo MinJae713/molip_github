@@ -8,6 +8,20 @@ const api = axios.create({
   timeout: 5000,
 });
 
+// 인터셉터 추가: 요청 시 토큰 주입
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
+
 // 인터셉터 추가: 에러를 명시적으로 전달합니다.
 api.interceptors.response.use(
   (response) => response,
