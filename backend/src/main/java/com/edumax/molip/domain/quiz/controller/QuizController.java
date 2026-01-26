@@ -1,7 +1,8 @@
 package com.edumax.molip.domain.quiz.controller;
 
-import com.edumax.molip.domain.quiz.dto.QuestionMessage;
+import com.edumax.molip.domain.quiz.dto.response.AiQuizMessage;
 import com.edumax.molip.domain.quiz.service.GrpcClientService;
+import com.edumax.molip.domain.quiz.service.QuizService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class QuizController {
   private final GrpcClientService grpcClientService;
   private final SimpMessagingTemplate messagingTemplate;
+  private final QuizService quizService;
 
   @GetMapping("/test/ping")
   public String test(@RequestParam String msg) {
@@ -24,8 +26,8 @@ public class QuizController {
   }
 
   @MessageMapping("/quiz/{roomId}")
-  public void makeQuiz(@DestinationVariable String roomId, QuestionMessage message) {
-
-    messagingTemplate.convertAndSend("/topic/room/" + roomId, "message");
+  public void makeQuiz(@DestinationVariable String roomId) {
+    AiQuizMessage aiQuizMessage = quizService.createQuizRedis(roomId, 200);
+    messagingTemplate.convertAndSend("/topic/quiz/" + roomId, aiQuizMessage);
   }
 }

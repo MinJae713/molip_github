@@ -1,5 +1,6 @@
 package com.edumax.molip.domain.quiz.handler;
 
+import com.edumax.molip.domain.quiz.dto.SttSaveEvent;
 import com.edumax.molip.grpc.stt.STTRequest;
 import com.edumax.molip.grpc.stt.STTResponse;
 import com.edumax.molip.grpc.stt.STTServiceGrpc;
@@ -10,7 +11,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.BinaryMessage;
 import org.springframework.web.socket.CloseStatus;
@@ -21,15 +22,14 @@ import org.springframework.web.socket.handler.BinaryWebSocketHandler;
 @Component
 @RequiredArgsConstructor
 public class VoiceForwardHandler extends BinaryWebSocketHandler {
+  private final ApplicationEventPublisher eventPublisher;
   private final STTServiceGrpc.STTServiceStub sttServiceStub;
-  private final StringRedisTemplate stringRedisTemplate;
-
-  // 세션별로 gRPC 스트림(requestObserver)을 관리합니다.
   private final Map<String, StreamObserver<STTRequest>> grpcStreamMap = new ConcurrentHashMap<>();
 
   // 연결할때 호출
   @Override
   public void afterConnectionEstablished(WebSocketSession session) {
+
     // 1. 웹소켓 연결 시 gRPC 스트림을 오픈합니다.
     StreamObserver<STTResponse> responseObserver =
         new StreamObserver<>() {
@@ -40,6 +40,12 @@ public class VoiceForwardHandler extends BinaryWebSocketHandler {
                 response.getStatus(),
                 response.getTimeline(),
                 response.getText());
+
+            eventPublisher.publishEvent(
+                new SttSaveEvent(
+                    (String) session.getAttributes().get("roomId"),
+                    response.getText(),
+                    response.getTimeline()));
           }
 
           @Override
@@ -54,7 +60,7 @@ public class VoiceForwardHandler extends BinaryWebSocketHandler {
         };
 
     // 비동기 gRPC 스트림 시작 및 맵에 보관
-    StreamObserver<STTRequest> requestObserver = sttServiceStub.sTT(responseObserver);
+    StreamObserver<STTRequest> requestObserver = sttServiceStub.sendSTT(responseObserver);
     grpcStreamMap.put((String) session.getAttributes().get("roomId"), requestObserver);
   }
 

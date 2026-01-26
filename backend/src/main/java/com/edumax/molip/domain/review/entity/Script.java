@@ -20,7 +20,7 @@ public class Script {
   @Column(nullable = false)
   private Integer time;
 
-  @Column(nullable = false, length = 1000)
+  @Column(nullable = false, length = 255)
   private String message;
 
   @ManyToOne

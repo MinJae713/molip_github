@@ -9,7 +9,7 @@ option java_outer_classname = "SttProto";
 
 service STTService {
   // 10초 간격으로 음성 데이터를 받아 STT 결과 반환
-  rpc STT (stream STTRequest) returns (stream STTResponse);
+  rpc sendSTT (stream STTRequest) returns (stream STTResponse);
 }
 
 message STTRequest {

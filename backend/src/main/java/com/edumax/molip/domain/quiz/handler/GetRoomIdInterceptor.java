@@ -6,7 +6,7 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor;
 
-public class VoiceHandshakeInterceptor extends HttpSessionHandshakeInterceptor {
+public class GetRoomIdInterceptor extends HttpSessionHandshakeInterceptor {
   @Override
   public boolean beforeHandshake(
       ServerHttpRequest request,
