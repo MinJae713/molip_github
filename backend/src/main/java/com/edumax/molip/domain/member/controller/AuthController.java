@@ -156,7 +156,7 @@ public class AuthController {
   private record RegisterRequest(
       String email, String password, String name, Long age, String address, String gender) {}
 
-  @DeleteMapping("member/delete")
+  @DeleteMapping("/delete")
   public ResponseEntity<Map<String, String>> deleteMember(
       @AuthenticationPrincipal MemberUserDetails member, HttpServletResponse res) {
     try {

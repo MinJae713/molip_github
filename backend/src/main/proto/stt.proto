@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+// springboot 작업환경에 맞게 수정
+package stt;
+
+option java_multiple_files = true;
+option java_package = "com.edumax.molip.grpc.stt";
+option java_outer_classname = "SttProto";
+
+service STTService {
+  // 10초 간격으로 음성 데이터를 받아 STT 결과 반환
+  rpc STT (stream STTRequest) returns (stream STTResponse);
+}
+
+message STTRequest {
+  string session_id = 1; // 세션 ID
+  int32 timeline = 2; // 타임라인 메타데이터
+  bytes audio_data = 3; // 음성 바이너리 데이터
+}
+
+message STTResponse {
+  string text = 1; // 변환된 텍스트
+  int32 timeline = 2; // 타임라인 메타데이터 그대로
+  bool status = 3; // 성공 여부
+}
