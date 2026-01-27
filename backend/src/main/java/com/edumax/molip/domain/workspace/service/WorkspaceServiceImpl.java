@@ -1,9 +1,17 @@
 package com.edumax.molip.domain.workspace.service;
 
 import com.edumax.molip.domain.course.entity.Course;
+import com.edumax.molip.domain.course.entity.CourseApply;
+import com.edumax.molip.domain.course.repository.CourseApplyRepository;
+import com.edumax.molip.domain.course.repository.ZzimRepository;
+import com.edumax.molip.domain.course.types.CourseCategory;
+import com.edumax.molip.domain.course.types.CourseStatus;
 import com.edumax.molip.domain.member.entity.Member;
 import com.edumax.molip.domain.member.exception.NoMemberException;
 import com.edumax.molip.domain.member.repository.MemberRepository;
+import com.edumax.molip.domain.review.entity.LearnerAnalysis;
+import com.edumax.molip.domain.review.repository.LearnerAnalysisRepository;
+import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.workspace.dto.request.JoinWorkspaceRequest;
 import com.edumax.molip.domain.workspace.dto.response.FindMyStatsResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceCoursesByIdResponse;
@@ -37,6 +45,9 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   private final WorkspaceRepository workspaceRepository;
 
   private final MemberRepository memberRepository;
+  private final LearnerAnalysisRepository learnerAnalysisRepository;
+  private final ZzimRepository zzimRepository;
+  private final CourseApplyRepository courseApplyRepository;
 
   @Override
   public List<FindWorkspaceResponse> findWorkspaces(Long memberId) {
@@ -143,38 +154,54 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   }
 
   @Override
-  public List<FindWorkspaceCoursesByIdResponse> findWorkspaceCoursesById(Long workspaceId) {
+  public List<FindWorkspaceCoursesByIdResponse> findWorkspaceCoursesById(Long workspaceId, Long memberId) {
+    Member member = memberRepository.findById(memberId)
+        .orElseThrow(NoMemberException::new);
     Workspace workspace = workspaceRepository.findById(workspaceId)
         .orElseThrow(NoWorkspaceException::new); // GlobalExceptionHandler
+    WorkspaceMember workspaceMember =
+        workspaceMemberRepository.findByMemberAndWorkspace(member, workspace)
+            .orElseThrow(NoWorkspaceMemberException::new);
+    // 위에서 예외 나오는 경우? -> 현재 사용자가 입력 받은 워스 멤버가 아니라면 에러남?
+    // 프론트에서 그런 경우가 있나?
     List<Course> courses = workspace.getCourses();
     List<FindWorkspaceCoursesByIdResponse> result = new ArrayList<>();
     courses.forEach(course -> {
       Long courseId = course.getCourseId();
       String title = course.getTitle();
       String description = course.getDescription();
+      CourseCategory category = course.getCategory();
       String subCategory = course.getSubCategory();
-      Integer maxLearner = course.getMaxLearner();
-      Boolean isEngageCheck = course.getIsEngageCheck();
-      Boolean isSentimentAnalysis = course.getIsSentimentAnalysis();
-      Integer attendance = course.getAttendance();
-      Integer engagement = course.getEngagement();
-      Integer exitQuiz = course.getExitQuiz();
-      Course.CourseStatus status = course.getStatus();
+      List<Session> sessions = course.getSessions();
+      Integer totalLessons = sessions.size();
+      Integer currentLessons = 0;
+      for (Session session : sessions)
+        currentLessons +=
+            learnerAnalysisRepository.
+                findById(session.getSessionId()).isPresent() ?
+                1 : 0;
+      Boolean isLiked = zzimRepository.
+          findByWorkspaceMemberAndCourse(workspaceMember, course).
+          isPresent();
+      System.out.println(courseId+", "+isLiked+", "+workspaceMember.getWorkspaceMemberId());
+      LocalDateTime dDay = course.getCreatedAt();
+      CourseStatus status = course.getStatus();
+      Boolean enrollmentStatus = courseApplyRepository.
+          findByWorkspaceMemberAndCourse(workspaceMember, course).
+          isPresent();
       result.add(FindWorkspaceCoursesByIdResponse.builder()
               .course_id(courseId)
               .workspace_id(workspaceId)
               .title(title)
               .description(description)
-              .category(null)
-              .sub_category(subCategory)
-              .tag(null)
-              .progress_rate(null)
-              .current_lessons(null)
-              .is_mandatory(null)
-              .is_liked(null)
-              .d_day(null)
-              .status(status.toString())
-              .enrollment_status(null)
+              .category(category)
+              .sub_category(subCategory) // null도 ㄱㄴ
+              .current_lessons(currentLessons)
+              .total_lessons(totalLessons)
+              .is_liked(isLiked)
+              .d_day(dDay)
+              .status(status)
+              .enrollment_status(enrollmentStatus)
           .build());
     });
     return result;

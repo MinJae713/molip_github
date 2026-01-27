@@ -17,5 +17,5 @@ public interface WorkspaceService {
 
   FindMyStatsResponse findMyStats(Long workspaceId); // 내 워크스페이스 통계 조회
 
-  List<FindWorkspaceCoursesByIdResponse> findWorkspaceCoursesById(Long workspaceId); // 워크스페이스별 강의 목록 조회
+  List<FindWorkspaceCoursesByIdResponse> findWorkspaceCoursesById(Long workspaceId, Long memberId); // 워크스페이스별 강의 목록 조회
 }

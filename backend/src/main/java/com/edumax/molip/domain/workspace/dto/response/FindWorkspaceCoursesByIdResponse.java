@@ -1,9 +1,13 @@
 package com.edumax.molip.domain.workspace.dto.response;
 
+import com.edumax.molip.domain.course.types.CourseCategory;
+import com.edumax.molip.domain.course.types.CourseStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor
@@ -14,15 +18,12 @@ public class FindWorkspaceCoursesByIdResponse {
   private Long workspace_id;
   private String title;
   private String description;
-  private String category;
+  private CourseCategory category; // MARKETING, AI, DEV, DATA
   private String sub_category;
-  private String tag;
-  private String progress_rate;
-  private Integer current_lessons;
-  private Integer total_lessons;
-  private Boolean is_mandatory;
-  private Boolean is_liked;
-  private Integer d_day;
-  private String status;
-  private String enrollment_status;
+  private Integer current_lessons; // 끝난 세션 수
+  private Integer total_lessons; // 총 세션 수
+  private Boolean is_liked; // 찜 여부
+  private LocalDateTime d_day; // created_at
+  private CourseStatus status;
+  private Boolean enrollment_status; // 수강 신청 여부
 }

@@ -56,6 +56,6 @@ public class WorkspaceController {
   public ResponseEntity<List<FindWorkspaceCoursesByIdResponse>> findWorkspaceCoursesById(
       @PathVariable(name = "workspace_id") Long workspaceId,
       @AuthenticationPrincipal MemberUserDetails member) {
-    return ResponseEntity.ok(workspaceService.findWorkspaceCoursesById(workspaceId));
+    return ResponseEntity.ok(workspaceService.findWorkspaceCoursesById(workspaceId, member.getMemberId()));
   }
 }
