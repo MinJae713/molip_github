@@ -25,13 +25,13 @@ public class MemberService {
   private String REFRESH_TOKEN_KEY_FORMAT = "jwt:refresh:%d";
 
   public void updateRefreshToken(Long memberId, String refreshToken) {
-    Duration ttl = Duration.ofDays(refreshTokenExpirationDay);
     String redisKey = REFRESH_TOKEN_KEY_FORMAT.formatted(memberId);
     if (refreshToken == null) {
-      ttl = Duration.ofSeconds(0); // 삭제 처리
-      refreshToken = "";
+      redisTemplate.delete(redisKey);
+    } else {
+      Duration ttl = Duration.ofDays(refreshTokenExpirationDay);
+      redisTemplate.opsForValue().set(redisKey, refreshToken, ttl);
     }
-    redisTemplate.opsForValue().set(redisKey, refreshToken, ttl);
   }
 
   public String getRefreshToken(Long memberId) {

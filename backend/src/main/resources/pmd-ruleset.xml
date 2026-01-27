@@ -13,5 +13,6 @@
     <exclude name="ShortVariable"/>
     <exclude name="OnlyOneReturn"/>
     <exclude name="AvoidElseIfStatements"/>
+    <exclude name="GuardLogStatement"/>
   </rule>
 </ruleset>
