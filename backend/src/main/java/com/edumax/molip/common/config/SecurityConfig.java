@@ -83,12 +83,12 @@ public class SecurityConfig {
                         "/api/member/register",
                         "/api/member/logout")
                     .permitAll()
-                    .requestMatchers("/uploads/**", "/ws/**")
+                    .requestMatchers("/uploads/**", "/message/**")
                     .permitAll()
                     .requestMatchers("/api/admin/**")
                     .hasRole("ADMIN")
                     .anyRequest()
-                    .permitAll())
+                    .authenticated())
         .addFilterAt(
             new JwtAuthenticationFilter(jwtTokenProvider),
             UsernamePasswordAuthenticationFilter.class) // 교체
