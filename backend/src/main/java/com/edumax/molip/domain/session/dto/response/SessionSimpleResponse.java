@@ -22,10 +22,14 @@ public class SessionSimpleResponse {
   private Boolean useEmotion;
   private Boolean useQuiz;
   private Integer quizCount;
+  private Long courseId;
+  private Long janusRoomId;
+  private Boolean isActive;
 
   @Builder
   public SessionSimpleResponse(Long sessionId, String title, String description, LocalDate date,
-      LocalTime startAt, LocalTime endAt, Boolean useFocus, Boolean useEmotion, Boolean useQuiz, Integer quizCount) {
+      LocalTime startAt, LocalTime endAt, Boolean useFocus, Boolean useEmotion, Boolean useQuiz, Integer quizCount,
+      Long courseId, Long janusRoomId, Boolean isActive) {
     this.sessionId = sessionId;
     this.title = title;
     this.description = description;
@@ -36,6 +40,9 @@ public class SessionSimpleResponse {
     this.useEmotion = useEmotion;
     this.useQuiz = useQuiz;
     this.quizCount = quizCount;
+    this.courseId = courseId;
+    this.janusRoomId = janusRoomId;
+    this.isActive = isActive;
   }
 
   public static SessionSimpleResponse from(Session session) {
@@ -50,6 +57,10 @@ public class SessionSimpleResponse {
         .useEmotion(session.getUseEmotion())
         .useQuiz(session.getUseQuiz())
         .quizCount(session.getQuizCount())
+        // Additional fields
+        .courseId(session.getCourse().getCourseId())
+        .janusRoomId(session.getJanusRoomId())
+        .isActive(session.getJanusRoomId() != null)
         .build();
   }
 }

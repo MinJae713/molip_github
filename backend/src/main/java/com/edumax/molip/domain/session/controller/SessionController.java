@@ -6,6 +6,7 @@ import com.edumax.molip.domain.session.dto.request.SessionCreateRequest;
 import com.edumax.molip.domain.session.dto.request.SessionUpdateRequest;
 import com.edumax.molip.domain.session.dto.response.SessionDetailResponse;
 import com.edumax.molip.domain.session.dto.response.SessionSimpleResponse;
+import com.edumax.molip.domain.session.dto.response.SessionStartResponse;
 import com.edumax.molip.domain.session.service.SessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,14 @@ public class SessionController {
     
     Long sessionId = sessionService.createSession(request, userDetails.getMemberId());
     return ResponseEntity.ok(sessionId);
+  }
+  
+  @GetMapping
+  public ResponseEntity<java.util.List<SessionSimpleResponse>> getSessionList(
+      @org.springframework.web.bind.annotation.RequestParam Long courseId,
+      @AuthenticationPrincipal MemberUserDetails userDetails) {
+    
+    return ResponseEntity.ok(sessionService.getSessionList(courseId, userDetails.getMemberId()));
   }
 
   @GetMapping("/{sessionId}/simple")
@@ -75,6 +84,15 @@ public class SessionController {
     } catch (Exception e) {
       return ResponseEntity.status(400).body("오류 발생");
     }
+  }
+
+  @PostMapping("/{sessionId}/start")
+  public ResponseEntity<SessionStartResponse> startSession(
+      @PathVariable Long sessionId,
+      @AuthenticationPrincipal MemberUserDetails userDetails) {
+      
+    SessionStartResponse response = sessionService.startSession(sessionId, userDetails.getMemberId());
+    return ResponseEntity.ok(response);
   }
 }
 

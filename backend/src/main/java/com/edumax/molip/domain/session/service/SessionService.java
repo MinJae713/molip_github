@@ -12,4 +12,8 @@ public interface SessionService {
   void updateSession(Long sessionId, com.edumax.molip.domain.session.dto.request.SessionUpdateRequest request, Long memberId);
 
   void deleteSession(Long sessionId, Long memberId);
+
+  com.edumax.molip.domain.session.dto.response.SessionStartResponse startSession(Long sessionId, Long memberId);
+  
+  java.util.List<com.edumax.molip.domain.session.dto.response.SessionSimpleResponse> getSessionList(Long courseId, Long memberId);
 }
