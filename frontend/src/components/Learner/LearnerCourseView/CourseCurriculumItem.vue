@@ -39,11 +39,9 @@
                     SESSION {{ String(index + 1).padStart(2, '0') }}
                 </span>
             </div>
-
             <h3 class="font-bold text-lg" :class="isCompleted ? 'text-slate-900' : 'text-slate-800'">
                 {{ session.title }}
             </h3>
-
             <p v-if="session.description" class="text-sm text-slate-600 mt-1 mb-2">{{ session.description }}</p>
 
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm text-slate-500">
@@ -80,7 +78,7 @@
                 <span
                     class="material-symbols-outlined text-[16px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
             </button>
-            <button v-else-if="session.state === 'ended'"
+            <button v-else-if="session.state === 'ended'" @click="enterReview"
                 class="w-full px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-bold rounded-lg flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined text-[18px]">history</span>
                 복습하기
@@ -145,6 +143,14 @@ const router = useRouter();
 const enterSession = () => {
     const route = router.resolve({
         name: 'learnerLiveSession',
+        params: { sessionId: props.session.session_id }
+    });
+    window.open(route.href, '_blank', 'noopener,noreferrer');
+}
+
+const enterReview = () => {
+    const route = router.resolve({
+        name: 'learnerReview',
         params: { sessionId: props.session.session_id }
     });
     window.open(route.href, '_blank', 'noopener,noreferrer');

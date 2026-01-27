@@ -43,17 +43,17 @@ export interface User {
 
 // 특정 워크스페이스 내에서의 멤버 정보 (Relationship)
 export interface WorkspaceMember extends User {
-    workspace_id: number | string;
-    role: 'Admin' | 'Instructor' | 'Learner'; // 워크스페이스별 역할
-    status: 'ACTIVE' | 'INACTIVE';            // 워크스페이스별 상태
-    joinedAt: string;
-    lastLogin: string;
-    // 이미지 상세 정보에 필요한 통계
-    stats?: {
-        progress: number;
-        courseCount: number;
-        quizAverage: number;
-    };
+  workspace_id: number | string;
+  role: "Admin" | "Instructor" | "Learner"; // 워크스페이스별 역할
+  status: "ACTIVE" | "INACTIVE"; // 워크스페이스별 상태
+  joinedAt: string;
+  lastLogin: string;
+  // 이미지 상세 정보에 필요한 통계
+  stats?: {
+    progress: number;
+    courseCount: number;
+    quizAverage: number;
+  };
 }
 
 export interface WorkspaceStats {
@@ -77,24 +77,22 @@ export interface WorkspaceStats {
 export interface Session {
   // ERD 기본 항목
   session_id: number; // changed from id
+  course_id: number;
   title: string;
   description: string;
-  session_number: number;
   start_at?: string;
   date?: string;
   end_at?: string;
-  attendance_excused?: Float16Array;
+  attendance_time?: Float16Array;
   created_at?: string;
   updated_at?: string;
   janus_room_id?: number;
   pin?: string;
-  course_id: number;
+
   // 커스텀 영역
 
   duration?: string;
-  type: "live" | "vod" | "quiz" | "assignment";
   is_completed?: boolean;
-  order: number;
   state: "live" | "ended" | "upcoming";
 }
 
@@ -114,8 +112,49 @@ export interface VideoRoom {
 }
 
 export interface LearnerWorkspaceTopCardStats {
+  id: number;
   user_id: number; // 유저 아이디
   workspace_id: number; // 워크스페이스 아이디
-  week_study_time: number; // 주간 학습 시간(분단위)
-  averageConcentration: number; //평균 집중도
+  role: string;
+  values: StatItem[];
+}
+
+export interface StatItem {
+  icon: string;
+  title: string;
+  unit: string;
+  value: string | number;
+}
+export interface WeeklyStat {
+  label: string;
+  time: number;
+  percentage: number;
+  isHighlight?: boolean;
+}
+export interface SessionConcentrationStats {
+  id: number;
+  user_id: number;
+  course_id: number | string;
+  workspace_id: number;
+  labels: string[];
+  my_scores: number[];
+  avg_scores: number[];
+  current_focus: number;
+}
+
+export interface SessionReportItem {
+  id: number;
+  name: string;
+  date: string;
+  duration: string;
+  focus: number;
+  participation: string;
+  activity_score: number;
+}
+export interface LearnerSessionReport {
+  id: number;
+  user_id: number;
+  workspace_id: number;
+  course_id: string;
+  sessions: SessionReportItem[];
 }

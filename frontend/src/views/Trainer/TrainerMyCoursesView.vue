@@ -40,7 +40,6 @@
                 </a>
             </nav>
         </div>
-
         <!-- 강의 목록 -->
         <div v-if="displayedCourses.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             <MyCourseCard v-for="course in displayedCourses" :key="course.course_id" :course="course"
@@ -54,10 +53,10 @@
                 <span class="material-symbols-outlined text-3xl">school</span>
             </div>
             <h3 class="text-lg font-bold text-slate-900 mb-2">과정이 없습니다.</h3>
-            <p class="text-slate-500 mb-6">아직 수강 중인 과정이 없습니다. 새로운 과정을 찾아보세요!</p>
+            <p class="text-slate-500 mb-6">등록된 과정이 없습니다.</p>
             <button @click="handleAddCourse"
                 class="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors">
-                과정 보러가기
+                과정 추가하기
             </button>
         </div>
     </div>

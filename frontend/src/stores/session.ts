@@ -11,53 +11,37 @@ export const useSessionStore = defineStore("session", () => {
   const isLoading = ref(false);
   const error = ref<string | null>(null);
   const currentSessionMaterials = ref<any[]>([]);
+  const currentSessionInfo = ref<Session | null>(null);
 
-  // 세션별 자료 가져오기
-  async function fetchSessionMaterials(sessionId: string | number) {
+  // 세션번호로 세션 정보 가져오기
+  async function fetchSessionInfo(sessionId: string | number) {
     isLoading.value = true;
     try {
-      // Mock API call
-      // const response = await api.get(`/sessions/${sessionId}/materials`);
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      // Mock data based on sessionId to show different results
-      if (String(sessionId) === "1" || String(sessionId) === "101") {
-        currentSessionMaterials.value = [
-          {
-            fileId: 201,
-            fileName: "Session1_Intro.pptx",
-            fileSize: "5.2 MB",
-            fileUrl: "#",
-            fileType: "pptx",
-          },
-          {
-            fileId: 202,
-            fileName: "Session1_Lab.zip",
-            fileSize: "15 MB",
-            fileUrl: "#",
-            fileType: "zip",
-          },
-        ];
-      } else {
-        currentSessionMaterials.value = [
-          {
-            fileId: 301,
-            fileName: "Summary_Notes.txt",
-            fileSize: "12 KB",
-            fileUrl: "#",
-            fileType: "txt",
-          },
-        ];
-      }
+      const response = await api.get(`/sessions/${sessionId}`);
+      currentSessionInfo.value = response.data;
     } catch (err: any) {
-      console.error("세션 자료 로드 실패:", err);
-      currentSessionMaterials.value = [];
+      console.error("강의 세션 불러오기 실패!: ", err);
+      error.value = err;
     } finally {
       isLoading.value = false;
     }
   }
 
-  //세션번호 기반 세션리스트 제공
+  // 세션별 자료 가져오기
+  async function fetchSessionMaterials(sessionId: string | number) {
+    isLoading.value = true;
+    try {
+      const response = await api.get(`/sessions/${sessionId}`);
+      sessionsList.value = response.data;
+    } catch (err: any) {
+      console.error("강의 세션 불러오기 실패!: ", err);
+      error.value = err;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  //코스번호 기반 세션리스트 제공
   async function fetchSessionsList(
     courseId: string | number,
     workspaceId: string | number,
@@ -82,8 +66,10 @@ export const useSessionStore = defineStore("session", () => {
     sessionsList,
     isLoading,
     error,
+    currentSessionInfo,
+    currentSessionMaterials,
     fetchSessionsList,
     fetchSessionMaterials,
-    currentSessionMaterials,
+    fetchSessionInfo,
   };
 });

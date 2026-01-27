@@ -1,23 +1,27 @@
 {
-  "/members/me/courses/attendance-rate": "/attendance_rate",
-  "/workspace/:workspaceId/learner/classroom/:courseId": "/sessions_list?course_id=:courseId",
-  "/workspaces/search": "/workspaces",
-
+  "/members/me/courses/attendance-rate*": "/attendance_rate",
   "/members/me/workspaces": "/my_workspaces",
   "/members/me/course-likes/:id": "/course_likes/:id",
   "/members/me/course-likes": "/course_likes",
-
   "/members/me/courses/:id": "/my_all_courses/:id",
   "/members/me/courses": "/my_all_courses",
 
+  "/workspaces/:workspaceId/courses/:courseId/stats/:userId": "/learner_workspace_top_card_stats?workspace_id=:workspaceId&course_id=:courseId&user_id=:userId",
+  "/workspaces/:workspaceId/stats/:userId": "/learner_workspace_top_card_stats?workspace_id=:workspaceId&user_id=:userId",
+  "/workspaces/:workspace_id/my-stats?role=:user_role": "/my_stats",
+  "/workspaces/:workspaceId/courses/:courseId/weekly-stats/:userId": "/learner_weekly_stats?workspace_id=:workspaceId&course_id=:courseId&user_id=:userId",
+  "/workspaces/:workspaceId/weekly-stats/:userId": "/learner_weekly_stats?workspace_id=:workspaceId&user_id=:userId",
   "/workspaces/:id/join": "/workspace_registers",
   "/workspaces/:id/courses": "/workspace_all_courses",
+  "/workspace/:workspaceId/learner/classroom/:courseId": "/sessions_list?course_id=:courseId",
+  "/workspaces/search": "/workspaces",
+  "/workspaces/:workspaceId/courses/:courseId/session-stats/:userId": "/learner_session_stats?workspace_id=:workspaceId&course_id=:courseId&user_id=:userId",
+  "/workspaces/:workspaceId/courses/:courseId/session-reports/:userId": "/learner_session_reports?workspace_id=:workspaceId&course_id=:courseId&user_id=:userId",
 
   "/courses/:courseId/sessions": "/sessions",
   "/courses/:id/enroll": "/course_enrollments",
   "/courses/:id/materials": "/course_materials?course_id=:id",
   "/courses/:id": "/workspace_all_courses/:id",
-  "/sessions/:id/materials": "/session_materials?session_id=:id",
-  "/workspaces/:workspace_id/my-stats?role=:user_role": "/my_stats",
-  "/workspaces/:workspaceId/stats/:userId": "/learner_workspace_top_card_stats?workspace_id=:workspaceId&user_id=:userId"
+  "/sessions/:id": "/sessions?session_id=:id",
+  "/sessions/:id/materials": "/session_materials?session_id=:id"
 }

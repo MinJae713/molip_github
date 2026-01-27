@@ -29,6 +29,7 @@ import LearnerClassroomView from "@/views/Learner/LearnerClassroomView.vue";
 import LearnerLiveSessionView from "@/views/Learner/LearnerLiveSessionView.vue";
 import LearnerWorkspace from "@/views/Learner/LearnerWorkspace.vue";
 import LearnerStatisticsView from "@/views/Learner/LearnerStatisticsView.vue";
+import LearnerReviewView from "@/views/Learner/LearnerReviewView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -113,25 +114,25 @@ const router = createRouter({
           meta: { requiresAuth: true },
         },
         {
-          path: 'settings',
-          name: 'AdminWorkspaceSettings',
+          path: "settings",
+          name: "AdminWorkspaceSettings",
           component: WorkspaceSettingsView,
         },
         {
-          path: 'members',
-          name: 'MemberManagement',
-          component: MemberManagementView
+          path: "members",
+          name: "MemberManagement",
+          component: MemberManagementView,
         },
         {
-          path: 'requests',
-          name: 'JoinRequest',
-          component: JoinRequestView
+          path: "requests",
+          name: "JoinRequest",
+          component: JoinRequestView,
         },
         {
-          path: 'invite-codes',
-          name: 'InviteCodeCenter',
-          component: InviteCodeView
-        }
+          path: "invite-codes",
+          name: "InviteCodeCenter",
+          component: InviteCodeView,
+        },
       ],
     },
     {
@@ -151,7 +152,7 @@ const router = createRouter({
         },
       ],
     },
-    // 하위 호환성을 위한 기존 라우트 (리다이렉트)
+    // 기존 라우트
     {
       path: "/workspaceDetail/:id",
       redirect: (to) => {
@@ -163,6 +164,12 @@ const router = createRouter({
       path: "/live-session/:sessionId",
       name: "learnerLiveSession",
       component: LearnerLiveSessionView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/review/:sessionId",
+      name: "learnerReview",
+      component: LearnerReviewView,
       meta: { requiresAuth: true },
     },
   ],

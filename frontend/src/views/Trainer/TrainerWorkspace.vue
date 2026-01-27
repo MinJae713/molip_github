@@ -108,11 +108,9 @@ const openCurriculumModal = async (courseId: string | number) => {
     const course = workspaceCourses.value.find(c => String(c.course_id) === String(courseId));
     if (course) {
         selectedCourse.value = course;
-
         // Fetch sessions from API
         const sessions = await courseStore.fetchCourseSessions(courseId);
         mockSessions.value = sessions;
-
         isModalOpen.value = true;
     }
 };

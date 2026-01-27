@@ -15,110 +15,130 @@ export const useUserStore = defineStore("user", () => {
   // 데이터 로딩 여부 (선택 사항)
   const isLoaded = ref(false);
 
-  async function fetchUserInfo() {
-    // 이미 데이터가 있다면 요청하지 않음 (캐싱 효과)
-    if (isLoaded.value) return;
-
-    try {
-      // 1. localStorage에서 JWT 토큰 가져오기
-      const token = localStorage.getItem("accessToken");
-
-      if (!token) {
-        isLoaded.value = true;
-        return;
-      }
-
-      let userId = 0;
-
-      const payload = parseJwt(token);
-      if (payload && payload.sub) {
-        userId = payload.sub;
-      } else if (payload && payload.id) {
-        userId = payload.id;
-      }
-
-      if (!userId) {
-        // 토큰은 있지만 ID를 파싱할 수 없는 경우
-        console.warn("Invalid token payload");
-        isLoaded.value = true;
-        return;
-      }
-
-      // 2. User ID로 사용자 정보 요청 (/user/:id -> /users/:id via routes.json)
-      const response = await api.get(`/members/${userId}`);
-      // Map response to User interface
-      user.value = {
-        member_id: response.data.member_id || response.data.id,
-        name: response.data.name,
-        email: response.data.email,
-        profile_image_url:
-          response.data.profile_image_url || response.data.profileImage,
-      };
-      isLoaded.value = true;
-    } catch (error) {
-      console.error("Failed to fetch user info:", error);
-    }
-  }
-
-  // Helper: JWT Parser
+  // ✅ [Helper] Base64 Url Decode (JWT 파싱용)
   function parseJwt(token: string) {
     try {
       const parts = token.split(".");
-      if (parts.length < 2) return null;
+      if (parts.length < 2) return null; // 길이 체크 추가
       const base64Url = parts[1];
-      if (!base64Url) return null;
+      if (!base64Url) return null; // 존재 여부 체크
+
       const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
       const jsonPayload = decodeURIComponent(
-        atob(base64)
+        window
+          .atob(base64)
           .split("")
           .map(function (c) {
             return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
           })
           .join(""),
       );
+
       return JSON.parse(jsonPayload);
     } catch (e) {
       return null;
     }
   }
 
-  async function login(email: string, pass: string) {
-    // Mock Login Logic
-    return new Promise<boolean>((resolve) => {
-      setTimeout(() => {
-        if (email === "student" && pass === "1234") {
-          // 학생 로그인 성공
-          user.value = {
-            member_id: 1, // Mock ID
-            name: "학생 김철수",
-            email: "student@example.com",
-            profile_image_url:
-              "https://cdn-icons-png.flaticon.com/512/257/257685.png",
-          };
-          localStorage.setItem("accessToken", "mock-access-token-12345");
-          isLoaded.value = true;
-          resolve(true);
-        } else if (email === "teacher" && pass === "1234") {
-          // 강사 로그인 성공
-          user.value = {
-            member_id: 2, // Mock ID
-            name: "강사 이영희",
-            email: "teacher@example.com",
-            profile_image_url:
-              "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5byKin5Im5nKcFce1aqq13DJSJsOGI0n7BA&s",
-          } as any;
-          localStorage.setItem("accessToken", "mock-trainer-token-67890");
-          isLoaded.value = true;
-          resolve(true);
-        } else {
-          resolve(false);
-        }
-      }, 500); // 0.5초 딜레이
-    });
+  // ✅ [Helper] 가짜 JWT 생성기 (Mock Login용)
+  function createMockJwt(userId: number, role: string) {
+    const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+    const payload = btoa(
+      JSON.stringify({
+        sub: userId,
+        role: role,
+        exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1시간 만료
+      }),
+    );
+    const signature = "mock-signature";
+    return `${header}.${payload}.${signature}`;
   }
 
+  // 1️⃣ 사용자 정보 가져오기 (새로고침 시)
+  async function fetchUserInfo() {
+    if (isLoaded.value) return;
+
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      isLoaded.value = true;
+      return;
+    }
+
+    try {
+      // 토큰 파싱해서 ID 추출
+      const payload = parseJwt(token);
+      const userId = payload?.sub;
+
+      if (!userId) {
+        throw new Error("Invalid Token");
+      }
+
+      // DB에서 최신 유저 정보 조회
+      const response = await api.get(`/members/${userId}`);
+      const userData = response.data;
+
+      user.value = {
+        member_id: userData.member_id,
+        name: userData.name,
+        email: userData.email,
+        profile_image_url: userData.profile_image_url,
+      };
+      isLoaded.value = true;
+    } catch (error) {
+      console.error("Fetch User Info Failed:", error);
+      logout();
+    }
+  }
+
+  // 2️⃣ 로그인 (비밀번호 검증 없이 ID 매핑만 수행)
+  async function login(emailId: string, pass: string) {
+    try {
+      // ID에 따라 타켓 유저 매핑 (비밀번호 검증 로직 제거됨)
+      let targetMemberId = 0;
+      let role = "student";
+
+      if (emailId === "student") {
+        targetMemberId = 1; // 나학생
+      } else if (emailId === "teacher") {
+        targetMemberId = 2; // 나강사
+        role = "trainer";
+      } else if (emailId === "admin") {
+        targetMemberId = 3; // 나관리자
+        role = "admin";
+      } else {
+        // 매핑되지 않은 ID면 실패 처리 (혹은 기본값 1로 처리할 수도 있음)
+        console.warn("Unknown ID, login failed");
+        return false;
+      }
+
+      // 해당 유저 정보 조회 (존재 여부 확인)
+      const response = await api.get(`/members/${targetMemberId}`);
+      const userData = response.data;
+
+      if (!userData) return false;
+
+      // 정보가 맞으면 토큰 생성 및 저장
+      const token = createMockJwt(userData.member_id, role);
+      localStorage.setItem("accessToken", token);
+
+      // 상태 업데이트 (API 데이터 사용)
+      user.value = {
+        member_id: userData.member_id,
+        name: userData.name,
+        email: userData.email,
+        profile_image_url: userData.profile_image_url,
+      };
+
+      isLoaded.value = true;
+      return true;
+    } catch (error) {
+      console.error("Login Failed:", error);
+      return false;
+    }
+  }
+
+  // 3️⃣ 로그아웃
   function logout() {
-    // 1. 상태 초기화
     user.value = {
       member_id: 0,
       name: "",
@@ -126,27 +146,20 @@ export const useUserStore = defineStore("user", () => {
       profile_image_url: "",
     };
     isLoaded.value = false;
-
-    // 2. LocalStorage 삭제
     localStorage.removeItem("accessToken");
 
-    // 3. 모든 쿠키 삭제 (도메인/경로 고려하여 만료 처리)
     const cookies = document.cookie.split(";");
     for (let i = 0; i < cookies.length; i++) {
       const cookie = cookies[i];
-      if (!cookie) continue;
+      if (!cookie) continue; // 방어 코드
       const eqPos = cookie.indexOf("=");
       const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
       document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
     }
-
-    // 4. 앱 리셋 (상태 잔여물 제거를 위해 새로고침하며 로그인 페이지로 이동)
     window.location.href = "/";
   }
 
-  const isAuthenticated = computed(
-    () => !!localStorage.getItem("accessToken") || !!user.value.member_id,
-  );
+  const isAuthenticated = computed(() => !!user.value.member_id);
 
   return { user, fetchUserInfo, login, logout, isAuthenticated };
 });

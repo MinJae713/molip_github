@@ -3,16 +3,30 @@
     {
       "id": "1",
       "member_id": 1,
-      "name": "김지수",
-      "email": "jisoo.kim@techcorp.com",
-      "profile_image_url": "https://ui-avatars.com/api/?name=Jisoo+Kim&background=random"
+      "name": "나학생",
+      "email": "나학생.kim@techcorp.com",
+      "profile_image_url": "https://image.utoimage.com/preview/cp902650/2022/02/202202012904_500.jpg"
     },
     {
       "id": "me",
       "member_id": 1,
-      "name": "김지수",
-      "email": "jisoo.kim@techcorp.com",
-      "profile_image_url": "https://ui-avatars.com/api/?name=Jisoo+Kim&background=random"
+      "name": "나학생",
+      "email": "나학생.kim@techcorp.com",
+      "profile_image_url": "https://image.utoimage.com/preview/cp902650/2022/02/202202012904_500.jpg"
+    },
+    {
+      "id": "2",
+      "member_id": 2,
+      "name": "나강사",
+      "email": "나강사.kim@techcorp.com",
+      "profile_image_url": "https://png.pngtree.com/png-clipart/20190905/original/pngtree-lecturer-flat-illustration-png-image_4535762.jpg"
+    },
+    {
+      "id": "3",
+      "member_id": 3,
+      "name": "나관리자",
+      "email": "나관리자.kim@techcorp.com",
+      "profile_image_url": "https://cdn-icons-png.flaticon.com/512/2304/2304226.png"
     }
   ],
   "workspaces": [
@@ -259,39 +273,30 @@
   ],
   "sessions": [
     {
-      "id": "1",
       "session_id": 1,
       "course_id": 4,
       "title": "LLM의 이해와 프롬프트 기초",
       "description": "대규모 언어 모델의 작동 원리와 토큰 개념 이해, 기본 프롬프트 구조 학습.",
-      "type": "live",
-      "order": 1,
       "duration": "60min",
       "date": "2026-01-25",
       "start_at": "14:00:00",
       "end_at": "15:00:00"
     },
     {
-      "id": "2",
       "session_id": 2,
       "course_id": 4,
       "title": "Zero-shot & Few-shot Prompting",
       "description": "예시 제공 여부에 따른 모델 성능 변화 실험 및 최적화 기법 실습.",
-      "type": "live",
-      "order": 2,
       "duration": "90min",
       "date": "2026-01-27",
       "start_at": "14:00:00",
       "end_at": "15:30:00"
     },
     {
-      "id": "3",
       "session_id": 3,
       "course_id": 4,
       "title": "Chain of Thought (CoT) 심화",
       "description": "복잡한 추론을 위한 CoT 기법과 Tree of Thoughts 전략 분석.",
-      "type": "quiz",
-      "order": 3,
       "duration": "45min",
       "date": "2026-01-29",
       "start_at": "10:00:00",
@@ -874,6 +879,7 @@
       "id": 1,
       "user_id": 1,
       "workspace_id": 1,
+      "course_id": "all",
       "role": "LEARNER",
       "values": [
         {
@@ -887,6 +893,275 @@
           "title": "평균 집중도",
           "unit": "%",
           "value": 86
+        },
+        {
+          "icon": "school",
+          "title": "수강 중인 강의",
+          "unit": "개",
+          "value": 5
+        },
+        {
+          "icon": "check_circle",
+          "title": "완료한 세션",
+          "unit": "개",
+          "value": 12
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "user_id": 1,
+      "workspace_id": 1,
+      "course_id": "1",
+      "role": "LEARNER",
+      "values": [
+        {
+          "icon": "timer",
+          "title": "강의 학습 시간",
+          "unit": "분",
+          "value": 120
+        },
+        {
+          "icon": "bolt",
+          "title": "강의 집중도",
+          "unit": "%",
+          "value": 92
+        },
+        {
+          "icon": "event_note",
+          "title": "남은 세션",
+          "unit": "개",
+          "value": 8
+        },
+        {
+          "icon": "emoji_events",
+          "title": "나의 랭킹",
+          "unit": "위",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "user_id": 1,
+      "workspace_id": 1,
+      "course_id": "2",
+      "role": "LEARNER",
+      "values": [
+        {
+          "icon": "timer",
+          "title": "강의 학습 시간",
+          "unit": "분",
+          "value": 45
+        },
+        {
+          "icon": "bolt",
+          "title": "강의 집중도",
+          "unit": "%",
+          "value": 65
+        },
+        {
+          "icon": "event_note",
+          "title": "남은 세션",
+          "unit": "개",
+          "value": 15
+        },
+        {
+          "icon": "emoji_events",
+          "title": "나의 랭킹",
+          "unit": "위",
+          "value": 12
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "user_id": 1,
+      "workspace_id": 1,
+      "course_id": "3",
+      "role": "LEARNER",
+      "values": [
+        {
+          "icon": "timer",
+          "title": "강의 학습 시간",
+          "unit": "분",
+          "value": 0
+        },
+        {
+          "icon": "bolt",
+          "title": "강의 집중도",
+          "unit": "%",
+          "value": 0
+        },
+        {
+          "icon": "event_note",
+          "title": "남은 세션",
+          "unit": "개",
+          "value": 20
+        },
+        {
+          "icon": "emoji_events",
+          "title": "나의 랭킹",
+          "unit": "위",
+          "value": "-"
+        }
+      ]
+    }
+  ],
+  "learner_weekly_stats": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "workspace_id": 1,
+      "course_id": "all",
+      "weekly_data": [
+        { "label": "월", "time": 1.5, "percentage": 30 },
+        { "label": "화", "time": 3.5, "percentage": 75 },
+        { "label": "수", "time": 2.5, "percentage": 50 },
+        { "label": "목", "time": 2.0, "percentage": 40 },
+        { "label": "금", "time": 4.0, "percentage": 85 },
+        { "label": "토", "time": 0.5, "percentage": 10 },
+        { "label": "일", "time": 0.2, "percentage": 5 }
+      ]
+    },
+    {
+      "id": 2,
+      "user_id": 1,
+      "workspace_id": 1,
+      "course_id": "1",
+      "weekly_data": [
+        { "label": "월", "time": 0.0, "percentage": 0 },
+        { "label": "화", "time": 2.0, "percentage": 40 },
+        { "label": "수", "time": 0.0, "percentage": 0 },
+        { "label": "목", "time": 1.5, "percentage": 30 },
+        { "label": "금", "time": 3.0, "percentage": 60 },
+        { "label": "토", "time": 0.0, "percentage": 0 },
+        { "label": "일", "time": 0.0, "percentage": 0 }
+      ]
+    },
+    {
+      "id": 3,
+      "user_id": 1,
+      "workspace_id": 1,
+      "course_id": "2",
+      "weekly_data": [
+        { "label": "월", "time": 1.0, "percentage": 20 },
+        { "label": "화", "time": 0.5, "percentage": 10 },
+        { "label": "수", "time": 1.5, "percentage": 30 },
+        { "label": "목", "time": 1.0, "percentage": 20 },
+        { "label": "금", "time": 0.5, "percentage": 10 },
+        { "label": "토", "time": 0.0, "percentage": 0 },
+        { "label": "일", "time": 0.0, "percentage": 0 }
+      ]
+    },
+    {
+      "id": 4,
+      "user_id": 1,
+      "workspace_id": 1,
+      "course_id": "3",
+      "weekly_data": [
+        { "label": "월", "time": 0.0, "percentage": 0 },
+        { "label": "화", "time": 0.0, "percentage": 0 },
+        { "label": "수", "time": 0.0, "percentage": 0 },
+        { "label": "목", "time": 0.0, "percentage": 0 },
+        { "label": "금", "time": 0.0, "percentage": 0 },
+        { "label": "토", "time": 0.0, "percentage": 0 },
+        { "label": "일", "time": 0.0, "percentage": 0 }
+      ]
+    }
+  ],
+  "learner_session_stats": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "workspace_id": 1,
+      "course_id": "all",
+      "labels": ["월간 평균", "주간 평균", "최근 세션"],
+      "my_scores": [85, 88, 92],
+      "avg_scores": [80, 82, 85],
+      "current_focus": 88
+    },
+    {
+      "id": 2,
+      "user_id": 1,
+      "workspace_id": 1,
+      "course_id": "1",
+      "labels": ["1회차", "2회차", "3회차", "4회차", "5회차"],
+      "my_scores": [100, 20, 40, 20, 20],
+      "avg_scores": [80, 90, 60, 70, 70],
+      "current_focus": 92
+    },
+    {
+      "id": 3,
+      "user_id": 1,
+      "workspace_id": 1,
+      "course_id": "2",
+      "labels": ["1회차", "2회차", "3회차"],
+      "my_scores": [50, 60, 55],
+      "avg_scores": [70, 75, 72],
+      "current_focus": 55
+    },
+    {
+      "id": 4,
+      "user_id": 1,
+      "workspace_id": 1,
+      "course_id": "3",
+      "labels": [],
+      "my_scores": [],
+      "avg_scores": [],
+      "current_focus": 0
+    }
+  ],
+  "learner_session_reports": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "workspace_id": 1,
+      "course_id": "1",
+      "sessions": [
+        {
+          "id": 101,
+          "name": "1강. Vue.js 기초 오리엔테이션",
+          "date": "2026.01.20",
+          "duration": "45분",
+          "focus": 95,
+          "participation": "상",
+          "activity_score": 90
+        },
+        {
+          "id": 102,
+          "name": "2강. 컴포넌트의 이해와 활용",
+          "date": "2026.01.21",
+          "duration": "60분",
+          "focus": 88,
+          "participation": "중",
+          "activity_score": 85
+        },
+        {
+          "id": 103,
+          "name": "3강. 상태 관리 (Pinia) 심화",
+          "date": "2026.01.22",
+          "duration": "55분",
+          "focus": 92,
+          "participation": "상",
+          "activity_score": 94
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "user_id": 1,
+      "workspace_id": 1,
+      "course_id": "2",
+      "sessions": [
+        {
+          "id": 201,
+          "name": "OT. 과정 소개",
+          "date": "2026.01.25",
+          "duration": "20분",
+          "focus": 100,
+          "participation": "상",
+          "activity_score": 100
         }
       ]
     }
