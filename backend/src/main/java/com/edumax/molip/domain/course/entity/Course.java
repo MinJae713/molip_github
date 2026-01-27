@@ -32,7 +32,7 @@ public class Course {
   @Column(nullable = false, length = 255)
   private String description;
 
-  @Column(name = "sub_category", nullable = false, length = 20)
+  @Column(name = "sub_category", length = 20)
   private String subCategory;
 
   @Column(name = "max_learner", nullable = false)
@@ -82,7 +82,7 @@ public class Course {
   private CourseCategory category;
 
   public enum CourseCategory {
-    MARKETING // 보이는 것이 일단 하나라 이거만 넣었습니다..!
+    MARKETING, AI, DEV, DATA
   }
 
   /** 수강 신청 */
