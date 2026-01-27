@@ -4,13 +4,13 @@
             <div class="flex items-center gap-3 px-3 py-3 bg-indigo-50/50 rounded-xl border border-indigo-100 mb-6">
                 <div
                     class="size-10 bg-white rounded-lg border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden">
-                    <img v-if="workspaceLogo" :src="workspaceLogo" :alt="workspaceName"
+                    <img v-if="displayLogo" :src="displayLogo" :alt="displayLogo"
                         class="w-full h-full object-contain" />
                     <span v-else class="material-symbols-outlined text-indigo-600">domain</span>
                 </div>
                 <div class="min-w-0">
                     <div class="text-xs font-bold text-indigo-800 mb-0.5">Current Workspace</div>
-                    <div class="text-sm font-bold text-slate-900 truncate">{{ workspaceName }}</div>
+                    <div class="text-sm font-bold text-slate-900 truncate">{{ displayName }}</div>
                 </div>
             </div>
             <nav class="space-y-1">
@@ -136,18 +136,6 @@ watch(() => route.params.id, (newId) => {
     if (newId) updateCurrentWorkspace();
 });
 
-interface Props {
-    workspaceName?: string;
-    workspaceLogo?: string;
-    currentActiveId?: string;
-}
-// 값 없을 경우 기본값 설정
-const props = withDefaults(defineProps<Props>(), {
-    workspaceName: 'Naver',
-    workspaceLogo: 'https://placehold.co/100x100/4f46e5/ffffff?text=TechCorp',
-    currentActiveId: 'courses', // 기본 활성화 아이템
-});
-
 // 현재 사용자 역할 감지 (route name 기반)
 const currentRole = computed(() => {
     const name = route.name as string;
@@ -170,8 +158,6 @@ const currentActiveId = computed(() => {
     if (name === 'workspaceLearner' || name === 'workspaceTrainer') {
         return 'dashboard';
     }
-    // prop으로 전달된 값 또는 기본값 사용
-    return props.currentActiveId;
 });
 
 const emit = defineEmits<{

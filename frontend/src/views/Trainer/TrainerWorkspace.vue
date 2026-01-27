@@ -1,5 +1,5 @@
 <template>
-    <h1>트레이너 워크스페이스</h1>
+    <h1>강사 워크스페이스</h1>
 </template>
 
 <script setup lang="ts">

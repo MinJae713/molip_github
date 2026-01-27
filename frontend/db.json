@@ -2,61 +2,23 @@
   "members": [
     {
       "id": "1",
+      "member_id": 1,
       "name": "김지수",
       "email": "jisoo.kim@techcorp.com",
-      "profileImage": "https://ui-avatars.com/api/?name=Jisoo+Kim&background=random"
+      "profile_image_url": "https://ui-avatars.com/api/?name=Jisoo+Kim&background=random"
     },
     {
       "id": "me",
+      "member_id": 1,
       "name": "김지수",
       "email": "jisoo.kim@techcorp.com",
-      "profileImage": "https://ui-avatars.com/api/?name=Jisoo+Kim&background=random"
-    },
-    {
-      "id": 1,
-      "workspace_id": 1,
-      "name": "이정훈",
-      "email": "jh.lee@techcorp.com",
-      "role": "Admin",
-      "status": "ACTIVE",
-      "joinedAt": "2023.11.12",
-      "lastLogin": "2024.05.21 14:32",
-      "profileImage": "https://ui-avatars.com/api/?name=Jeonghoon+Kim&background=random"
-    },
-    {
-      "id": 10,
-      "name": "김지수",
-      "email": "js.kim@techcorp.com",
-      "profileImage": "https://ui-avatars.com/api/?name=Jisoo+Kim&background=random"
-    },
-    {
-      "id": 11,
-      "name": "박건우",
-      "email": "kw.park@global.inc",
-      "profileImage": "https://ui-avatars.com/api/?name=Gunwoo+Park&background=random"
-    },
-    {
-      "id": 12,
-      "name": "한나래",
-      "email": "narae.han@creative.co.kr",
-      "profileImage": "https://ui-avatars.com/api/?name=Narae+Han&background=random"
-    },
-    {
-      "id": 13,
-      "name": "윤도현",
-      "email": "dh.yoon@techcorp.com",
-      "profileImage": "https://ui-avatars.com/api/?name=Dohyun+Yoon&background=random"
-    },
-    {
-      "id": 14,
-      "name": "정성훈",
-      "email": "sh.jung@startup.io",
-      "profileImage": "https://ui-avatars.com/api/?name=Sunghoon+Jung&background=random"
+      "profile_image_url": "https://ui-avatars.com/api/?name=Jisoo+Kim&background=random"
     }
   ],
   "workspaces": [
     {
       "id": "1",
+      "workspace_id": 1,
       "name": "TechCorp HQ1",
       "logo_url": "https://img.icons8.com/color/512/samsung.png",
       "location": "Seoul, Korea",
@@ -69,6 +31,7 @@
     },
     {
       "id": "2",
+      "workspace_id": 2,
       "name": "Molip Design Studio",
       "logo_url": "https://i.namu.wiki/i/Zd_OejaDruiYcAZKDQDI4gMN8wxu3lrZSyZ5Rn-1I9tL0_pVpF5C4xHqd7Y1nrre8TA2UVSuzoSqU4SUCdRzpg.svg",
       "location": "Pangyo, Korea",
@@ -81,7 +44,8 @@
     },
     {
       "id": "3",
-      "name": "Global Language Hubddㅇㅇ",
+      "workspace_id": 3,
+      "name": "Global Language Hub",
       "logo_url": "https://img.icons8.com/color/512/google-logo.png",
       "location": "Global",
       "description": "외국어 학습 및 글로벌 비즈니스 커뮤니케이션 역량을 키우는 곳입니다.ddㅇㅇ",
@@ -93,6 +57,7 @@
     },
     {
       "id": "4",
+      "workspace_id": 4,
       "name": "Frontend Masters",
       "logo_url": "",
       "location": "Online",
@@ -107,23 +72,25 @@
   "my_workspaces": [
     {
       "id": "1",
-      "name": "TechCorp HQ",
-      "join_code": "TC1234",
-      "description": "전사 공통 교육 및 부서별 역량 강화 프로그램을 위한 메인 워크스페이스입니다. 공지사항 및 기본 교육 자료를 확인할 수 있습니다.",
+      "workspace_id": 1,
+      "name": "학생 워크스페이스",
+      "join_code": "LEARNER1234",
+      "description": "학생 워크스페이스 설명문구입니다. 학생 워크스페이스 설명문구입니다. 학생 워크스페이스 설명문구입니다. 학생 워크스페이스 설명문구입니다. ",
       "logo_url": "https://img.icons8.com/color/512/samsung.png",
-      "memberCount": 1420,
+      "memberCount": 9999,
       "courseCount": 5,
       "status": 2,
       "role": "LEARNER",
-      "location": "Seoul, Korea"
+      "location": "Mangalore, India"
     },
     {
       "id": "2",
-      "name": "강사 워크스페이스 테스트",
-      "join_code": "TC1234",
-      "description": "전사 공통 교육 및 부서별 역량 강화 프로그램을 위한 메인 워크스페이스입니다. 공지사항 및 기본 교육 자료를 확인할 수 있습니다.",
-      "logo_url": "https://img.icons8.com/color/512/samsung.png",
-      "memberCount": 1420,
+      "workspace_id": 2,
+      "name": "강사 워크스페이스",
+      "join_code": "TRAINER1234",
+      "description": "강사 워크스페이스 설명문구입니다. 강사 워크스페이스 설명문구입니다. 강사 워크스페이스 설명문구입니다. 강사 워크스페이스 설명문구입니다. ",
+      "logo_url": "https://img1.daumcdn.net/thumb/R1280x0.fwebp/?fname=http://t1.daumcdn.net/brunch/service/user/5rH/image/LHUiJV1nog0BqnOJ8Mtj5UbNTjQ",
+      "memberCount": 123123,
       "courseCount": 5,
       "status": 2,
       "role": "TRAINER",
@@ -131,11 +98,12 @@
     },
     {
       "id": "3",
-      "name": "관리자 워크스페이스 테스트",
-      "join_code": "TC1234",
-      "description": "전사 공통 교육 및 부서별 역량 강화 프로그램을 위한 메인 워크스페이스입니다. 공지사항 및 기본 교육 자료를 확인할 수 있습니다.",
-      "logo_url": "https://img.icons8.com/color/512/samsung.png",
-      "memberCount": 1420,
+      "workspace_id": 3,
+      "name": "관리자 워크스페이스",
+      "join_code": "ADMIN1234",
+      "description": "관리자 워크스페이스 설명문구입니다. 관리자 워크스페이스 설명문구입니다. 관리자 워크스페이스 설명문구입니다. 관리자 워크스페이스 설명문구입니다. ",
+      "logo_url": "https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdna%2FcdppWF%2FbtrRLMpVhFv%2FAAAAAAAAAAAAAAAAAAAAAOnC_C2f7BXyN1g3pO6fcky1Mi16_kmboXmZ22Xrig1T%2Fimg.png%3Fcredential%3DyqXZFxpELC7KVnFOS48ylbz2pIh7yKj8%26expires%3D1769871599%26allow_ip%3D%26allow_referer%3D%26signature%3D9jJE%252FXKP%252FU7hYCT6BRxl57%252FHwHc%253D",
+      "memberCount": 123123,
       "courseCount": 5,
       "status": 2,
       "role": "ADMIN",
@@ -145,7 +113,9 @@
   "my_all_courses": [
     {
       "id": "1",
-      "workspace_id": 1,
+      "course_id": 1,
+      "workspace_id": "1",
+      "status": "active",
       "title": "AI 비즈니스 활용 전략",
       "description": "최신 AI 트렌드와 비즈니스 적용 사례를 통해 실무 역량을 강화합니다.",
       "tag": "직무 필수",
@@ -160,52 +130,43 @@
     },
     {
       "id": "2",
-      "workspace_id": 1,
-      "title": "데이터 리터러시 기초: Level 1",
-      "description": "데이터 기반 의사결정을 위한 기초 통계 및 시각화 도구 활용법을 익힙니다.",
-      "tag": "핵심 역량",
-      "category": "data",
-      "progress_rate": 15,
-      "current_lessons": 2,
-      "total_lessons": 12,
-      "last_accessed_at": "2026-01-19T15:30:00",
+      "course_id": 2,
+      "workspace_id": "1",
+      "status": "active",
+      "title": "Vue3 + TypeScript 실전 아키텍처",
+      "description": "대규모 프로젝트를 위한 Vue3 컴포넌트 설계와 타입스크립트 활용법을 배웁니다.",
+      "tag": "인기",
+      "category": "dev",
+      "progress_rate": 90,
+      "current_lessons": 18,
+      "total_lessons": 20,
+      "last_accessed_at": "2026-01-21T09:30:00",
       "is_mandatory": false,
-      "sub_tag": "자율 학습",
-      "is_liked": false
+      "d_day": 2,
+      "is_liked": true
     },
     {
       "id": "3",
-      "workspace_id": 2,
-      "title": "2024 정보보안 교육2",
-      "description": "안전한 업무 환경 조성을 위한 연례 필수 정보보안 교육 과정입니다.",
-      "tag": "사내 공통",
-      "category": "security",
-      "progress_rate": 10,
-      "current_lessons": 1,
-      "total_lessons": 10,
-      "last_accessed_at": "2026-01-18T09:00:00",
-      "is_mandatory": true
-    },
-    {
-      "id": "4",
-      "workspace_id": 1,
-      "title": "고급 프롬프트 엔지니어링",
-      "description": "LLM 모델을 효과적으로 제어하기 위한 고급 프롬프트 작성 기법을 학습합니다.",
-      "tag": "모집 중",
-      "category": "ai",
-      "progress_rate": 0,
-      "current_lessons": 0,
-      "total_lessons": 12,
-      "last_accessed_at": "",
-      "is_mandatory": false,
-      "sub_tag": "심화",
-      "duration": "6시간 30분",
-      "is_liked": false,
-      "status": "recruiting"
+      "course_id": 3,
+      "workspace_id": "1",
+      "status": "active",
+      "title": "데이터 분석을 위한 SQL 마스터",
+      "description": "복잡한 쿼리 작성부터 성능 최적화까지, 현업 데이터 분석의 핵심을 파악합니다.",
+      "tag": "핵심 역량",
+      "category": "data",
+      "progress_rate": 30,
+      "current_lessons": 6,
+      "total_lessons": 20,
+      "last_accessed_at": "2026-01-18T15:00:00",
+      "is_mandatory": true,
+      "d_day": 12,
+      "is_liked": false
     },
     {
       "id": "5",
-      "workspace_id": 1,
+      "course_id": 5,
+      "workspace_id": "1",
+      "status": "pending_approval",
       "title": "AI 기반 마케팅 자동화",
       "description": "마케팅 캠페인 효율화를 위한 AI 도구 활용법과 자동화 파이프라인 구축 실습.",
       "tag": "승인 대기 중",
@@ -213,11 +174,59 @@
       "progress_rate": 0,
       "current_lessons": 0,
       "total_lessons": 8,
-      "last_accessed_at": "",
+      "last_accessed_at": null,
       "is_mandatory": false,
       "request_date": "2023.11.15",
-      "is_liked": false,
-      "status": "pending_approval"
+      "is_liked": false
+    },
+    {
+      "id": "7",
+      "course_id": 7,
+      "workspace_id": "1",
+      "status": "active",
+      "title": "Product Management 실무",
+      "description": "고객 가치를 정의하고 데이터에 기반한 의사결정을 내리는 PM의 역할을 배웁니다.",
+      "tag": "직무 필수",
+      "category": "business",
+      "progress_rate": 75,
+      "current_lessons": 12,
+      "total_lessons": 16,
+      "last_accessed_at": "2026-01-20T22:00:00",
+      "is_mandatory": true,
+      "d_day": 3,
+      "is_liked": true
+    },
+    {
+      "id": "9",
+      "workspace_id": "1",
+      "status": "active",
+      "title": "재무제표를 활용한 기업 분석 기초",
+      "description": "숫자 뒤에 숨겨진 기업의 건강 상태를 읽는 방법을 쉽고 재미있게 가르쳐 드립니다.",
+      "tag": "공통",
+      "category": "business",
+      "progress_rate": 0,
+      "current_lessons": 10,
+      "total_lessons": 10,
+      "last_accessed_at": "2026-01-10T13:00:00",
+      "is_mandatory": false,
+      "d_day": 0,
+      "is_liked": false
+    },
+    {
+      "id": "10",
+      "workspace_id": "1",
+      "status": "active",
+      "title": "효과적인 프롬프트 엔지니어링 실습",
+      "description": "LLM을 업무에 200% 활용하기 위한 고도화된 프롬프트 작성 기술을 익힙니다.",
+      "tag": "인기",
+      "category": "ai",
+      "progress_rate": 40,
+      "current_lessons": 4,
+      "total_lessons": 10,
+      "last_accessed_at": "2026-01-21T08:00:00",
+      "is_mandatory": true,
+      "d_day": 7,
+      "is_liked": true
     }
   ],
   "my-stats": [
@@ -259,30 +268,42 @@
   "sessions": [
     {
       "id": "1",
+      "session_id": 1,
       "course_id": 4,
       "title": "LLM의 이해와 프롬프트 기초",
       "description": "대규모 언어 모델의 작동 원리와 토큰 개념 이해, 기본 프롬프트 구조 학습.",
       "type": "live",
       "order": 1,
-      "duration": "60min"
+      "duration": "60min",
+      "date": "2026-01-25",
+      "start_at": "14:00:00",
+      "end_at": "15:00:00"
     },
     {
       "id": "2",
+      "session_id": 2,
       "course_id": 4,
       "title": "Zero-shot & Few-shot Prompting",
       "description": "예시 제공 여부에 따른 모델 성능 변화 실험 및 최적화 기법 실습.",
       "type": "live",
       "order": 2,
-      "duration": "90min"
+      "duration": "90min",
+      "date": "2026-01-27",
+      "start_at": "14:00:00",
+      "end_at": "15:30:00"
     },
     {
       "id": "3",
+      "session_id": 3,
       "course_id": 4,
       "title": "Chain of Thought (CoT) 심화",
       "description": "복잡한 추론을 위한 CoT 기법과 Tree of Thoughts 전략 분석.",
       "type": "quiz",
       "order": 3,
-      "duration": "45min"
+      "duration": "45min",
+      "date": "2026-01-29",
+      "start_at": "10:00:00",
+      "end_at": "10:45:00"
     }
   ],
   "workspace_registers": [
@@ -370,8 +391,9 @@
   "workspace_all_courses": [
     {
       "id": "1",
-      "status": "recruiting",
+      "course_id": 1,
       "workspace_id": "1",
+      "status": "active",
       "title": "AI 비즈니스 활용 전략",
       "description": "최신 AI 트렌드와 비즈니스 적용 사례를 통해 실무 역량을 강화합니다.",
       "tag": "직무 필수",
@@ -386,8 +408,9 @@
     },
     {
       "id": "2",
+      "course_id": 2,
       "workspace_id": "1",
-      "status": "pending_approval",
+      "status": "active",
       "title": "Vue3 + TypeScript 실전 아키텍처",
       "description": "대규모 프로젝트를 위한 Vue3 컴포넌트 설계와 타입스크립트 활용법을 배웁니다.",
       "tag": "인기",
@@ -402,6 +425,7 @@
     },
     {
       "id": "3",
+      "course_id": 3,
       "workspace_id": "1",
       "title": "데이터 분석을 위한 SQL 마스터",
       "description": "복잡한 쿼리 작성부터 성능 최적화까지, 현업 데이터 분석의 핵심을 파악합니다.",
@@ -413,52 +437,43 @@
       "last_accessed_at": "2026-01-18T15:00:00",
       "is_mandatory": true,
       "d_day": 12,
-      "is_liked": false
+      "is_liked": false,
+      "status": "active"
     },
     {
       "id": "4",
+      "course_id": 4,
       "workspace_id": "1",
-      "title": "디자인 시스템 구축과 협업 가이드",
-      "description": "Figma를 활용하여 개발자와 소통할 수 있는 일관된 디자인 시스템을 만듭니다.",
-      "tag": "신규",
-      "category": "design",
-      "progress_rate": 10,
-      "current_lessons": 2,
-      "total_lessons": 15,
-      "last_accessed_at": "2026-01-21T11:00:00",
+      "title": "고급 프롬프트 엔지니어링",
+      "description": "LLM 모델을 효과적으로 제어하기 위한 고급 프롬프트 작성 기법을 학습합니다.",
+      "tag": "모집 중",
+      "category": "ai",
+      "progress_rate": 0,
+      "current_lessons": 0,
+      "total_lessons": 12,
+      "last_accessed_at": null,
       "is_mandatory": false,
-      "d_day": 30,
-      "is_liked": true
+      "sub_category": "심화",
+      "duration": "6시간 30분",
+      "is_liked": false,
+      "status": "recruiting"
     },
     {
       "id": "5",
+      "course_id": 5,
       "workspace_id": "1",
-      "title": "Kubernetes 기반 클라우드 운영",
-      "description": "컨테이너 오케스트레이션의 기초부터 실전 배포 파이프라인까지 학습합니다.",
-      "tag": "심화",
-      "category": "dev",
+      "title": "AI 기반 마케팅 자동화",
+      "description": "마케팅 캠페인 효율화를 위한 AI 도구 활용법과 자동화 파이프라인 구축 실습.",
+      "tag": "승인 대기 중",
+      "category": "marketing",
       "progress_rate": 0,
       "current_lessons": 0,
-      "total_lessons": 25,
+      "total_lessons": 8,
       "last_accessed_at": null,
-      "is_mandatory": true,
-      "d_day": 45,
-      "is_liked": false
-    },
-    {
-      "id": "6",
-      "workspace_id": "1",
-      "title": "비즈니스 영어 이메일 & 커뮤니케이션",
-      "description": "글로벌 비즈니스 환경에서 필요한 프로페셔널한 영어 표현을 익힙니다.",
-      "tag": "자기계발",
-      "category": "skill",
-      "progress_rate": 50,
-      "current_lessons": 5,
-      "total_lessons": 10,
-      "last_accessed_at": "2026-01-19T17:45:00",
       "is_mandatory": false,
-      "d_day": 10,
-      "is_liked": false
+      "request_date": "2023.11.15",
+      "is_liked": false,
+      "status": "pending_approval"
     },
     {
       "id": "7",
@@ -473,7 +488,8 @@
       "last_accessed_at": "2026-01-20T22:00:00",
       "is_mandatory": true,
       "d_day": 3,
-      "is_liked": true
+      "is_liked": true,
+      "status": "active"
     },
     {
       "id": "8",
@@ -482,13 +498,14 @@
       "description": "Pandas와 Matplotlib을 활용해 주가 데이터를 분석하고 시각화합니다.",
       "tag": "추천",
       "category": "data",
-      "progress_rate": 20,
+      "progress_rate": 0,
       "current_lessons": 4,
       "total_lessons": 20,
       "last_accessed_at": "2026-01-15T14:20:00",
       "is_mandatory": false,
       "d_day": 20,
-      "is_liked": false
+      "is_liked": false,
+      "status": "recruiting"
     },
     {
       "id": "9",
@@ -497,13 +514,14 @@
       "description": "숫자 뒤에 숨겨진 기업의 건강 상태를 읽는 방법을 쉽고 재미있게 가르쳐 드립니다.",
       "tag": "공통",
       "category": "business",
-      "progress_rate": 100,
+      "progress_rate": 0,
       "current_lessons": 10,
       "total_lessons": 10,
       "last_accessed_at": "2026-01-10T13:00:00",
       "is_mandatory": false,
       "d_day": 0,
-      "is_liked": false
+      "is_liked": false,
+      "status": "recruiting"
     },
     {
       "id": "10",
@@ -518,7 +536,8 @@
       "last_accessed_at": "2026-01-21T08:00:00",
       "is_mandatory": true,
       "d_day": 7,
-      "is_liked": true
+      "is_liked": true,
+      "status": "active"
     }
   ],
   "admin_courses": [
@@ -622,8 +641,51 @@
   ],
   "course_likes": [
     {
-      "courseId": "10",
-      "id": 1
+      "id": "9",
+      "courseId": "9",
+      "workspace_id": "1",
+      "title": "재무제표를 활용한 기업 분석 기초",
+      "description": "숫자 뒤에 숨겨진 기업의 건강 상태를 읽는 방법을 쉽고 재미있게 가르쳐 드립니다.",
+      "tag": "공통",
+      "category": "business",
+      "progress_rate": 0,
+      "current_lessons": 10,
+      "total_lessons": 10,
+      "is_mandatory": false,
+      "d_day": 0,
+      "is_liked": true
+    },
+    {
+      "id": "8",
+      "courseId": "8",
+      "workspace_id": "1",
+      "title": "Python 금융 데이터 분석",
+      "description": "Pandas와 Matplotlib을 활용해 주가 데이터를 분석하고 시각화합니다.",
+      "tag": "추천",
+      "category": "data",
+      "progress_rate": 0,
+      "current_lessons": 4,
+      "total_lessons": 20,
+      "is_mandatory": false,
+      "d_day": 20,
+      "is_liked": true
+    },
+    {
+      "id": "6",
+      "course_id": 6,
+      "workspace_id": "1",
+      "status": "recruiting",
+      "title": "비즈니스 영어 이메일 & 커뮤니케이션",
+      "description": "글로벌 비즈니스 환경에서 필요한 프로페셔널한 영어 표현을 익힙니다.",
+      "tag": "자기계발",
+      "category": "skill",
+      "progress_rate": 0,
+      "current_lessons": 5,
+      "total_lessons": 10,
+      "last_accessed_at": "2026-01-19T17:45:00",
+      "is_mandatory": false,
+      "d_day": 10,
+      "is_liked": true
     }
   ],
   "course_enrollments": [
@@ -631,8 +693,64 @@
       "courseId": "1",
       "memberId": "1",
       "status": 1,
-      "applied_at": "2026-01-22T05:00:12.711Z",
+      "applied_at": "2026-01-22T04:39:58.422Z",
       "id": 1
+    },
+    {
+      "courseId": "1",
+      "memberId": "1",
+      "status": 1,
+      "applied_at": "2026-01-22T04:40:00.749Z",
+      "id": 2
+    },
+    {
+      "courseId": "8",
+      "memberId": "1",
+      "status": 1,
+      "applied_at": "2026-01-22T05:28:19.284Z",
+      "id": 3
+    }
+  ],
+  "attendance_rate": [
+    {
+      "year": 2026,
+      "month": 1,
+      "attendance_rate": 77,
+      "period": "2026-01",
+      "total_sessions": 25,
+      "attended_sessions": 23
+    }
+  ],
+  "sessions_list": [
+    {
+      "session_id": 1,
+      "title": "title 테스트 강의세션 1번 강의",
+      "description": "description 테스트 강의세션 1번의 설명",
+      "session_number": 1,
+      "start_at": "09:00:00",
+      "date": "2026-01-22",
+      "end_at": "12:00:00",
+      "attendance_excused": 80.0,
+      "created_at": "2026-01-22T18:30:00.000Z",
+      "updated_at": "2026-01-22T18:30:00.000Z",
+      "janus_room_id": "112132",
+      "pin": "pin_num1",
+      "course_id": 1
+    },
+    {
+      "session_id": 2,
+      "title": "title 테스트 강의세션 2번 강의",
+      "description": "description 테스트 강의세션 2번의 설명",
+      "session_number": 2,
+      "start_at": "09:00:00",
+      "date": "2026-01-23",
+      "end_at": "12:00:00",
+      "attendance_excused": 80.0,
+      "created_at": "2026-01-22T18:30:00.000Z",
+      "updated_at": "2026-01-22T18:30:00.000Z",
+      "janus_room_id": "112133",
+      "pin": "pin_num2",
+      "course_id": 1
     }
   ]
 }

@@ -17,7 +17,7 @@
             <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">내 강의실</h1>
             <!-- 통계 카드 -->
             <MyCoursesStats :ongoingCount="ongoingCourses.length" :completedCount="completedCourses.length"
-                :attendanceRate="92" />
+                :attendanceRate="myCoursesAttendanceRate || 0" />
         </div>
         <!-- 탭 네비게이션 -->
         <div class="border-b border-slate-200">
@@ -40,20 +40,46 @@
                 </a>
             </nav>
         </div>
+
+        <!-- 강의 목록 -->
+        <div v-if="displayedCourses.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <MyCourseCard v-for="course in displayedCourses" :key="course.course_id" :course="course"
+                @enter-course="handleEnterCourse" @enroll-course="handleEnrollCourse" />
+        </div>
+
+        <!-- 데이터 없음 안내 -->
+        <div v-else class="bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center">
+            <div
+                class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                <span class="material-symbols-outlined text-3xl">school</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-2">과정이 없습니다.</h3>
+            <p class="text-slate-500 mb-6">아직 수강 중인 과정이 없습니다. 새로운 과정을 찾아보세요!</p>
+            <button @click="handleAddCourse"
+                class="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors">
+                과정 보러가기
+            </button>
+        </div>
     </div>
 </template>
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
 
 import { useCourseStore } from '@/stores/course';
+import { useUserStore } from '@/stores/user';
 import MyCoursesStats from '@/components/Learner/LearnerMyCoursesView/MyCoursesStats.vue';
 import MyCourseCard from '@/components/Learner/LearnerMyCoursesView/MyCourseCard.vue';
 
 const courseStore = useCourseStore();
+const userStore = useUserStore();
 const route = useRoute();
+const router = useRouter();
 const activeTab = ref('ongoing');
 
+const { myEnrolledCourses, myCoursesAttendanceRate, myLikedCourses } = storeToRefs(courseStore);
+const { user } = storeToRefs(userStore);
 const workspaceId = computed(() => route.params.id);
 
 // 현재 route에 따라 home 경로 결정
@@ -65,46 +91,66 @@ const homeRoute = computed(() => {
     };
 });
 
-const tabs = [
-    { id: 'ongoing', label: '학습 중인 과정', count: 3 },
-    { id: 'liked', label: '찜한 과정', count: 2 },
-    { id: 'completed', label: '수료한 과정', count: 12 }
-];
-// Mock data - 실제로는 courseStore에서 가져와야 함
-const ongoingCourses = ref([
-    {
-        id: 1,
-        title: '비즈니스 AI 윤리 가이드',
-        description: '생성형 AI 도입 시 고려해야 할 기업 윤리, 데이터 보안, 저작권 이슈에 대한 포괄적 가이드.',
-        category: 'Business AI Track > Level 1',
-        tag: '필수 과정',
-        is_mandatory: true,
-        progress: 40,
-        currentLessons: 2,
-        totalLessons: 5,
-        remaining_hours: 3,
-        has_live_session: true,
-        next_schedule: {
-            type: 'live',
-            icon: 'videocam',
-            title: '다음 세션: 실시간 강의',
-            time: '오늘 14:00 - 16:00'
-        }
-    },
-    // ... 더 많은 강의 추가
+// Store에서 가져온 데이터를 상태별로 필터링
+// progress_rate로 학습 진행 상태를 구분 (0-99: 진행중/대기중, 100: 완료)
+const ongoingCourses = computed(() =>
+    myEnrolledCourses.value.filter(course =>
+        course.progress_rate < 100
+    )
+);
+
+const completedCourses = computed(() =>
+    myEnrolledCourses.value.filter(course =>
+        course.progress_rate === 100
+    )
+);
+const likedCoursesCount = computed(() => likedCourses.value.length);
+const likedCourses = computed(() => myLikedCourses.value);
+
+// 탭별 동적 카운트
+const tabs = computed(() => [
+    { id: 'ongoing', label: '학습 중인 과정', count: ongoingCourses.value.length },
+    { id: 'liked', label: '찜한 과정', count: likedCoursesCount },
+    { id: 'completed', label: '수료한 과정', count: completedCourses.value.length }
 ]);
-const completedCourses = ref([]);
+
+onMounted(async () => {
+    // 사용자 정보 로드 (memberId 확보용)
+    await userStore.fetchUserInfo();
+    // 내 강의 목록과 이번달 출석률 불러오기
+    await courseStore.fetchMyEnrolledCourses();
+    await courseStore.fetchMyCoursesAttendanceRate();
+    await courseStore.fetchLikeCourses();
+});
 const displayedCourses = computed(() => {
     switch (activeTab.value) {
         case 'ongoing': return ongoingCourses.value;
-        case 'liked': return []; // 찜한 과정
+        case 'liked': return likedCourses.value;
         case 'completed': return completedCourses.value;
         default: return [];
     }
 });
 const handleEnterCourse = (courseId: string | number) => {
     console.log('강의실 입장:', courseId);
-    // TODO: 강의실 페이지로 라우팅
+    router.push({
+        name: 'workspaceLearnerClassroom',
+        params: {
+            id: workspaceId.value,
+            courseId: courseId
+        }
+    });
+};
+const handleEnrollCourse = async (courseId: string | number) => {
+    if (confirm('이 과정을 수항신청하시겠습니까?')) {
+        const success = await courseStore.enrollCourse(courseId, user.value.member_id);
+        if (success) {
+            alert('수강신청이 성공적으로 완료되었습니다. 관리자 승인을 기다려주세요.');
+            // 목록 새로고침
+            await courseStore.fetchMyEnrolledCourses();
+        } else {
+            alert('수강신청에 실패했습니다. 다시 시도해주세요.');
+        }
+    }
 };
 const handleAddCourse = () => {
     console.log('새 과정 신청');

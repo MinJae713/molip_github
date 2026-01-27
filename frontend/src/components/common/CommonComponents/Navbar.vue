@@ -5,7 +5,7 @@
 interface UserInfo {
     name: string;
     email: string;
-    profileImage: string;
+    profile_image_url: string;
 }
 
 interface Props {
@@ -22,7 +22,7 @@ const props = withDefaults(defineProps<Props>(), {
     user: () => ({
         name: '김지수',
         email: 'jisoo.kim@techcorp.com',
-        profileImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBiolsf6prQfZQmoZ420xEZd441M2OqmX3ZkCgcZz6CiNM7dWL1j5LkuMWr7C98MkSlOn5khaGV_o6iP8HvgU5kV1ulrcFZ4M_s4sPvoltW4goOg9cU1JZ5MwNh5Jqp3a6O4sh35Gt_K8JOaiejQAWSGcZep5eH2o3TBxeCCemLid8l3JlLO5BXcjQhIR0LMMCRhZb7f4kbU6yd3jFL06u8vBS2gLEppd_BaZP7-ASlf6YuhAMP5EtdxZwJfdsRzYY0kqCpgq_Piw'
+        profile_image_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBiolsf6prQfZQmoZ420xEZd441M2OqmX3ZkCgcZz6CiNM7dWL1j5LkuMWr7C98MkSlOn5khaGV_o6iP8HvgU5kV1ulrcFZ4M_s4sPvoltW4goOg9cU1JZ5MwNh5Jqp3a6O4sh35Gt_K8JOaiejQAWSGcZep5eH2o3TBxeCCemLid8l3JlLO5BXcjQhIR0LMMCRhZb7f4kbU6yd3jFL06u8vBS2gLEppd_BaZP7-ASlf6YuhAMP5EtdxZwJfdsRzYY0kqCpgq_Piw'
     })
 });
 
@@ -44,10 +44,20 @@ const emit = defineEmits<{
                         EduVerse <span class="text-indigo-400 font-light">Work</span>
                     </span>
                 </router-link>
-                <h1 class="hidden md:block text-lg font-bold text-white/90 border-l border-slate-700 pl-6">
-                    {{ workspaceName }} <span class="text-slate-500 mx-2">/</span>
-                    <span class="text-indigo-300">{{ currentPathName }}</span>
-                </h1>
+
+                <!-- Navigation Links -->
+                <nav class="hidden md:flex items-center gap-6 border-l border-slate-700 pl-6">
+                    <router-link to="/workspaces"
+                        class="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+                        active-class="text-white font-bold">
+                        워크스테이션
+                    </router-link>
+                    <router-link to="/mypage"
+                        class="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+                        active-class="text-white font-bold">
+                        마이페이지
+                    </router-link>
+                </nav>
             </div>
 
             <div class="flex items-center gap-4">
@@ -66,7 +76,7 @@ const emit = defineEmits<{
                     </div>
 
                     <div class="size-9 rounded-full custom-gradient p-[2px]">
-                        <img :src="user.profileImage" :alt="user.name"
+                        <img :src="user.profile_image_url" :alt="user.name"
                             class="rounded-full w-full h-full object-cover border-2 border-dark-navy-900" />
                     </div>
                 </div>
