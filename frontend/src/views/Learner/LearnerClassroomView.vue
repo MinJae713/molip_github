@@ -15,7 +15,7 @@
                 < </ol>
         </nav>
         <!-- Header -->
-        <ClassroomHeader />
+        <courseHeader />
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <!-- Left Column: Curriculum -->
             <div class="xl:col-span-2 space-y-6">
@@ -43,23 +43,22 @@
             </div>
             <!-- Right Column: Sidebar Widgets -->
             <div class="space-y-6">
-                <ClassroomSidebar />
+                <CourseSidebar />
             </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import ClassroomHeader from '@/components/Learner/Classroom/ClassroomHeader.vue';
-import CurriculumList from '@/components/Learner/Classroom/CurriculumItem.vue';
-import ClassroomSidebar from '@/components/Learner/Classroom/ClassroomSidebar.vue';
+import CourseHeader from '@/components/Learner/LearnerCourseView/CourseHeader.vue';
+import CurriculumList from '@/components/Learner/LearnerCourseView/CourseCurriculumItem.vue';
+import CourseSidebar from '@/components/Learner/LearnerCourseView/CourseSidebar.vue';
 
 import { useRoute } from 'vue-router';
 import { useCourseStore } from '@/stores/course';
 import { useSessionStore } from '@/stores/session';
 
 import { onMounted } from 'vue';
-import { ConsoleLogger } from 'storybook/internal/node-logger';
 
 const courseStore = useCourseStore()
 const sessionStore = useSessionStore()
@@ -75,9 +74,10 @@ onMounted(() => {
     }
     if ((courseId && typeof courseId === 'string') && (workspaceId && typeof workspaceId === 'string')) {
         sessionStore.fetchSessionsList(courseId, workspaceId);
-        console.log("불러오기 성공~!");
     }
 });
+
+
 
 // In the future, we will fetch course details based on route.params.courseId
 </script>

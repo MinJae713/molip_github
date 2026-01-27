@@ -35,7 +35,8 @@
                                 {{ course.status === 'recruiting' ? '모집 중' : '진행 중' }}
                             </span>
                             <span class="text-xs font-bold text-indigo-900/60 flex items-center gap-1">
-                                <span class="size-1 rounded-full bg-indigo-400"></span> {{ course.sub_tag || '심화 과정' }}
+                                <span class="size-1 rounded-full bg-indigo-400"></span>
+                                {{ course.sub_category || '심화과정' }}
                             </span>
                         </div>
                         <h2 class="text-lg font-bold text-slate-900 mb-1">{{ course.title }}</h2>
@@ -54,7 +55,7 @@
                             <h4 class="text-base font-bold text-slate-900">실시간 강의 (Live Lecture)</h4>
                         </div>
                         <div class="space-y-3 pl-3 border-l-2 border-slate-100 ml-4">
-                            <div v-for="session in sessions" :key="session.id"
+                            <div v-for="session in sessions" :key="session.session_id"
                                 class="relative group bg-white hover:bg-slate-50 rounded-xl p-4 border border-slate-200 hover:border-indigo-300 transition-all ml-4">
                                 <div
                                     class="absolute w-4 h-4 bg-white border-2 border-indigo-200 rounded-full -left-[33px] top-6 group-hover:border-indigo-500 transition-colors">

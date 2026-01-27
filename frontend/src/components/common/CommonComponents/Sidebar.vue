@@ -92,7 +92,7 @@ interface MenuItem {
 const studyMenus: MenuItem[] = [
     { id: "dashboard", name: "대시보드", icon: "dashboard", path: "#" },
     { id: "courses", name: "교육과정", icon: "library_books", path: "#" },
-    { id: "stats", name: "학습 통계", icon: "analytics", path: "#" }
+    { id: "my-stats", name: "학습 통계", icon: "analytics", path: "#" }
 ];
 
 const communityMenus: MenuItem[] = [
@@ -158,6 +158,14 @@ const currentActiveId = computed(() => {
     if (name === 'workspaceLearner' || name === 'workspaceTrainer') {
         return 'dashboard';
     }
+    // classroom 경로면 'courses' 활성화
+    if (path.includes('/classroom') || name?.includes('Classroom')) {
+        return 'courses';
+    }
+    // my-stats 경로면 'courses' 활성화
+    if (path.includes('/my-stats') || name?.includes('MyStats')) {
+        return 'my-stats';
+    }
 });
 
 const emit = defineEmits<{
@@ -179,6 +187,12 @@ const handleNavigate = (id: string) => {
             router.push({ name: 'workspaceTrainer', params: { id: workspaceId } });
         } else {
             router.push({ name: 'workspaceLearner', params: { id: workspaceId } });
+        }
+    } else if (id === 'my-stats' && workspaceId) {
+        if (role === 'trainer') {
+            router.push({ name: 'workspaceLearnerMyStats', params: { id: workspaceId } });
+        } else {
+            router.push({ name: 'workspaceLearnerMyStats', params: { id: workspaceId } });
         }
     } else {
         // 다른 메뉴는 기존대로 emit 이벤트 발생

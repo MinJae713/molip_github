@@ -13,7 +13,6 @@
             <StatCard title="수료한 과정" :value="workspaceStats.completed.value" icon="emoji_events" color="orange"
                 :subText="`총 ${workspaceStats.completed.total}개 필수 과정 중`" />
         </section>
-
         <!-- Loading State for Stats -->
         <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="h-32 bg-slate-100 rounded-xl animate-pulse" v-for="n in 3" :key="n"></div>

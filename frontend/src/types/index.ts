@@ -1,16 +1,12 @@
 export interface Workspace {
-  workspace_id: string | number; // changed from id
-  name: string;
-  logo_url?: string;
-  role?: string;
-  status?: number;
-  location?: string;
-  description?: string;
-  memberCount?: number;
-  courseCount?: number;
-  join_code?: string;
-  typeIcon?: string;
-  themeColor?: string;
+  workspace_id: 1;
+  name: "Admin Workspace 1";
+  logo_url: "null"; // S3 로고 이미지 URL (이미 반영됨)
+  description: "시스템 관리자 운영 공간";
+  memberCount: 4;
+  courseCount: 5;
+  my_status: null; // 검색 가능 여부 워크스페이스
+  my_role: string;
 }
 
 export interface Course {
@@ -33,6 +29,7 @@ export interface Course {
   course_status?: "PREPARING" | "INVITE" | "PROCEED" | "FINISH";
   request_date?: string;
   tag?: string;
+  status?: any;
 }
 
 export interface User {
@@ -40,6 +37,8 @@ export interface User {
   name: string;
   email: string;
   profile_image_url: string;
+  role?: string;
+  auth?: string;
 }
 
 // 특정 워크스페이스 내에서의 멤버 정보 (Relationship)
@@ -96,4 +95,27 @@ export interface Session {
   type: "live" | "vod" | "quiz" | "assignment";
   is_completed?: boolean;
   order: number;
+  state: "live" | "ended" | "upcoming";
+}
+
+export interface Material {
+  fileId: number | string;
+  fileName: string;
+  fileSize: string;
+  fileUrl: string;
+  fileType: string;
+  uploadAt?: string;
+}
+
+export interface VideoRoom {
+  janus_room_id: number;
+  roomAlive: boolean;
+  pin: string;
+}
+
+export interface LearnerWorkspaceTopCardStats {
+  user_id: number; // 유저 아이디
+  workspace_id: number; // 워크스페이스 아이디
+  week_study_time: number; // 주간 학습 시간(분단위)
+  averageConcentration: number; //평균 집중도
 }

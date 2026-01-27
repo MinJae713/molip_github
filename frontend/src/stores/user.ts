@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { defineStore } from "pinia";
 import api from "@/api";
 
@@ -20,20 +20,28 @@ export const useUserStore = defineStore("user", () => {
     if (isLoaded.value) return;
 
     try {
-      // 1. 쿠키에서 JWT 토큰 가져오기 (예: 'accessToken')
-      const token = getCookie("accessToken");
+      // 1. localStorage에서 JWT 토큰 가져오기
+      const token = localStorage.getItem("accessToken");
 
-      // 토큰이 없으면 로그인되지 않은 것으로 간주
-      // 여기서는 1번 사용자로 강제 지정. 서비스 단계 가면 수정해야함.
-      let userId = 1;
+      if (!token) {
+        isLoaded.value = true;
+        return;
+      }
 
-      if (token) {
-        const payload = parseJwt(token);
-        if (payload && payload.sub) {
-          userId = payload.sub; // payload의 sub 필드를 user_id로 가정
-        } else if (payload && payload.id) {
-          userId = payload.id;
-        }
+      let userId = 0;
+
+      const payload = parseJwt(token);
+      if (payload && payload.sub) {
+        userId = payload.sub;
+      } else if (payload && payload.id) {
+        userId = payload.id;
+      }
+
+      if (!userId) {
+        // 토큰은 있지만 ID를 파싱할 수 없는 경우
+        console.warn("Invalid token payload");
+        isLoaded.value = true;
+        return;
       }
 
       // 2. User ID로 사용자 정보 요청 (/user/:id -> /users/:id via routes.json)
@@ -50,15 +58,6 @@ export const useUserStore = defineStore("user", () => {
     } catch (error) {
       console.error("Failed to fetch user info:", error);
     }
-  }
-
-  // Helper: Cookie Getter
-  function getCookie(name: string): string | null {
-    const match = document.cookie.match(
-      new RegExp("(^| )" + name + "=([^;]+)"),
-    );
-    if (match && match[2]) return match[2];
-    return null;
   }
 
   // Helper: JWT Parser
@@ -83,5 +82,71 @@ export const useUserStore = defineStore("user", () => {
     }
   }
 
-  return { user, fetchUserInfo };
+  async function login(email: string, pass: string) {
+    // Mock Login Logic
+    return new Promise<boolean>((resolve) => {
+      setTimeout(() => {
+        if (email === "student" && pass === "1234") {
+          // 학생 로그인 성공
+          user.value = {
+            member_id: 1, // Mock ID
+            name: "학생 김철수",
+            email: "student@example.com",
+            profile_image_url:
+              "https://cdn-icons-png.flaticon.com/512/257/257685.png",
+          };
+          localStorage.setItem("accessToken", "mock-access-token-12345");
+          isLoaded.value = true;
+          resolve(true);
+        } else if (email === "teacher" && pass === "1234") {
+          // 강사 로그인 성공
+          user.value = {
+            member_id: 2, // Mock ID
+            name: "강사 이영희",
+            email: "teacher@example.com",
+            profile_image_url:
+              "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5byKin5Im5nKcFce1aqq13DJSJsOGI0n7BA&s",
+          } as any;
+          localStorage.setItem("accessToken", "mock-trainer-token-67890");
+          isLoaded.value = true;
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      }, 500); // 0.5초 딜레이
+    });
+  }
+
+  function logout() {
+    // 1. 상태 초기화
+    user.value = {
+      member_id: 0,
+      name: "",
+      email: "",
+      profile_image_url: "",
+    };
+    isLoaded.value = false;
+
+    // 2. LocalStorage 삭제
+    localStorage.removeItem("accessToken");
+
+    // 3. 모든 쿠키 삭제 (도메인/경로 고려하여 만료 처리)
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i];
+      if (!cookie) continue;
+      const eqPos = cookie.indexOf("=");
+      const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+      document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+    }
+
+    // 4. 앱 리셋 (상태 잔여물 제거를 위해 새로고침하며 로그인 페이지로 이동)
+    window.location.href = "/";
+  }
+
+  const isAuthenticated = computed(
+    () => !!localStorage.getItem("accessToken") || !!user.value.member_id,
+  );
+
+  return { user, fetchUserInfo, login, logout, isAuthenticated };
 });
