@@ -68,14 +68,12 @@ public class SessionDetailResponse {
   @Getter
   @NoArgsConstructor(access = AccessLevel.PROTECTED)
   public static class QuizInfo {
-    private Long quizId;
     private String question;
     private Integer answerNumber;
     private List<AnswerInfo> choices;
 
     @Builder
-    public QuizInfo(Long quizId, String question, Integer answerNumber, List<AnswerInfo> choices) {
-      this.quizId = quizId;
+    public QuizInfo(String question, Integer answerNumber, List<AnswerInfo> choices) {
       this.question = question;
       this.answerNumber = answerNumber;
       this.choices = choices;
@@ -83,7 +81,6 @@ public class SessionDetailResponse {
 
     public static QuizInfo from(ExitQuiz quiz) {
       return QuizInfo.builder()
-          .quizId(quiz.getExitQuizId())
           .question(quiz.getQuestion())
           .answerNumber(quiz.getAnswerNumber())
           .choices(quiz.getExitQuizAnswers().stream()
@@ -96,20 +93,17 @@ public class SessionDetailResponse {
   @Getter
   @NoArgsConstructor(access = AccessLevel.PROTECTED)
   public static class AnswerInfo {
-    private Long answerId;
     private Integer number;
     private String content;
 
     @Builder
-    public AnswerInfo(Long answerId, Integer number, String content) {
-      this.answerId = answerId;
+    public AnswerInfo(Integer number, String content) {
       this.number = number;
       this.content = content;
     }
 
     public static AnswerInfo from(ExitQuizAnswer answer) {
       return AnswerInfo.builder()
-          .answerId(answer.getExitQuizAnswerId())
           .number(answer.getNumber())
           .content(answer.getAnswer())
           .build();

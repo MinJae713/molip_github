@@ -83,7 +83,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/admin/**")
                     .hasRole("ADMIN")
                     .anyRequest()
-                    .permitAll())
+                    .authenticated())//명시적으로 허용한 경로(로그인, 회원가입 등) 외에는 모두 인증이 필요하도록
         .addFilterAt(
             new JwtAuthenticationFilter(jwtTokenProvider),
             UsernamePasswordAuthenticationFilter.class) // 교체

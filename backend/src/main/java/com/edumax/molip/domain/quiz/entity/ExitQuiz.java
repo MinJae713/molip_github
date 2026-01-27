@@ -61,7 +61,7 @@ public class ExitQuiz {
   @Builder.Default
   private List<ExitQuizResult> exitQuizResults = new ArrayList<>();
 
-  @Column(nullable = false, length = 50)
+  @Column(length = 50)
   private ExitQuizType type;
 
   public enum ExitQuizType {

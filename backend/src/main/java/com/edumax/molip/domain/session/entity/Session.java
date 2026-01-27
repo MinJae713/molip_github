@@ -121,4 +121,17 @@ public class Session {
   /** 세션 분석 결과 */
   @OneToOne(mappedBy = "session")
   private LearnerAnalysis learnerAnalysis;
+
+  public void update(String title, String description, LocalDate date, LocalTime startAt,
+      LocalTime endAt, Boolean useFocus, Boolean useEmotion, Boolean useQuiz, Integer quizCount) {
+    if (title != null) this.title = title;
+    if (description != null) this.description = description;
+    if (date != null) this.date = date;
+    if (startAt != null) this.startAt = startAt;
+    if (endAt != null) this.endAt = endAt;
+    if (useFocus != null) this.useFocus = useFocus;
+    if (useEmotion != null) this.useEmotion = useEmotion;
+    if (useQuiz != null) this.useQuiz = useQuiz;
+    if (quizCount != null) this.quizCount = quizCount;
+  }
 }
