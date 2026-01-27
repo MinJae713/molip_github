@@ -1,3 +1,7 @@
 package com.edumax.molip.domain.session.service;
 
-public interface SessionService {}
+import com.edumax.molip.domain.session.dto.request.SessionCreateRequest;
+
+public interface SessionService {
+  Long createSession(SessionCreateRequest request);
+}

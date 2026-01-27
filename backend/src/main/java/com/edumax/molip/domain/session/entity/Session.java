@@ -60,9 +60,16 @@ public class Session {
   @Column(name = "end_at", nullable = false)
   private LocalTime endAt;
   @Column(name = "use_focus", nullable = false)
-  private Boolean useFocus=false;
+  private Boolean useFocus = false;
+
   @Column(name = "use_emotion", nullable = false)
-  private Boolean useEmotion=false;
+  private Boolean useEmotion = false;
+
+  @Column(name = "use_quiz", nullable = false)
+  private Boolean useQuiz = false;
+
+  @Column(name = "quiz_count", nullable = false)
+  private Integer quizCount = 0;
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
