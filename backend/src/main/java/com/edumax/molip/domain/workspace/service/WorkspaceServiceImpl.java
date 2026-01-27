@@ -21,13 +21,19 @@ import com.edumax.molip.domain.workspace.entity.InviteCode;
 import com.edumax.molip.domain.workspace.entity.Workspace;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import com.edumax.molip.domain.workspace.entity.WorkspaceRegister;
+import com.edumax.molip.domain.workspace.exception.NoWorkspaceAppliedAtException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceMemberException;
+import com.edumax.molip.domain.workspace.exception.NoWorkspaceMemberRoleException;
+import com.edumax.molip.domain.workspace.exception.NoWorkspaceRegisterException;
+import com.edumax.molip.domain.workspace.exception.WorkspaceMemberExistException;
+import com.edumax.molip.domain.workspace.exception.WorkspaceRegisterExistException;
 import com.edumax.molip.domain.workspace.repository.InviteCodeRepository;
 import com.edumax.molip.domain.workspace.repository.WorkspaceMemberRepository;
 import com.edumax.molip.domain.workspace.repository.WorkspaceRegisterRepository;
 import com.edumax.molip.domain.workspace.repository.WorkspaceRepository;
 import com.edumax.molip.domain.workspace.types.WorkspaceMemberRole;
+import com.edumax.molip.domain.workspace.types.WorkspaceMemberStatus;
 import com.edumax.molip.domain.workspace.types.WorkspaceRegisterStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,6 +41,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -123,25 +130,62 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     Member member = memberRepository.findById(member_id)
         .orElseThrow(NoMemberException::new); // GlobalExceptionHandler
     WorkspaceRegisterStatus status = joinWorkspaceRequest.getStatus();
+    // PENDING, APPROVE, REJECTED
     LocalDateTime applied_at = joinWorkspaceRequest.getApplied_at();
-    if (status == WorkspaceRegisterStatus.APPROVE) {
-
-    } else if (status == WorkspaceRegisterStatus.REJECTED) {
-
-    } else {
-      // PENDING
-      WorkspaceRegister workspaceRegister =
-          WorkspaceRegister.builder()
-          .build();
+    switch (status) {
+      case PENDING: {
+        // 사용자 워크스페이스 가입 신청
+        // 워크 스페이스 가입 대기에 추가 (PENDING)
+        if (workspaceRegisterRepository.findByMemberAndWorkspace(member, workspace).isPresent())
+          throw new WorkspaceRegisterExistException();
+        workspaceRegisterRepository.save(WorkspaceRegister.builder()
+                .status(WorkspaceRegisterStatus.PENDING)
+                .member(member)
+                .workspace(workspace)
+            .build());
+        break;
+      }
+      case APPROVE: {
+        // 관리자 워크스페이스 가입 승인
+        if (role == null)
+          throw new NoWorkspaceMemberRoleException();
+        else if (applied_at == null)
+          throw new NoWorkspaceAppliedAtException();
+        WorkspaceRegister workspaceRegister =
+            workspaceRegisterRepository.
+                findByMemberAndWorkspace(member, workspace).
+                orElseThrow(NoWorkspaceRegisterException::new);
+        // 워크 스페이스 가입 대기 수정 (APPROVE)
+        workspaceRegister.setApprovedAt(applied_at);
+        workspaceRegister.setStatus(WorkspaceRegisterStatus.APPROVE);
+        workspaceRegisterRepository.save(workspaceRegister);
+        // 워크 스페이스 참여자에 추가
+        if (workspaceMemberRepository.findByMemberAndWorkspace(member, workspace).isPresent())
+          throw new WorkspaceMemberExistException();
+        workspaceMemberRepository.save(WorkspaceMember.builder()
+                .status(WorkspaceMemberStatus.ACTIVE)
+                .role(role)
+                .member(member)
+                .workspace(workspace)
+            .build());
+        break;
+      }
+      case REJECTED: {
+        // 관리자 워크스페이스 가입 반려
+        WorkspaceRegister workspaceRegister =
+            workspaceRegisterRepository.
+                findByMemberAndWorkspace(member, workspace).
+                orElseThrow(NoWorkspaceRegisterException::new);
+        // 워크 스페이스 가입 대기에서 삭제
+        workspaceRegisterRepository.delete(workspaceRegister);
+        // 워크 스페이스 참여자에서 삭제
+        Optional<WorkspaceMember> workspaceMember =
+            workspaceMemberRepository.findByMemberAndWorkspace(member, workspace);
+        if (workspaceMember.isPresent())
+          workspaceMemberRepository.delete(workspaceMember.orElse(null));
+        break;
+      }
     }
-
-    workspaceMemberRepository.save(WorkspaceMember.builder()
-        .connectedAt(applied_at)
-        .status(null) // status integer값?
-        .role(null)
-        .member(member)
-        .workspace(workspace)
-        .build());
     return JoinWorkspaceResponse.builder().apiResult(true).build();
   }
 

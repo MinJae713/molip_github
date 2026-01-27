@@ -2,8 +2,13 @@ package com.edumax.molip.common.exception;
 
 import com.edumax.molip.domain.member.exception.DuplicateEmailException;
 import com.edumax.molip.domain.member.exception.NoMemberException;
+import com.edumax.molip.domain.workspace.exception.NoWorkspaceAppliedAtException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceMemberException;
+import com.edumax.molip.domain.workspace.exception.NoWorkspaceRegisterException;
+import com.edumax.molip.domain.workspace.exception.NoWorkspaceMemberRoleException;
+import com.edumax.molip.domain.workspace.exception.WorkspaceMemberExistException;
+import com.edumax.molip.domain.workspace.exception.WorkspaceRegisterExistException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponse;
@@ -33,7 +38,12 @@ public class GlobalExceptionHandler {
   }
   @ExceptionHandler({
       NoWorkspaceException.class,
-      NoWorkspaceMemberException.class
+      NoWorkspaceMemberException.class,
+      NoWorkspaceRegisterException.class,
+      WorkspaceRegisterExistException.class,
+      WorkspaceMemberExistException.class,
+      NoWorkspaceMemberRoleException.class,
+      NoWorkspaceAppliedAtException.class
   })
   public ResponseEntity<ErrorResponse> handleWorkspaceBadRequestException(RuntimeException e) {
     ErrorResponse body = ErrorResponse.create(e, HttpStatus.BAD_REQUEST, e.getMessage());
