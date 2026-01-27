@@ -50,8 +50,6 @@ public class Session {
   @Column(length = 255)
   private String description;
 
-  @Column(nullable = false)
-  private Integer number;
 
   @Column(name = "start_at", nullable = false)
   private LocalTime startAt;
@@ -61,10 +59,10 @@ public class Session {
 
   @Column(name = "end_at", nullable = false)
   private LocalTime endAt;
-
-  @Column(name = "attendance_excused", nullable = false, precision = 8, scale = 2)
-  private BigDecimal attendanceExcused;
-
+  @Column(name = "use_focus", nullable = false)
+  private Boolean useFocus=false;
+  @Column(name = "use_emotion", nullable = false)
+  private Boolean useEmotion=false;
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
