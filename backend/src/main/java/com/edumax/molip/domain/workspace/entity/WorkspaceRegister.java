@@ -1,6 +1,7 @@
 package com.edumax.molip.domain.workspace.entity;
 
 import com.edumax.molip.domain.member.entity.Member;
+import com.edumax.molip.domain.workspace.types.WorkspaceRegisterStatus;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.*;
@@ -36,16 +37,11 @@ public class WorkspaceRegister {
   @Column(nullable = false, length = 10)
   private WorkspaceRegisterStatus status;
 
-  public enum WorkspaceRegisterStatus {
-    PENDING,
-    APPROVE,
-    REJECTED
-  }
-
   @Column(name = "reject_reason", length = 1000)
   private String rejectReason;
 
-  @Column(name = "reject_type", nullable = false)
+  @Enumerated(EnumType.STRING)
+  @Column(name = "reject_type")
   private RejectType rejectType;
 
   public enum RejectType {

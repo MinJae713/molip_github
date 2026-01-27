@@ -9,6 +9,8 @@ import com.edumax.molip.domain.member.entity.Member;
 import com.edumax.molip.domain.quiz.entity.ExitQuizResult;
 import com.edumax.molip.domain.review.entity.*;
 import com.edumax.molip.domain.session.entity.CourseLearner;
+import com.edumax.molip.domain.workspace.types.WorkspaceMemberRole;
+import com.edumax.molip.domain.workspace.types.WorkspaceMemberStatus;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -38,19 +40,9 @@ public class WorkspaceMember {
   @Column(nullable = false, length = 20)
   private WorkspaceMemberStatus status;
 
-  public enum WorkspaceMemberStatus {
-    ACTIVE,
-    INACTIVE
-  }
-
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
   private WorkspaceMemberRole role;
-
-  public enum WorkspaceMemberRole {
-    LEARNER,
-    TRAINER
-  }
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
