@@ -20,10 +20,10 @@ import TrainerMyCoursesView from "@/views/Trainer/TrainerMyCoursesView.vue";
 import TrainerLiveSessionView from "@/views/Trainer/TrainerLiveSessionView.vue";
 // 관리자 라우트
 import AdminWorkspaceView from "@/views/Admin/AdminWorkspaceView.vue";
-import WorkspaceSettingsView from "@/views/Admin/WorkspaceSettingsView.vue";
-import MemberManagementView from "@/views/Admin/MemberManagementView.vue";
-import JoinRequestView from "@/views/Admin/JoinRequestView.vue";
-import InviteCodeView from "@/views/Admin/InviteCodeView.vue";
+import AdminWorkspaceSettingsView from "@/views/Admin/AdminWorkspaceSettingsView.vue";
+import AdminMemberManagementView from "@/views/Admin/AdminMemberManagementView.vue";
+import AdminJoinRequestView from "@/views/Admin/AdminJoinRequestView.vue";
+import AdminInviteCenterView from "@/views/Admin/AdminInviteCenterView.vue";
 // 학습자 라우트
 import LearnerMyCoursesView from "@/views/Learner/LearnerMyCoursesView.vue";
 import LearnerClassroomView from "@/views/Learner/LearnerClassroomView.vue";
@@ -106,32 +106,32 @@ const router = createRouter({
     {
       path: "/workspace/:id/admin",
       component: MainLayout,
+      meta: { requiresAuth: true },
       children: [
         {
           path: "",
           name: "workspaceAdmin",
           component: AdminWorkspaceView,
-          meta: { requiresAuth: true },
         },
         {
           path: 'settings',
-          name: 'AdminWorkspaceSettings',
-          component: WorkspaceSettingsView,
+          name: 'workspaceAdminSettings',
+          component: AdminWorkspaceSettingsView,
         },
         {
           path: 'members',
-          name: 'MemberManagement',
-          component: MemberManagementView
+          name: 'workspaceAdminMembers',
+          component: AdminMemberManagementView,
         },
         {
           path: 'requests',
-          name: 'JoinRequest',
-          component: JoinRequestView
+          name: 'workspaceAdminRequest',
+          component: AdminJoinRequestView,
         },
         {
-          path: 'invite-codes',
-          name: 'InviteCodeCenter',
-          component: InviteCodeView
+          path: 'invite',
+          name: 'workspaceAdminInvite',
+          component: AdminInviteCenterView,
         }
       ],
     },

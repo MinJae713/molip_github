@@ -48,6 +48,7 @@ export interface WorkspaceMember extends User {
     status: 'ACTIVE' | 'INACTIVE';            // 워크스페이스별 상태
     joinedAt: string;
     lastLogin: string;
+    courses?: string[]; // [추가] 수강 중인 강의 목록 (없을 수 있으므로 선택적 속성)
     // 이미지 상세 정보에 필요한 통계
     stats?: {
         progress: number;

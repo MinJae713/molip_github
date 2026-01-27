@@ -26,7 +26,7 @@ export const useMemberStore = defineStore('member', () => {
 
   // 2. 특정 멤버 상세 정보 조회 (캐시 우선 로직)
   async function fetchMemberDetail(memberId: number) {
-    const cached = members.value.find(m => m.id === memberId);
+    const cached = members.value.find(m => m.member_id === memberId);
     if (cached) currentMemberDetail.value = cached;
 
     try {
@@ -42,12 +42,12 @@ export const useMemberStore = defineStore('member', () => {
     try {
       await api.patch(`/members/${memberId}`, { role: newRole });
       
-      const targetMember = members.value.find(m => m.id === memberId);
+      const targetMember = members.value.find(m => m.member_id === memberId);
       if (targetMember) {
         targetMember.role = newRole as any; 
       }
       
-      if (currentMemberDetail.value?.id === memberId) {
+      if (currentMemberDetail.value?.member_id === memberId) {
         currentMemberDetail.value.role = newRole as any;
       }
       return true;
@@ -63,10 +63,10 @@ export const useMemberStore = defineStore('member', () => {
       await Promise.all(ids.map(id => api.patch(`/members/${id}`, { role: newRole })));
       
       members.value = members.value.map(m => 
-        ids.includes(m.id) ? { ...m, role: newRole as any } : m
+        ids.includes(m.member_id) ? { ...m, role: newRole as any } : m
       );
 
-      if (currentMemberDetail.value && ids.includes(currentMemberDetail.value.id)) {
+      if (currentMemberDetail.value && ids.includes(currentMemberDetail.value.member_id)) {
         currentMemberDetail.value.role = newRole as any;
       }
       return true;
@@ -81,12 +81,12 @@ export const useMemberStore = defineStore('member', () => {
     try {
       await api.patch(`/members/${memberId}`, { status: newStatus });
 
-      const targetMember = members.value.find(m => m.id === memberId);
+      const targetMember = members.value.find(m => m.member_id === memberId);
       if (targetMember) {
         targetMember.status = newStatus as any;
       }
 
-      if (currentMemberDetail.value?.id === memberId) {
+      if (currentMemberDetail.value?.member_id === memberId) {
         currentMemberDetail.value.status = newStatus as any;
       }
       return true;
@@ -102,10 +102,10 @@ export const useMemberStore = defineStore('member', () => {
       await Promise.all(ids.map(id => api.patch(`/members/${id}`, { status: newStatus })));
 
       members.value = members.value.map(m => 
-        ids.includes(m.id) ? { ...m, status: newStatus as any } : m
+        ids.includes(m.member_id) ? { ...m, status: newStatus as any } : m
       );
 
-      if (currentMemberDetail.value && ids.includes(currentMemberDetail.value.id)) {
+      if (currentMemberDetail.value && ids.includes(currentMemberDetail.value.member_id)) {
         currentMemberDetail.value.status = newStatus as any;
       }
       return true;
@@ -129,7 +129,7 @@ export const useMemberStore = defineStore('member', () => {
       const allMembersRes = await api.get<WorkspaceMember[]>(`/members`);
       
       joinRequests.value = regRes.data.map((reg: any) => {
-        const userDetail = allMembersRes.data.find(m => String(m.id) === String(reg.member_id));
+        const userDetail = allMembersRes.data.find(m => String(m.member_id) === String(reg.member_id));
         return {
           ...reg,
           user: userDetail // 유저의 이름, 이메일, 이미지 등을 담음
