@@ -9,6 +9,8 @@ import com.edumax.molip.domain.quiz.repository.ExitQuizAnswerRepository;
 import com.edumax.molip.domain.quiz.repository.ExitQuizRepository;
 import com.edumax.molip.domain.session.dto.request.SessionCreateRequest;
 import com.edumax.molip.domain.session.dto.request.SessionCreateRequest.QuizDto;
+import com.edumax.molip.domain.session.dto.response.SessionDetailResponse;
+import com.edumax.molip.domain.session.dto.response.SessionSimpleResponse;
 import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.session.repository.SessionRepository;
 import java.util.List;
@@ -52,6 +54,26 @@ public class SessionServiceImpl implements SessionService {
     }
 
     return savedSession.getSessionId();
+  }
+
+  @Override
+  public SessionSimpleResponse getSessionSimple(Long sessionId) {
+    Session session = sessionRepository.findById(sessionId)
+        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 세션입니다. ID: " + sessionId));
+    
+    return SessionSimpleResponse.from(session);
+  }
+
+  @Override
+  public SessionDetailResponse getSessionDetail(Long sessionId) {
+    Session session = sessionRepository.findById(sessionId)
+        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 세션입니다. ID: " + sessionId));
+
+    // ExitQuiz와 Answer는 Fetch Join이나 Batch Size로 최적화가 필요할 수 있으나, 
+    // 현재는 간단히 Lazy Loading을 통해 가져오도록 처리 (엔티티 그래프 내에서 조회됨)
+    List<ExitQuiz> exitQuizzes = session.getExitQuizzes();
+    
+    return SessionDetailResponse.of(session, exitQuizzes);
   }
 
   private void createQuizzes(Session session, List<QuizDto> quizDtos) {
