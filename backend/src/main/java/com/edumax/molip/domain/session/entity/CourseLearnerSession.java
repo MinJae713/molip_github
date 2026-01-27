@@ -43,8 +43,10 @@ public class CourseLearnerSession {
   private Integer exitTicket;
 
   @Column(name = "is_attendance", nullable = false)
-  private Boolean isAttendance;
+  private Boolean isAttendance=false;
 
+  @Column(name = "attendance_time", nullable = false)
+  private Integer attendanceTime=0;
   /** 강의 수강생 (CourseLearner) FK: course_learner_id */
   @ManyToOne
   @JoinColumn(name = "course_learner_id", nullable = false)
