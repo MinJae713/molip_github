@@ -165,6 +165,11 @@ const router = createRouter({
       component: LearnerLiveSessionView,
       meta: { requiresAuth: true },
     },
+    {
+      path: '/live',
+      name: 'live-room',
+      component: () => import('@/views/Live/InstructorConsole.vue')
+    }
   ],
 });
 
