@@ -24,6 +24,7 @@ import LearnerMyCoursesView from "@/views/Learner/LearnerMyCoursesView.vue";
 import LearnerClassroomView from "@/views/Learner/LearnerClassroomView.vue";
 import LearnerLiveSessionView from "@/views/Learner/LearnerLiveSessionView.vue";
 import LearnerWorkspace from "@/views/Learner/LearnerWorkspace.vue";
+import LearnerStatisticsView from "@/views/Learner/LearnerStatisticsView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -89,6 +90,11 @@ const router = createRouter({
           path: "classroom/:courseId",
           name: "workspaceLearnerClassroom",
           component: LearnerClassroomView,
+        },
+        {
+          path: "my-stats",
+          name: "workspaceLearnerMyStats",
+          component: LearnerStatisticsView,
         },
       ],
     },

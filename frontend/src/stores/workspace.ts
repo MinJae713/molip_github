@@ -9,7 +9,6 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   const myWorkspaces = ref<Workspace[]>([]);
   const currentWorkspace = ref<Workspace | null>(null);
   const isLoaded = ref(false);
-
   const workspaceStats = ref<WorkspaceStats | null>(null);
 
   // 내가 가입한 워크스테이션 목록 가져오기

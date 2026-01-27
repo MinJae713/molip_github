@@ -820,5 +820,27 @@
       "fileUrl": "#",
       "fileType": "txt"
     }
+  ],
+  "learner_workspace_top_card_stats": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "workspace_id": 1,
+      "role": "LEARNER",
+      "values": [
+        {
+          "icon": "timer",
+          "title": "이번 주 학습 시간",
+          "unit": "분",
+          "value": 324
+        },
+        {
+          "icon": "bolt",
+          "title": "평균 집중도",
+          "unit": "%",
+          "value": 86
+        }
+      ]
+    }
   ]
 }

@@ -6,6 +6,7 @@ export interface Workspace {
   memberCount: 4;
   courseCount: 5;
   my_status: null; // 검색 가능 여부 워크스페이스
+  my_role: string;
 }
 
 export interface Course {
@@ -95,4 +96,11 @@ export interface VideoRoom {
   janus_room_id: number;
   roomAlive: boolean;
   pin: string;
+}
+
+export interface LearnerWorkspaceTopCardStats {
+  user_id: number; // 유저 아이디
+  workspace_id: number; // 워크스페이스 아이디
+  week_study_time: number; // 주간 학습 시간(분단위)
+  averageConcentration: number; //평균 집중도
 }

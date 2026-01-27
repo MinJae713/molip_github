@@ -9,7 +9,8 @@
             <!-- Video Area -->
             <!-- 강의 화면, 집중도 정보, 경고 메시지, 채팅 버튼 -->
             <LiveVideoArea :focusStatus="focusStatus" :showWarning="showWarning" @close-warning="showWarning = false"
-                :mainStream="videoStore.mainStream" :pipStream="videoStore.pipStream" :userRole="videoStore.userRole">
+                :mainStream="videoStore.mainStream" :pipStream="videoStore.pipStream"
+                :userRole="workspaceStore.currentWorkspace?.my_role">
                 <template #controls>
                     <LiveControlDock :isMicOn="isMicOn" :isCameraOn="isCameraOn" :isHandRaised="isHandRaised"
                         @toggle-mic="toggleMic" @toggle-camera="toggleCamera" @raise-hand="raiseHand" />
@@ -51,7 +52,6 @@ import ChatPanel from '@/components/Learner/LearnerLiveSession/ChatPanel.vue';
 const route = useRoute();
 const videoStore = useVideoRoomStore();
 const workspaceStore = useWorkspaceStore();
-
 
 // State
 const elapsedTime = ref(2712); // seconds (00:45:12)
