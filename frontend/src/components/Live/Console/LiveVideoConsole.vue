@@ -31,14 +31,14 @@ const liveStore = useLiveStore();
         />
         <div v-else class="flex flex-col items-center text-slate-700">
           <span class="material-symbols-outlined text-6xl mb-3">videocam_off</span>
-          <p class="font-bold text-slate-500">카메라가 꺼져 있습니다</p>
+          <p class="font-bold text-slate-500 uppercase tracking-widest text-[10px]">Camera Offline</p>
         </div>
       </template>
 
       <Transition name="fade">
         <div 
           v-if="liveStore.isScreenSharing && liveStore.isCamOn"
-          class="absolute top-6 right-6 z-20 w-56 aspect-video bg-slate-900 rounded-3xl border-2 border-white/20 shadow-2xl overflow-hidden"
+          class="absolute top-6 right-6 z-20 w-64 aspect-video bg-slate-900 rounded-3xl border-2 border-white/20 shadow-2xl overflow-hidden"
         >
           <LocalVideoView 
             :stream="liveStore.myStream" 
@@ -53,7 +53,7 @@ const liveStore = useLiveStore();
       </Transition>
     </div>
 
-    <div class="bg-slate-900 px-8 py-5 border-t border-slate-800 flex items-center justify-between">
+    <div class="bg-slate-900 px-8 py-4 border-t border-slate-800 flex items-center justify-between">
       
       <div class="flex items-center gap-4">
         <MediaButton 

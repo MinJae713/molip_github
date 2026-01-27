@@ -17,6 +17,7 @@ import LoginView from "@/views/Common/LoginView.vue";
 // 강사 라우트
 import TrainerWorkspace from "@/views/Trainer/TrainerWorkspace.vue";
 import TrainerMyCoursesView from "@/views/Trainer/TrainerMyCoursesView.vue";
+import TrainerLiveSessionView from "@/views/Trainer/TrainerLiveSessionView.vue";
 // 관리자 라우트
 import AdminWorkspaceView from "@/views/Admin/AdminWorkspaceView.vue";
 import WorkspaceSettingsView from "@/views/Admin/WorkspaceSettingsView.vue";
@@ -167,8 +168,8 @@ const router = createRouter({
     },
     {
       path: '/live',
-      name: 'live-room',
-      component: () => import('@/views/Live/InstructorConsole.vue')
+      name: 'trainerLiveSession',
+      component: () => import('@/views/Trainer/TrainerLiveSessionView.vue')
     }
   ],
 });

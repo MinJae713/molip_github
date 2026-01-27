@@ -4,29 +4,38 @@ const liveStore = useLiveStore();
 </script>
 
 <template>
-  <div v-if="liveStore.selectedStudent" class="bg-white rounded-4xl border border-slate-100 shadow-xl overflow-hidden flex flex-col h-full">
-    <div class="p-4 flex items-center justify-between border-b border-slate-50">
+  <div v-if="liveStore.selectedStudent" class="bg-white rounded-3xl border border-slate-100 shadow-2xl overflow-hidden flex flex-col h-full ring-1 ring-slate-100 transition-all">
+    <div class="px-5 py-3 flex items-center justify-between border-b border-slate-50">
       <div class="flex items-center gap-2">
-        <span class="size-2 bg-emerald-500 rounded-full"></span>
-        <h3 class="font-bold text-slate-800 text-sm">모니터링: {{ liveStore.selectedStudent.name }}</h3>
+        <span class="material-symbols-outlined text-indigo-500 text-[18px]">monitor</span>
+        <h3 class="font-bold text-slate-800 text-[13px]">모니터링: {{ liveStore.selectedStudent.name }}</h3>
       </div>
-      <button @click="liveStore.selectedStudent = null" class="text-slate-400 hover:text-slate-600">
-        <span class="material-symbols-outlined text-sm">close</span>
+      <button @click="liveStore.selectedStudent = null" class="text-slate-300 hover:text-slate-500 transition-colors">
+        <span class="material-symbols-outlined text-[18px]">close</span>
       </button>
     </div>
 
-    <div class="flex-1 bg-slate-900 relative">
-      <video autoplay playsinline class="w-full h-full object-cover"></video>
+    <div class="relative w-full aspect-video bg-slate-900 overflow-hidden group">
+      <!-- 실제 웹알티씨 스트림이 들어갈 자리 -->
+      <video autoplay playsinline class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"></video>
       
-      <div class="absolute top-4 left-4 bg-black/50 backdrop-blur-md p-2 rounded-xl border border-white/10">
-        <p class="text-[10px] text-white font-medium uppercase tracking-tighter">Current Attention</p>
-        <p class="text-lg font-black text-emerald-400">{{ liveStore.selectedStudent.concentrationScore }}%</p>
+      <div class="absolute top-3 right-3 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 flex items-center gap-1.5">
+        <span class="size-1.5 bg-red-500 rounded-full animate-pulse"></span>
+        <p class="text-[9px] text-white font-black tracking-tighter uppercase">Attention: {{ liveStore.selectedStudent.concentrationScore }}%</p>
+      </div>
+
+      <!-- 오버레이 안내 (카메라가 꺼져 있을 때) -->
+      <div v-if="!liveStore.selectedStudent.isCameraOn" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80">
+        <span class="material-symbols-outlined text-3xl text-slate-700 mb-2">videocam_off</span>
+        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">No Stream Available</p>
       </div>
     </div>
     
-    <div class="p-4 bg-slate-50 h-24">
-       <p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Focus Trend</p>
-       <div class="w-full h-8 bg-slate-200 rounded-lg animate-pulse"></div>
+    <div class="p-4 bg-white">
+      <button class="w-full py-3.5 bg-indigo-600 text-white rounded-2xl font-bold text-[11px] flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-100">
+        <span class="material-symbols-outlined text-base">notifications_active</span>
+        경고 보내기
+      </button>
     </div>
   </div>
 </template>
