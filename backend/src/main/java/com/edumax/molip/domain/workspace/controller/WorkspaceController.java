@@ -60,4 +60,17 @@ public class WorkspaceController {
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(workspaceService.findWorkspaceCoursesById(workspaceId, member.getMemberId()));
   }
+
+  @GetMapping("/me")
+  public ResponseEntity<List<FindWorkspaceResponse>> findMyWorkspaces(
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.findMyWorkspaces(member.getMemberId()));
+  }
+
+  @GetMapping("/{search_query}/search")
+  public ResponseEntity<List<FindWorkspaceResponse>> searchWorkspaces(
+      @PathVariable(name = "search_query") String searchQuery,
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.searchWorkspaces(searchQuery, member.getMemberId()));
+  }
 }

@@ -2,6 +2,7 @@ package com.edumax.molip.domain.workspace.dto.response;
 
 import com.edumax.molip.domain.course.types.CourseCategory;
 import com.edumax.molip.domain.course.types.CourseStatus;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,6 +24,8 @@ public class FindWorkspaceCoursesByIdResponse {
   private Integer current_lessons; // 끝난 세션 수
   private Integer total_lessons; // 총 세션 수
   private Boolean is_liked; // 찜 여부
+  @JsonFormat(shape = JsonFormat.Shape.STRING,
+      pattern = "yyyy-MM-dd'T'HH:mm:ss")
   private LocalDateTime d_day; // created_at
   private CourseStatus status;
   private Boolean enrollment_status; // 수강 신청 여부

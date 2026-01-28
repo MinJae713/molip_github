@@ -40,6 +40,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -227,7 +228,6 @@ public class WorkspaceServiceImpl implements WorkspaceService {
       Boolean isLiked = zzimRepository.
           findByWorkspaceMemberAndCourse(workspaceMember, course).
           isPresent();
-      System.out.println(courseId+", "+isLiked+", "+workspaceMember.getWorkspaceMemberId());
       LocalDateTime dDay = course.getCreatedAt();
       CourseStatus status = course.getStatus();
       Boolean enrollmentStatus = courseApplyRepository.
@@ -249,5 +249,27 @@ public class WorkspaceServiceImpl implements WorkspaceService {
           .build());
     });
     return result;
+  }
+
+  @Override
+  public List<FindWorkspaceResponse> findMyWorkspaces(Long memberId) {
+    Member member = memberRepository.findById(memberId)
+        .orElseThrow(NoMemberException::new);
+    List<WorkspaceMember> workspaceMembers =
+        workspaceMemberRepository.findByMember(member);
+    List<FindWorkspaceResponse> result = new ArrayList<>();
+    workspaceMembers.stream().sorted(new Comparator<WorkspaceMember>() {
+      @Override
+      public int compare(WorkspaceMember o1, WorkspaceMember o2) {
+        return o2.getWorkspaceMemberId().compareTo(o1.getWorkspaceMemberId());
+      }
+    }).forEach(workspaceMember ->
+        result.add(findWorkspace(workspaceMember.getWorkspace(), memberId)));
+    return result;
+  }
+
+  @Override
+  public List<FindWorkspaceResponse> searchWorkspaces(String searchQuery, Long memberId) {
+    return List.of();
   }
 }
