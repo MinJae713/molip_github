@@ -1,6 +1,7 @@
 package com.edumax.molip.common.exception;
 
 import com.edumax.molip.domain.member.exception.DuplicateEmailException;
+import com.edumax.molip.domain.member.exception.NoAdminException;
 import com.edumax.molip.domain.member.exception.NoMemberException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceAppliedAtException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceException;
@@ -30,7 +31,8 @@ public class GlobalExceptionHandler {
   //    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
   //  }
   @ExceptionHandler({
-      NoMemberException.class
+      NoMemberException.class,
+      NoAdminException.class
   })
   public ResponseEntity<ErrorResponse> handleMemberBadRequestException(RuntimeException e) {
     ErrorResponse body = ErrorResponse.create(e, HttpStatus.BAD_REQUEST, e.getMessage());

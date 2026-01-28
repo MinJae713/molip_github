@@ -1,15 +1,14 @@
 package com.edumax.molip.domain.workspace.service;
 
 import com.edumax.molip.domain.course.entity.Course;
-import com.edumax.molip.domain.course.entity.CourseApply;
 import com.edumax.molip.domain.course.repository.CourseApplyRepository;
 import com.edumax.molip.domain.course.repository.ZzimRepository;
 import com.edumax.molip.domain.course.types.CourseCategory;
 import com.edumax.molip.domain.course.types.CourseStatus;
 import com.edumax.molip.domain.member.entity.Member;
+import com.edumax.molip.domain.member.exception.NoAdminException;
 import com.edumax.molip.domain.member.exception.NoMemberException;
 import com.edumax.molip.domain.member.repository.MemberRepository;
-import com.edumax.molip.domain.review.entity.LearnerAnalysis;
 import com.edumax.molip.domain.review.repository.LearnerAnalysisRepository;
 import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.workspace.dto.request.ChangeWorkspaceMemberRoleRequest;
@@ -53,7 +52,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -272,22 +270,53 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   }
 
   @Override
-  public List<FindWorkspaceResponse> searchWorkspaces(String searchQuery, Long memberId) {
-    // 일단 워스 이름으로만 검색되도록 구현!!
-    List<Workspace> workspaces = workspaceRepository.findByNameContaining(searchQuery);
-    return workspaces.stream().map(workspace -> findWorkspace(workspace, memberId)).toList();
+  public FindWorkspaceResponse searchWorkspaces(String searchQuery, Long memberId) {
+    // 워스 가입 코드가 일치한 것으로 검색
+    Optional<InviteCode> inviteCode = inviteCodeRepository.findByCodeName(searchQuery);
+    return inviteCode.isPresent() ?
+        findWorkspace(inviteCode.orElse(null).getWorkspace(), memberId): null;
   }
 
   @Override
   @Transactional
-  public CreateWorkspaceResponse createWorkspace(CreateWorkspaceRequest createWorkspaceRequest) {
-    return null;
+  public CreateWorkspaceResponse createWorkspace(CreateWorkspaceRequest createWorkspaceRequest, Long memberId) {
+    String name = createWorkspaceRequest.getName();
+    String description = createWorkspaceRequest.getDescription();
+    String logoImage = createWorkspaceRequest.getLogo_image(); // 임시
+
+    Member member = memberRepository.findById(memberId).
+        orElseThrow(NoMemberException::new);
+    if (member.getRole() != Member.Role.ADMIN)
+      throw new NoAdminException();
+
+    workspaceRepository.save(Workspace.builder()
+            .name(name)
+            .description(description)
+            .logoUrl("더미 - S3 연동 이후 URL이 들어감")
+            .isSearchable(true)
+            .member(member)
+        .build());
+    return CreateWorkspaceResponse.builder().apiResult(true).build();
   }
 
   @Override
   @Transactional
   public UpdateWorkspaceResponse updateWorkspace(UpdateWorkspaceRequest updateWorkspaceRequest) {
-    return null;
+    Long workspaceId = updateWorkspaceRequest.getWorkspace_id();
+    Workspace workspace = workspaceRepository.findById(workspaceId)
+        .orElseThrow(NoWorkspaceException::new);
+    String name = updateWorkspaceRequest.getName();
+    if (name != null && !name.isEmpty())
+      workspace.setName(name);
+    String description = updateWorkspaceRequest.getDescription();
+    if (description != null && !description.isEmpty())
+      workspace.setDescription(description);
+//    String logoImage = updateWorkspaceRequest.getLogo_image(); // 임시
+//    if (logoImage != null && !logoImage.isEmpty())
+//      workspace.setLogoUrl(logoImage);
+    // 임시
+    workspaceRepository.save(workspace);
+    return UpdateWorkspaceResponse.builder().apiResult(true).build();
   }
 
   @Override

@@ -12,9 +12,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ChangeWorkspaceMemberRoleRequest {
 
-  @NotNull(message = "멤버 아이디는 필수값입니다.")
-  @Positive(message = "멤버 아이디는 양수여야 합니다.")
-  private Long member_id;
+  @NotNull(message = "워크스페이스 멤버 아이디는 필수값입니다.")
+  @Positive(message = "워크스페이스 멤버 아이디는 양수여야 합니다.")
+  private Long workspace_member_id;
 
   @NotNull(message = "멤버 역할은 필수값입니다.")
   private WorkspaceMemberRole workspaceMemberRole;

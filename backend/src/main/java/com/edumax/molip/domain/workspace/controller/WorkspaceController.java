@@ -82,7 +82,7 @@ public class WorkspaceController {
   }
 
   @GetMapping("/{search_query}/search")
-  public ResponseEntity<List<FindWorkspaceResponse>> searchWorkspaces(
+  public ResponseEntity<FindWorkspaceResponse> searchWorkspaces(
       @PathVariable(name = "search_query") String searchQuery,
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(workspaceService.searchWorkspaces(searchQuery, member.getMemberId()));
@@ -92,7 +92,7 @@ public class WorkspaceController {
   public ResponseEntity<CreateWorkspaceResponse> createWorkspace(
       @RequestBody CreateWorkspaceRequest createWorkspaceRequest,
       @AuthenticationPrincipal MemberUserDetails member) {
-    return ResponseEntity.ok(workspaceService.createWorkspace(createWorkspaceRequest));
+    return ResponseEntity.ok(workspaceService.createWorkspace(createWorkspaceRequest, member.getMemberId()));
   }
 
   @PatchMapping

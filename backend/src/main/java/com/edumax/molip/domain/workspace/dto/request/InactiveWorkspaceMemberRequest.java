@@ -11,9 +11,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class InactiveWorkspaceMemberRequest {
 
-  @NotNull(message = "멤버 아이디는 필수값입니다.")
-  @Positive(message = "멤버 아이디는 양수여야 합니다.")
-  private Long member_id;
+  @NotNull(message = "워크스페이스 멤버 아이디는 필수값입니다.")
+  @Positive(message = "워크스페이스 멤버 아이디는 양수여야 합니다.")
+  private Long workspace_member_id;
 
   private Boolean is_send_mail;
   // 와이어 프레임 내용 반영 - 현재는 미구현 상태

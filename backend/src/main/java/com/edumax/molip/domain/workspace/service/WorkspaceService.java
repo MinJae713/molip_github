@@ -34,9 +34,9 @@ public interface WorkspaceService {
 
   List<FindWorkspaceResponse> findMyWorkspaces(Long memberId); // 내 워크스페이스 목록 조회
 
-  List<FindWorkspaceResponse> searchWorkspaces(String searchQuery, Long memberId); // 워크스페이스 검색
+  FindWorkspaceResponse searchWorkspaces(String searchQuery, Long memberId); // 워크스페이스 검색
 
-  CreateWorkspaceResponse createWorkspace(CreateWorkspaceRequest createWorkspaceRequest); // 워크스페이스 생성
+  CreateWorkspaceResponse createWorkspace(CreateWorkspaceRequest createWorkspaceRequest, Long memberId); // 워크스페이스 생성
 
   UpdateWorkspaceResponse updateWorkspace(UpdateWorkspaceRequest updateWorkspaceRequest); // 워크스페이스 수정
 

@@ -17,5 +17,5 @@ public abstract class GeneralWorkspaceRequest {
   @Size(max = 300, message = "워크스페이스 설명은 300자 이내여야 합니다.")
   protected String description;
 
-  protected String logoUrl; // 임시 - 실제 구현 시 MultipartFile로 변경 예정
+  protected String logo_image; // 임시 - 실제 구현 시 MultipartFile로 변경 예정
 }
