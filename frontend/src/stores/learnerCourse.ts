@@ -4,9 +4,8 @@ import { ref } from "vue";
 import api from "@/api";
 import type { Course, Material } from "@/types";
 
-// [리팩토링 노트]
-// 이 스토어는 '수강생(Learner)'이 수강 중인 코스를 관리하는 역할에 집중합니다.
-// 강사가 관리하는 코스 정보는 `stores/trainerCourse.ts`를 사용하세요.
+// 이 스토어는 수강생(Learner)이 수강 중인 코스를 관리하는 역할에 집중
+// 강사가 관리하는 코스 정보는 `stores/trainerCourse.ts`를 사용
 
 export const useLearnerCourseStore = defineStore("learnerCourse", () => {
   // --- 상태 (State) ---
@@ -46,10 +45,7 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
       request_date: course.request_date,
     }));
   };
-
-  // --- 액션 (Actions) ---
-
-  // [R] 워크스페이스 내 개설된 전체 강의 목록 (수강 신청 가능 목록)
+  // 워크스페이스 내 개설된 전체 강의 목록 (수강 신청 가능 목록)
   async function fetchCoursesByWorkspace(
     workspaceId: string | number,
     forceRefresh = false,

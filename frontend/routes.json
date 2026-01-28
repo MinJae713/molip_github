@@ -1,5 +1,5 @@
 {
-  "/members/me/courses/attendance-rate*": "/mock_attendance_stats",
+  "/members/me/courses/attendance-rate": "/mock_attendance_stats",
   "/members/me/workspaces": "/mock_my_workspaces",
 
   "/members/me/course-likes/:id": "/mock_liked_courses/:id",

@@ -9,50 +9,34 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
   const currentManagedCourse = ref<Course | null>(null); // 현재 선택/관리 중인 코스 상세
   const isLoading = ref(false);
 
-  async function fetchMyCourses(workspaceId: string | number, role: string) {
+  // 워크스페이스의 모든 코스 목록 가져오기
+  async function fetchWorkspaceAllCourses(workspaceId: string | number) {
     isLoading.value = true;
 
-    // 디버깅: 값이 제대로 들어오는지 확인
-    console.log(`[Emergency Fix] workspaceId: ${workspaceId}, role: ${role}`);
-
     try {
-      // routes.json을 거치지 않고 db.json의 최상위 키에 직접 접근합니다.
-      const response = await api.get(`/mock_my_courses_unified`, {
-        params: {
-          // json-server 기본 필터링: 컬럼명과 값을 일치시킵니다.
-          workspace_id: workspaceId,
-          role: role,
-        },
-      });
+      const response = await api.get(`/workspaces/${workspaceId}/courses`);
 
-      console.log("[API Success] 응답 데이터 확인:", response.data);
+      workspaceAllCourses.value = response.data.map((c: any) => ({
+        ...c,
+      }));
+    } catch (error) {
+      console.error("워크스페이스 모든 코스 목록 로드 실패:", error);
 
-      // 데이터 할당
-      managedCourses.value = Array.isArray(response.data) ? response.data : [];
-    } catch (error: any) {
-      console.error("[API Error] 데이터 로드 실패:", error);
-      managedCourses.value = [];
+      workspaceAllCourses.value = [];
     } finally {
       isLoading.value = false;
     }
   }
 
-  // trainerCourseStore 내의 함수라고 가정
-
+  // 내 코스 가져오기
   async function fetchMyCourses(workspaceId: string | number, role: string) {
     isLoading.value = true;
-
     // 디버깅용: 호출 시 어떤 값이 들어오는지 확인
     console.log(`[API Request] workspaceId: ${workspaceId}, role: ${role}`);
-
     try {
-      const response = await api.get(`/mock_my_courses_unified`, {
-        params: {
-          workspace_id: workspaceId,
-          role: role,
-        },
-      });
-
+      //진짜경로는 실제 서버 적용할때 목업 서버 바보라서 계속 꼬임
+      //const response = await api.get(`/workspaces/:workspaceId/me/courses?role=TRAINER`,
+      const response = await api.get(`/mock_my_courses_unified`);
       // json-server 필터링 결과가 정상적으로 배열로 오는지 확인
       console.log("[API Success] 응답 데이터:", response.data);
 
