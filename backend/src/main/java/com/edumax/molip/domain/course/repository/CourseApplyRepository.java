@@ -11,4 +11,5 @@ public interface CourseApplyRepository extends JpaRepository<CourseApply, Long> 
 
   @Query("SELECT COUNT(ca) > 0 FROM CourseApply ca WHERE ca.course.courseId = :courseId AND ca.workspaceMember.member.id = :memberId AND ca.isApplied = true")
   boolean existsByMemberIdAndCourseId(@Param("memberId") Long memberId, @Param("courseId") Long courseId);
+   Optional<CourseApply> findByWorkspaceMemberAndCourse(WorkspaceMember workspaceMember, Course course);
 }

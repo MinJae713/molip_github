@@ -1,4 +1,4 @@
-package com.edumax.molip.common.security;
+package com.edumax.molip.common.config;
 
 import com.edumax.molip.common.jwt.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Value;

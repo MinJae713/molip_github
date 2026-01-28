@@ -1,3 +1,3 @@
 package com.edumax.molip.domain.workspace.dto.response;
 
-public class WorkspaceResponseDumy {}
+public class FindMyStatsResponse {}

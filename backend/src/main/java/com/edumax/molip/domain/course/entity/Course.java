@@ -1,5 +1,7 @@
 package com.edumax.molip.domain.course.entity;
 
+import com.edumax.molip.domain.course.types.CourseCategory;
+import com.edumax.molip.domain.course.types.CourseStatus;
 import com.edumax.molip.domain.session.entity.CourseLearner;
 import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.workspace.entity.Workspace;
@@ -32,7 +34,7 @@ public class Course {
   @Column(nullable = false, length = 255)
   private String description;
 
-  @Column(name = "sub_category", nullable = false, length = 20)
+  @Column(name = "sub_category", length = 20)
   private String subCategory;
 
   @Column(name = "max_learner", nullable = false)
@@ -55,13 +57,6 @@ public class Course {
   @Column(nullable = false, length = 20)
   private CourseStatus status;
 
-  public enum CourseStatus {
-    PREPARING,
-    INVITE,
-    PROCEED,
-    FINISH
-  }
-
   @Column(nullable = false)
   private Integer period; // 삭제될 수도 있음
 
@@ -80,10 +75,6 @@ public class Course {
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 50)
   private CourseCategory category;
-
-  public enum CourseCategory {
-    MARKETING // 보이는 것이 일단 하나라 이거만 넣었습니다..!
-  }
 
   /** 수강 신청 */
   @OneToMany(mappedBy = "course")

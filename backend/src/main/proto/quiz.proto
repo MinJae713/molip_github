@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package quiz;
+
+option java_multiple_files = true;
+option java_package = "com.edumax.molip.grpc.quiz";
+
+// 퀴즈 및 컨텍스트 관련 서비스
+service QuizService {
+  // 실시간 퀴즈 생성을 위해 최근 텍스트(약 200자) 조회
+  rpc createQuiz (QuizRequest) returns (QuizResponse);
+}
+
+// 컨텍스트 조회 요청 구조
+message QuizRequest {
+  string session_id = 1;
+  string sttText = 2; // 200자
+}
+
+message QuizResponse {
+  string session_id = 1;
+  string question = 2;
+  string answer1 = 3;
+  string answer2 = 4;
+  string answer3 = 5;
+  string answer4 = 6;
+  int32 correct_answer = 7;
+  string explanation = 8;
+}
