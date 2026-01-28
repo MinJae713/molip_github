@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "LeanerAnalysis")
@@ -26,6 +28,7 @@ public class LearnerAnalysis {
   @MapsId
   @OneToOne
   @JoinColumn(name = "session_id", nullable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private Session session;
 
   @Column(name = "video_url", length = 255)

@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "InviteCode")
@@ -34,5 +36,6 @@ public class InviteCode {
 
   @ManyToOne
   @JoinColumn(name = "workspace_id", nullable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private Workspace workspace;
 }

@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
@@ -70,6 +72,7 @@ public class Course {
 
   @ManyToOne
   @JoinColumn(name = "workspace_member_id", nullable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private WorkspaceMember leaner; // 테이블엔 workspace_member_id로 반영됨
 
   @Enumerated(EnumType.STRING)
@@ -108,5 +111,6 @@ public class Course {
 
   @ManyToOne
   @JoinColumn(name = "workspace_id", nullable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private Workspace workspace;
 }
