@@ -17,9 +17,11 @@
     "mock": "json-server --watch db.json --routes routes.json --port 3000"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.2.1",
     "axios": "^1.13.2",
     "dayjs": "^1.11.19",
     "pinia": "^3.0.4",
+    "sockjs-client": "^1.6.1",
     "vue": "^3.5.26",
     "vue-router": "^4.6.4"
   },
@@ -33,6 +35,7 @@
     "@tailwindcss/vite": "^4.1.18",
     "@tsconfig/node24": "^24.0.3",
     "@types/node": "^24.10.4",
+    "@types/sockjs-client": "^1.5.4",
     "@vitejs/plugin-vue": "^6.0.3",
     "@vitest/browser-playwright": "^4.0.17",
     "@vitest/coverage-v8": "^4.0.17",

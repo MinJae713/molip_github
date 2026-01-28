@@ -5,11 +5,12 @@ import Navbar from '@/components/common/CommonComponents/Navbar.vue';
 import MypageSidebar from '@/components/common/MypageView/MypageSidebar.vue';
 import { useUserStore } from '@/stores/user';
 import { useWorkspaceStore } from '@/stores/workspace';
-import { useCourseStore } from '@/stores/course';
+
+import { useLearnerCourseStore } from '@/stores/learnerCourse';
 
 const userStore = useUserStore();
 const workspaceStore = useWorkspaceStore();
-const courseStore = useCourseStore();
+const courseStore = useLearnerCourseStore();
 
 onMounted(() => {
     userStore.fetchUserInfo();

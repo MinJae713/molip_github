@@ -1,5 +1,5 @@
 {
-  "members": [
+  "mock_users": [
     {
       "id": "1",
       "member_id": 1,
@@ -29,7 +29,7 @@
       "profile_image_url": "https://cdn-icons-png.flaticon.com/512/2304/2304226.png"
     }
   ],
-  "workspaces": [
+  "mock_public_workspaces": [
     {
       "id": "1",
       "workspace_id": 1,
@@ -83,7 +83,7 @@
       "status": 0
     }
   ],
-  "my_workspaces": [
+  "mock_my_workspaces": [
     {
       "workspace_id": 1,
       "name": "학생 워크스페이스",
@@ -115,7 +115,7 @@
       "my_role": "ADMIN"
     }
   ],
-  "my_all_courses": [
+  "mock_my_enrolled_courses": [
     {
       "id": "1",
       "course_id": 1,
@@ -234,8 +234,8 @@
       "is_liked": true
     }
   ],
-  "student_workspace_stats": [],
-  "my-stats": [
+  "mock_student_stats": [],
+  "mock_my_workspace_stats": [
     {
       "user_id": "1",
       "workspace_id": "1",
@@ -271,7 +271,7 @@
       }
     }
   ],
-  "sessions": [
+  "mock_sessions": [
     {
       "id": 1,
       "session_id": 1,
@@ -306,7 +306,7 @@
       "end_at": "10:45:00"
     }
   ],
-  "workspace_registers": [
+  "mock_workspace_applications": [
     {
       "workspaceId": "2",
       "role": "LEARNER",
@@ -388,7 +388,7 @@
       "applied_at": "2026-01-20T08:15:00.000Z"
     }
   ],
-  "workspace_all_courses": [
+  "mock_workspace_courses": [
     {
       "id": "1",
       "course_id": 1,
@@ -591,7 +591,7 @@
       "status": "active"
     }
   ],
-  "admin_courses": [
+  "mock_admin_courses": [
     {
       "id": 1,
       "title": "파이썬 데이터 분석 실무",
@@ -638,7 +638,7 @@
       "status": "completed"
     }
   ],
-  "course_details": [
+  "mock_course_details": [
     {
       "id": 1,
       "title": "파이썬 데이터 분석 실무",
@@ -688,9 +688,32 @@
         "phone": "010-1111-2222"
       },
       "curriculum": []
+    },
+    {
+      "title": "ㅁㄴㅇㄻㄴㅇㄻㄴㅇㄻㅇㄴㄹ",
+      "description": "",
+      "category": "",
+      "sub_category": "",
+      "tag": "",
+      "period": "",
+      "duration": "",
+      "total_lessons": 1,
+      "ai_engagement_check": true,
+      "ai_sentiment_analysis": false,
+      "completion_attendance_rate": 80,
+      "use_engagement_criteria": true,
+      "completion_engagement_score": 70,
+      "use_quiz_criteria": true,
+      "completion_quiz_score": 60,
+      "workspace_id": "2",
+      "current_lessons": 0,
+      "progress_rate": 0,
+      "is_liked": false,
+      "course_status": "recruiting",
+      "id": 3
     }
   ],
-  "course_likes": [
+  "mock_liked_courses": [
     {
       "id": "9",
       "courseId": "9",
@@ -736,7 +759,7 @@
       "id": "UDbUe5P"
     }
   ],
-  "course_enrollments": [
+  "mock_enrollments": [
     {
       "courseId": "1",
       "memberId": "1",
@@ -773,7 +796,7 @@
       "id": 5
     }
   ],
-  "attendance_rate": [
+  "mock_attendance_stats": [
     {
       "year": 2026,
       "month": 1,
@@ -783,7 +806,7 @@
       "attended_sessions": 23
     }
   ],
-  "sessions_list": [
+  "mock_sessions_list": [
     {
       "session_id": 1,
       "title": "title 테스트 강의세션 1번 강의",
@@ -833,7 +856,7 @@
       "state": "upcoming"
     }
   ],
-  "course_materials": [
+  "mock_course_materials": [
     {
       "id": 101,
       "fileId": 101,
@@ -855,7 +878,7 @@
       "uploadAt": "2026-01-11"
     }
   ],
-  "session_materials": [
+  "mock_session_materials": [
     {
       "id": 201,
       "fileId": 201,
@@ -884,7 +907,7 @@
       "fileType": "txt"
     }
   ],
-  "learner_workspace_top_card_stats": [
+  "mock_learner_stats_top": [
     {
       "id": 1,
       "user_id": 1,
@@ -1018,7 +1041,7 @@
       ]
     }
   ],
-  "learner_weekly_stats": [
+  "mock_learner_stats_weekly": [
     {
       "id": 1,
       "user_id": 1,
@@ -1192,27 +1215,15 @@
       ]
     }
   ],
-  "learner_session_stats": [
+  "mock_session_concentration": [
     {
       "id": 1,
       "user_id": 1,
       "workspace_id": 1,
       "course_id": "all",
-      "labels": [
-        "월간 평균",
-        "주간 평균",
-        "최근 세션"
-      ],
-      "my_scores": [
-        85,
-        88,
-        92
-      ],
-      "avg_scores": [
-        80,
-        82,
-        85
-      ],
+      "labels": ["월간 평균", "주간 평균", "최근 세션"],
+      "my_scores": [85, 88, 92],
+      "avg_scores": [80, 82, 85],
       "current_focus": 88
     },
     {
@@ -1220,27 +1231,9 @@
       "user_id": 1,
       "workspace_id": 1,
       "course_id": "1",
-      "labels": [
-        "1회차",
-        "2회차",
-        "3회차",
-        "4회차",
-        "5회차"
-      ],
-      "my_scores": [
-        100,
-        20,
-        40,
-        20,
-        20
-      ],
-      "avg_scores": [
-        80,
-        90,
-        60,
-        70,
-        70
-      ],
+      "labels": ["1회차", "2회차", "3회차", "4회차", "5회차"],
+      "my_scores": [100, 20, 40, 20, 20],
+      "avg_scores": [80, 90, 60, 70, 70],
       "current_focus": 92
     },
     {
@@ -1248,21 +1241,9 @@
       "user_id": 1,
       "workspace_id": 1,
       "course_id": "2",
-      "labels": [
-        "1회차",
-        "2회차",
-        "3회차"
-      ],
-      "my_scores": [
-        50,
-        60,
-        55
-      ],
-      "avg_scores": [
-        70,
-        75,
-        72
-      ],
+      "labels": ["1회차", "2회차", "3회차"],
+      "my_scores": [50, 60, 55],
+      "avg_scores": [70, 75, 72],
       "current_focus": 55
     },
     {
@@ -1276,7 +1257,7 @@
       "current_focus": 0
     }
   ],
-  "learner_session_reports": [
+  "mock_session_reports": [
     {
       "id": 1,
       "user_id": 1,
@@ -1328,6 +1309,124 @@
           "activity_score": 100
         }
       ]
+    }
+  ],
+  "mock_my_courses_unified": [
+    {
+      "course_id": 1,
+      "workspace_id": 1,
+      "role": "LEARNER",
+      "title": "AI 비즈니스 활용 전략",
+      "description": "최신 AI 트렌드와 비즈니스 적용 사례를 통해 실무 역량을 강화합니다.",
+      "tag": "직무 필수",
+      "category": "ai",
+      "progress_rate": 65,
+      "current_lessons": 13,
+      "total_lessons": 20,
+      "is_mandatory": true,
+      "d_day": 5,
+      "is_liked": false,
+      "status": "active"
+    },
+    {
+      "course_id": 2,
+      "workspace_id": 1,
+      "role": "LEARNER",
+      "title": "Vue3 + TypeScript 실전 아키텍처",
+      "description": "대규모 프로젝트를 위한 Vue3 컴포넌트 설계와 타입스크립트 활용법을 배웁니다.",
+      "tag": "인기",
+      "category": "dev",
+      "progress_rate": 90,
+      "current_lessons": 18,
+      "total_lessons": 20,
+      "is_mandatory": false,
+      "d_day": 2,
+      "is_liked": true,
+      "status": "active"
+    },
+    {
+      "course_id": 4,
+      "workspace_id": 1,
+      "role": "TRAINER",
+      "title": "고급 프롬프트 엔지니어링",
+      "description": "LLM 모델을 효과적으로 제어하기 위한 고급 프롬프트 작성 기법을 학습합니다.",
+      "tag": "모집 중",
+      "category": "ai",
+      "progress_rate": 0,
+      "current_lessons": 0,
+      "total_lessons": 12,
+      "sub_category": "심화",
+      "duration": "6시간 30분",
+      "is_liked": false,
+      "status": "recruiting"
+    },
+    {
+      "course_id": 8,
+      "workspace_id": 1,
+      "role": "TRAINER",
+      "title": "Python 금융 데이터 분석",
+      "description": "Pandas와 Matplotlib을 활용해 주가 데이터를 분석하고 시각화합니다.",
+      "tag": "추천",
+      "category": "data",
+      "progress_rate": 0,
+      "current_lessons": 4,
+      "total_lessons": 20,
+      "is_mandatory": false,
+      "d_day": 20,
+      "is_liked": false,
+      "status": "recruiting"
+    },
+    {
+      "course_id": 11,
+      "workspace_id": 2,
+      "role": "TRAINER",
+      "title": "디자인 시스템 구축 가이드",
+      "description": "효율적인 협업을 위한 디자인 시스템 설계 및 유지보수 전략.",
+      "tag": "모집 중",
+      "category": "design",
+      "progress_rate": 0,
+      "current_lessons": 0,
+      "total_lessons": 8,
+      "sub_category": "실무",
+      "duration": "4시간",
+      "is_liked": false,
+      "status": "recruiting"
+    }
+  ],
+  "mock_workspace_2_courses": [
+    {
+      "course_id": 11,
+      "workspace_id": 2,
+      "role": "TRAINER",
+      "title": "디자인 시스템 구축 가이드",
+      "description": "효율적인 협업을 위한 디자인 시스템 설계 및 유지보수 전략.",
+      "tag": "모집 중",
+      "category": "design",
+      "progress_rate": 0,
+      "current_lessons": 0,
+      "total_lessons": 8,
+      "sub_category": "실무",
+      "duration": "4시간",
+      "is_liked": false,
+      "status": "recruiting"
+    }
+  ],
+  "workspaces_2_me_courses": [
+    {
+      "course_id": 11,
+      "workspace_id": 2,
+      "role": "TRAINER",
+      "title": "디자인 시스템 구축 가이드",
+      "description": "효율적인 협업을 위한 디자인 시스템 설계 및 유지보수 전략.",
+      "tag": "모집 중",
+      "category": "design",
+      "progress_rate": 0,
+      "current_lessons": 0,
+      "total_lessons": 8,
+      "sub_category": "실무",
+      "duration": "4시간",
+      "is_liked": false,
+      "status": "recruiting"
     }
   ]
 }

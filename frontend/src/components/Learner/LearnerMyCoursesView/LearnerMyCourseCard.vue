@@ -34,7 +34,7 @@
                     <div class="flex justify-between items-end mb-2">
                         <span class="text-xs font-bold text-slate-700">진도율</span>
                         <span class="text-lg font-bold text-indigo-600">{{ displayCourse('progress_rate') || 0
-                            }}%</span>
+                        }}%</span>
                     </div>
                     <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                         <div class="bg-indigo-600 h-full rounded-full"
@@ -93,7 +93,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import type { Course } from '@/types';
-import { useCourseStore } from '@/stores/course';
+import { useLearnerCourseStore } from '@/stores/learnerCourse';
 
 interface Props {
     course: Course;
@@ -104,7 +104,7 @@ defineEmits<{
     (e: 'enroll-course', courseId: string | number): void;
 }>();
 
-const courseStore = useCourseStore();
+const courseStore = useLearnerCourseStore();
 const nowCouse = ref<any>(null);
 
 onMounted(async () => {

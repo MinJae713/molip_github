@@ -49,10 +49,10 @@
     </div>
 </template>
 <script setup lang="ts">
-import { useCourseStore } from '@/stores/course';
+import { useLearnerCourseStore } from '@/stores/learnerCourse';
 import { couldStartTrivia } from 'typescript';
 
-const courseStore = useCourseStore()
+const courseStore = useLearnerCourseStore()
 
 // Variables for dynamic data can be added here
 </script>

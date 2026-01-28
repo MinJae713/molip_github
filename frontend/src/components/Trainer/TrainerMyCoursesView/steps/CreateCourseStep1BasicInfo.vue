@@ -1,0 +1,77 @@
+<template>
+    <div class="space-y-4">
+        <!-- Title -->
+        <div>
+            <label class="block text-sm font-bold text-slate-700 mb-1.5">과정명</label>
+            <input :value="modelValue.title" @input="updateField('title', ($event.target as HTMLInputElement).value)"
+                type="text"
+                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors placeholder:text-slate-400"
+                placeholder="예: 실전 마케팅 전략 마스터" required />
+        </div>
+
+        <!-- Description -->
+        <div>
+            <label class="block text-sm font-bold text-slate-700 mb-1.5">한줄 소개</label>
+            <textarea :value="modelValue.description"
+                @input="updateField('description', ($event.target as HTMLInputElement).value)"
+                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors placeholder:text-slate-400 resize-none"
+                rows="3" placeholder="과정에 대한 간략한 설명을 입력하세요."></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <!-- Category -->
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1.5">카테고리</label>
+                <select :value="modelValue.category"
+                    @change="updateField('category', ($event.target as HTMLSelectElement).value)"
+                    class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white">
+                    <option value="" disabled>선택하세요</option>
+                    <option value="business">비즈니스</option>
+                    <option value="dev">개발/프로그래밍</option>
+                    <option value="data">데이터 사이언스</option>
+                    <option value="marketing">마케팅</option>
+                    <option value="design">디자인</option>
+                    <option value="finance">재무/회계</option>
+                    <option value="language">외국어</option>
+                </select>
+            </div>
+
+            <!-- Tag -->
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1.5">태그</label>
+                <input :value="modelValue.tag" @input="updateField('tag', ($event.target as HTMLInputElement).value)"
+                    type="text"
+                    class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors placeholder:text-slate-400"
+                    placeholder="예: 직무 필수" />
+            </div>
+        </div>
+
+        <!-- Sub Category -->
+        <div>
+            <label class="block text-sm font-bold text-slate-700 mb-1.5">서브 카테고리</label>
+            <input :value="modelValue.sub_category"
+                @input="updateField('sub_category', ($event.target as HTMLInputElement).value)" type="text"
+                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors placeholder:text-slate-400"
+                placeholder="예: 심화과정 (선택사항)" />
+        </div>
+    </div>
+</template>
+
+<script setup lang="ts">
+import type { Course } from '@/types';
+
+const props = defineProps<{
+    modelValue: Partial<Course>;
+}>();
+
+const emit = defineEmits<{
+    (e: 'update:modelValue', value: Partial<Course>): void;
+}>();
+
+const updateField = (field: keyof Course, value: any) => {
+    emit('update:modelValue', {
+        ...props.modelValue,
+        [field]: value
+    });
+};
+</script>

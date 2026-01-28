@@ -15,7 +15,7 @@ import MypageView from "@/views/Common/MypageView.vue";
 import LoginView from "@/views/Common/LoginView.vue";
 
 // 강사 라우트
-import TrainerWorkspace from "@/views/Trainer/TrainerWorkspace.vue";
+import TrainerWorkspaceView from "@/views/Trainer/TrainerWorkspaceView.vue";
 import TrainerMyCoursesView from "@/views/Trainer/TrainerMyCoursesView.vue";
 import TrainerLiveSessionView from "@/views/Trainer/TrainerLiveSessionView.vue";
 // 관리자 라우트
@@ -115,25 +115,25 @@ const router = createRouter({
           component: AdminWorkspaceView,
         },
         {
-          path: 'settings',
-          name: 'workspaceAdminSettings',
+          path: "settings",
+          name: "workspaceAdminSettings",
           component: AdminWorkspaceSettingsView,
         },
         {
-          path: 'members',
-          name: 'workspaceAdminMembers',
+          path: "members",
+          name: "workspaceAdminMembers",
           component: AdminMemberManagementView,
         },
         {
-          path: 'requests',
-          name: 'workspaceAdminRequest',
+          path: "requests",
+          name: "workspaceAdminRequest",
           component: AdminJoinRequestView,
         },
         {
-          path: 'invite',
-          name: 'workspaceAdminInvite',
+          path: "invite",
+          name: "workspaceAdminInvite",
           component: AdminInviteCenterView,
-        }
+        },
       ],
     },
     {
@@ -143,7 +143,7 @@ const router = createRouter({
         {
           path: "",
           name: "workspaceTrainer",
-          component: TrainerWorkspace,
+          component: TrainerWorkspaceView,
           meta: { requiresAuth: true },
         },
         {
@@ -168,10 +168,10 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/live',
-      name: 'trainerLiveSession',
-      component: () => import('@/views/Trainer/TrainerLiveSessionView.vue')
-    }
+      path: "/live",
+      name: "trainerLiveSession",
+      component: () => import("@/views/Trainer/TrainerLiveSessionView.vue"),
+    },
     {
       path: "/review/:sessionId",
       name: "learnerReview",

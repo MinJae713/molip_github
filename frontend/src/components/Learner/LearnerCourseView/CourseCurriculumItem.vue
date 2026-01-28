@@ -93,11 +93,6 @@
                 class="w-full px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-colors">
                 <span class="material-symbols-outlined text-[18px]">description</span>학습자료 확인하기
             </button>
-            <!-- 
-                Using session.course_id from backend response if available, 
-                otherwise assuming parent passes it or relying on session_id to have relations.
-                Mock data in db.json shows course_id in session.
-            -->
             <MaterialDownloadModal v-model="isModalOpen" :courseId="session.course_id"
                 :sessionId="session.session_id" />
         </div>

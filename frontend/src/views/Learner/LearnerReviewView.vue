@@ -30,13 +30,13 @@ import { onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 
 // 상태 관리
-import { useSessionStore } from '@/stores/session';
+import { useLearnerSessionStore } from '@/stores/learnerSession';
 import { useWorkspaceStore } from '@/stores/workspace';
 
 // 라우터
 const route = useRoute();
 // 상태 관리
-const sessionStore = useSessionStore();
+const sessionStore = useLearnerSessionStore();
 // props
 defineProps<{ title: string }>();
 defineEmits(['close']);

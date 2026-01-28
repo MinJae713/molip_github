@@ -80,7 +80,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useWorkspaceStore } from '@/stores/workspace';
-import { useCourseStore } from '@/stores/course';
+import { useLearnerCourseStore } from '@/stores/learnerCourse';
 import { storeToRefs } from 'pinia';
 import type { Course, Session } from '@/types';
 import StatCard from '@/components/Learner/LearnerWorkspace/StatCard.vue';
@@ -90,7 +90,7 @@ import CourseCurriculumModal from '@/components/Learner/LearnerWorkspace/CourseC
 const route = useRoute();
 const router = useRouter();
 const workspaceStore = useWorkspaceStore();
-const courseStore = useCourseStore();
+const courseStore = useLearnerCourseStore();
 
 const { workspaceStats } = storeToRefs(workspaceStore);
 const { workspaceCourses } = storeToRefs(courseStore);

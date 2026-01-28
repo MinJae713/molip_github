@@ -12,12 +12,12 @@
                 {{ workspace.name }}
             </div>
 
-            <span v-if="workspace.role === 'ADMIN'"
+            <span v-if="workspace.my_role === 'ADMIN'"
                 class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-white whitespace-nowrap leading-none">
                 관리자
             </span>
 
-            <span v-else-if="workspace.role === 'TRAINER'"
+            <span v-else-if="workspace.my_role === 'TRAINER'"
                 class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 border border-indigo-200 whitespace-nowrap leading-none">
                 강사
             </span>

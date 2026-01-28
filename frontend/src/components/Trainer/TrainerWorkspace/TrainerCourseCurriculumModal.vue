@@ -55,7 +55,7 @@
                             <h4 class="text-base font-bold text-slate-900">실시간 강의 (Live Lecture)</h4>
                         </div>
                         <div class="space-y-3 pl-3 border-l-2 border-slate-100 ml-4">
-                            <div v-for="session in sessions" :key="session.session_id"
+                            <div v-for="session in sortedSessions" :key="session.session_id"
                                 class="relative group bg-white hover:bg-slate-50 rounded-xl p-4 border border-slate-200 hover:border-indigo-300 transition-all ml-4">
                                 <div
                                     class="absolute w-4 h-4 bg-white border-2 border-indigo-200 rounded-full -left-[33px] top-6 group-hover:border-indigo-500 transition-colors">
@@ -63,7 +63,7 @@
                                 <div class="flex flex-col sm:flex-row gap-4 sm:items-start">
                                     <div class="min-w-[80px]">
                                         <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
-                                            Session {{ String(session.order).padStart(2, '0') }}
+                                            Session {{ String((session as any).computedOrder).padStart(2, '0') }}
                                         </span>
                                     </div>
                                     <div class="flex-1">
@@ -73,12 +73,6 @@
                                         <p class="text-xs text-slate-500 leading-relaxed">
                                             {{ session.description }}
                                         </p>
-                                    </div>
-                                    <div class="shrink-0" v-if="session.type === 'quiz'">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200">
-                                            <span class="material-symbols-outlined text-[12px]">quiz</span> 퇴실 퀴즈 포함
-                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -101,9 +95,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { Course, Session } from '@/types';
 
-defineProps<{
+const props = defineProps<{
     isOpen: boolean;
     course: Course;
     sessions: Session[];
@@ -112,6 +107,18 @@ defineProps<{
 defineEmits<{
     (e: 'close'): void;
 }>();
+
+const sortedSessions = computed(() => {
+    const list = [...props.sessions]; // 원본 배열 복사떠서 처리. 변형 방지
+    return list.sort((a, b) => {
+        const dateA = new Date(a.date || a.start_at || a.created_at || 0).getTime();
+        const dateB = new Date(b.date || b.start_at || b.created_at || 0).getTime();
+        return dateA - dateB;
+    }).map((session, index) => ({
+        ...session,
+        computedOrder: index + 1
+    }));
+});
 </script>
 
 <style scoped>

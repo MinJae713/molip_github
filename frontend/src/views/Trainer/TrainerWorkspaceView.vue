@@ -5,10 +5,8 @@
         <section class="grid grid-cols-1 md:grid-cols-3 gap-6" v-if="workspaceStats">
             <TrainerStatCard title="운영 중인 교육 과정" :value="`${workspaceStats.progress.value} 과정`" icon="school"
                 color="indigo" />
-
             <TrainerStatCard title="참여 수강생 수" :value="`${workspaceStats.sessions.value} 명`" icon="groups"
                 color="blue" />
-
             <TrainerStatCard title="오늘 예정된 세션" :value="`${workspaceStats.completed.value} 과정`" icon="schedule"
                 color="orange" />
         </section>
@@ -32,7 +30,6 @@
                             class="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-48 md:w-64 transition-all"
                             placeholder="강의 검색..." type="text" />
                     </div>
-
                     <!-- Sort Dropdown -->
                     <div class="relative group">
                         <button
@@ -56,17 +53,15 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Course Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" v-if="filteredCourses.length > 0">
-                <TrainerDashboardCourseCard v-for="course in filteredCourses" :key="course.course_id" :course="course"
-                    @open-curriculum="openCurriculumModal" @enter-course="handleEnterCourse" />
+            <!-- 코스(강의 영역) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" v-if="workspaceAllCourses.length > 0">
+                <TrainerDashboardCourseCard v-for="course in workspaceAllCourses" :key="course.course_id"
+                    :course="course" @open-curriculum="openCurriculumModal" />
             </div>
             <div v-else class="text-center py-20 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                 <p class="text-slate-500">등록된 강의가 없습니다.</p>
             </div>
         </section>
-
         <!-- Course Curriculum Modal -->
         <TrainerCourseCurriculumModal :isOpen="isModalOpen" :course="selectedCourse" :sessions="mockSessions"
             @close="closeModal" @register="handleRegister" />
@@ -75,9 +70,21 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
+
+// 스토어 할당
 import { useWorkspaceStore } from '@/stores/workspace';
-import { useCourseStore } from '@/stores/course';
+import { useTrainerCourseStore } from '@/stores/trainerCourse';
+import { useTrainerSessionStore } from '@/stores/trainerSession';
+
+const workspaceStore = useWorkspaceStore();
+const trainerCourseStore = useTrainerCourseStore();
+const trainerSessionStore = useTrainerSessionStore();
+
+const { workspaceStats } = storeToRefs(workspaceStore);
+const { workspaceAllCourses } = storeToRefs(trainerCourseStore);
+const { managedSessions } = storeToRefs(trainerSessionStore);
+
 import { storeToRefs } from 'pinia';
 import type { Course, Session } from '@/types';
 import TrainerStatCard from '@/components/Trainer/TrainerWorkspace/TrainerStatCard.vue';
@@ -85,55 +92,37 @@ import TrainerDashboardCourseCard from '@/components/Trainer/TrainerWorkspace/Tr
 import TrainerCourseCurriculumModal from '@/components/Trainer/TrainerWorkspace/TrainerCourseCurriculumModal.vue';
 
 const route = useRoute();
-const router = useRouter();
-const workspaceStore = useWorkspaceStore();
-const courseStore = useCourseStore();
+// 스토어 할당
 
-const { workspaceStats } = storeToRefs(workspaceStore);
-const { workspaceCourses } = storeToRefs(courseStore);
+
 
 const searchQuery = ref('');
 const sortOption = ref<'newest' | 'deadline' | 'oldest'>('newest');
 
-// Date Filter State
-const filterStartDate = ref('');
-const filterEndDate = ref('');
-
-// Modal State
+// 모달 상태관리
 const isModalOpen = ref(false);
 const selectedCourse = ref<Course>({} as Course);
 const mockSessions = ref<Session[]>([]);
 
+// 커리큘럼 확인 모달 열기
 const openCurriculumModal = async (courseId: string | number) => {
-    const course = workspaceCourses.value.find(c => String(c.course_id) === String(courseId));
+    const course = workspaceAllCourses.value.find(c => String(c.course_id) === String(courseId));
     if (course) {
         selectedCourse.value = course;
-        // Fetch sessions from API
-        const sessions = await courseStore.fetchCourseSessions(courseId);
-        mockSessions.value = sessions;
+        try {
+            // Fetch sessions using store
+            await trainerSessionStore.fetchManagedSessions(courseId);
+            mockSessions.value = managedSessions.value;
+        } catch (e) {
+            console.error('세션 목록 로드 실패', e);
+            mockSessions.value = [];
+        }
         isModalOpen.value = true;
     }
 };
 
 const closeModal = () => {
     isModalOpen.value = false;
-};
-
-
-
-const handleEnterCourse = (courseId: string | number) => {
-    const currentWorkspaceId = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id;
-    if (!currentWorkspaceId) return;
-
-    // 강사용 강의실 뷰가 따로 없다면 LEARNER Classroom으로 이동하거나, 
-    // 추후 강사용 라우트로 변경 (현재는 기존 로직 복원)
-    router.push({
-        name: 'workspaceLearnerClassroom',
-        params: {
-            id: currentWorkspaceId,
-            courseId: courseId
-        }
-    });
 };
 
 const handleRegister = () => {
@@ -149,87 +138,18 @@ const sortOptionLabel = computed(() => {
         default: return '정렬';
     }
 });
-
-const filteredCourses = computed(() => {
-    let result = [...workspaceCourses.value];
-
-    // Filter by search query
-    if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase();
-        result = result.filter(course =>
-            course.title.toLowerCase().includes(query) ||
-            course.description.toLowerCase().includes(query)
-        );
-    }
-
-    // Filter by date range (last_accessed_at 기준)
-    if (filterStartDate.value || filterEndDate.value) {
-        result = result.filter(course => {
-            if (!course.current_lessons || course.current_lessons === 0) {
-                // 수강하지 않은 강의는 날짜 필터에서 제외하지 않음
-                return true;
-            }
-
-            // last_accessed_at이 없는 경우는 필터링에서 제외
-            const accessedAt = (course as any).last_accessed_at;
-            if (!accessedAt) return false;
-
-            const courseDate = new Date(accessedAt);
-
-            if (filterStartDate.value) {
-                const startDate = new Date(filterStartDate.value);
-                if (courseDate < startDate) return false;
-            }
-
-            if (filterEndDate.value) {
-                const endDate = new Date(filterEndDate.value);
-                endDate.setHours(23, 59, 59, 999); // 종료일 포함
-                if (courseDate > endDate) return false;
-            }
-
-            return true;
-        });
-    }
-
-    // Sort (Simple implementation)
-    switch (sortOption.value) {
-        case 'newest':
-            result.sort((a, b) => Number(b.course_id) - Number(a.course_id));
-            break;
-        case 'oldest':
-            result.sort((a, b) => Number(a.course_id) - Number(b.course_id));
-            break;
-        case 'deadline':
-            result.sort((a, b) => (a.d_day || 999) - (b.d_day || 999));
-            break;
-    }
-
-    return result;
-});
-
 const setSort = (option: 'newest' | 'deadline' | 'oldest') => {
     sortOption.value = option;
 };
 
-const applyDateFilter = () => {
-    // 날짜 필터는 이미 filteredCourses에서 자동으로 적용됨
-    // 드롭다운을 닫기 위한 처리는 CSS로 이미 구현되어 있음
-};
-
-const resetDateFilter = () => {
-    filterStartDate.value = '';
-    filterEndDate.value = '';
-};
-
+// 대시보드 초기화
 const initDashboard = async () => {
     const workspaceId = route.params.id;
     if (workspaceId) {
         const id = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
-
         if (!id) return;
-
         await workspaceStore.setCurrentWorkspaceById(id);
-        await courseStore.fetchCoursesByWorkspace(id);
+        await trainerCourseStore.fetchWorkspaceAllCourses(id); // 강사: 관리 코스 목록 조회
     }
 };
 

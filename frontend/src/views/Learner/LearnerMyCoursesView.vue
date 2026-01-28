@@ -16,7 +16,7 @@
         <div>
             <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">내 강의실</h1>
             <!-- 통계 카드 -->
-            <MyCoursesStats :ongoingCount="ongoingCourses.length" :completedCount="completedCourses.length"
+            <LearnerMyCoursesStats :ongoingCount="ongoingCourses.length" :completedCount="completedCourses.length"
                 :attendanceRate="myCoursesAttendanceRate || 0" />
         </div>
         <!-- 탭 네비게이션 -->
@@ -43,7 +43,7 @@
 
         <!-- 강의 목록 -->
         <div v-if="displayedCourses.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            <MyCourseCard v-for="course in displayedCourses" :key="course.course_id" :course="course"
+            <LearnerMyCourseCard v-for="course in displayedCourses" :key="course.course_id" :course="course"
                 @enter-course="handleEnterCourse" @enroll-course="handleEnrollCourse" />
         </div>
 
@@ -67,12 +67,12 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import { useCourseStore } from '@/stores/course';
+import { useLearnerCourseStore } from '@/stores/learnerCourse';
 import { useUserStore } from '@/stores/user';
-import MyCoursesStats from '@/components/Learner/LearnerMyCoursesView/MyCoursesStats.vue';
-import MyCourseCard from '@/components/Learner/LearnerMyCoursesView/MyCourseCard.vue';
+import LearnerMyCoursesStats from '@/components/Learner/LearnerMyCoursesView/LearnerMyCoursesStats.vue';
+import LearnerMyCourseCard from '@/components/Learner/LearnerMyCoursesView/LearnerMyCourseCard.vue';
 
-const courseStore = useCourseStore();
+const courseStore = useLearnerCourseStore();
 const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
@@ -116,9 +116,15 @@ const tabs = computed(() => [
 
 onMounted(async () => {
     // 사용자 정보 로드 (memberId 확보용)
-    await userStore.fetchUserInfo();
     // 내 강의 목록과 이번달 출석률 불러오기
-    await courseStore.fetchMyEnrolledCourses();
+    const wsId = Array.isArray(workspaceId.value) ? workspaceId.value[0] : workspaceId.value;
+    if (wsId) {
+        await courseStore.fetchMyEnrolledCourses(
+            wsId,
+            userStore.user.member_id,
+            'LEARNER'
+        );
+    }
     await courseStore.fetchMyCoursesAttendanceRate();
     await courseStore.fetchLikeCourses();
 });
@@ -146,7 +152,10 @@ const handleEnrollCourse = async (courseId: string | number) => {
         if (success) {
             alert('수강신청이 성공적으로 완료되었습니다. 관리자 승인을 기다려주세요.');
             // 목록 새로고침
-            await courseStore.fetchMyEnrolledCourses();
+            const wsId = Array.isArray(workspaceId.value) ? workspaceId.value[0] : workspaceId.value;
+            if (wsId) {
+                await courseStore.fetchMyEnrolledCourses(wsId, user.value.member_id, 'LEARNER');
+            }
         } else {
             alert('수강신청에 실패했습니다. 다시 시도해주세요.');
         }
@@ -160,7 +169,4 @@ const handleViewRecommendation = () => {
     console.log('추천 과정 보기');
     // TODO: 추천 과정 페이지로 이동
 };
-onMounted(() => {
-    // courseStore.fetchMyEnrolledCourses();
-});
 </script>

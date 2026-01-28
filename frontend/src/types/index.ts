@@ -26,10 +26,27 @@ export interface Course {
   is_liked?: boolean;
   duration?: string;
   enrollment_status?: "recruiting" | "pending_approval" | "active";
-  course_status?: "PREPARING" | "INVITE" | "PROCEED" | "FINISH";
+  course_status?:
+    | "PREPARING"
+    | "INVITE"
+    | "PROCEED"
+    | "FINISH"
+    | "active"
+    | "recruiting"
+    | "ended"; // 프론트 임시 상태값 호환용 추가
   request_date?: string;
   tag?: string;
   status?: any;
+
+  // New fields for Course Wizard
+  period?: string;
+  ai_engagement_check?: boolean;
+  ai_sentiment_analysis?: boolean;
+  completion_attendance_rate?: number;
+  use_engagement_criteria?: boolean;
+  completion_engagement_score?: number;
+  use_quiz_criteria?: boolean;
+  completion_quiz_score?: number;
 }
 
 export interface User {
@@ -55,6 +72,7 @@ export interface WorkspaceMember extends User {
     courseCount: number;
     quizAverage: number;
   };
+  profileImage?: string; // Added for compatibility
 }
 
 export interface WorkspaceStats {

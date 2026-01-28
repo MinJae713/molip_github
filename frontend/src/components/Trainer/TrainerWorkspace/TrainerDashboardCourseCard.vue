@@ -45,13 +45,6 @@
             </div>
 
             <div class="flex flex-col justify-end items-end gap-2 min-w-[100px]">
-                <!-- Action Buttons -->
-                <button v-if="course.status === 'active'" @click.stop="$emit('enter-course', course.course_id)"
-                    class="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 border border-indigo-600 rounded-lg hover:bg-indigo-700 hover:border-indigo-700 transition-all flex items-center gap-1.5 shadow-sm">
-                    <span class="material-symbols-outlined text-[16px]">logout</span>
-                    강의실 입장
-                </button>
-
                 <button @click="$emit('open-curriculum', course.course_id)"
                     class="px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 hover:border-indigo-200 transition-all flex items-center gap-1.5">
                     <span class="material-symbols-outlined text-[16px]">menu_book</span>

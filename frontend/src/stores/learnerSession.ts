@@ -4,7 +4,7 @@ import { ref } from "vue";
 import api from "@/api";
 import type { Session } from "@/types";
 
-export const useSessionStore = defineStore("session", () => {
+export const useLearnerSessionStore = defineStore("learnerSession", () => {
   // 제공 데이터
   const sessionsList = ref<Session[]>([]);
   const currentSession = ref<Session | null>(null);
@@ -31,11 +31,12 @@ export const useSessionStore = defineStore("session", () => {
   // 세션별 자료 가져오기
   async function fetchSessionMaterials(sessionId: string | number) {
     isLoading.value = true;
+    currentSessionMaterials.value = [];
     try {
       const response = await api.get(`/sessions/${sessionId}/materials`);
       currentSessionMaterials.value = response.data;
     } catch (err: any) {
-      console.error("강의 세션 불러오기 실패!: ", err);
+      console.error("강의 세션 자료 불러오기 실패!: ", err);
       error.value = err;
     } finally {
       isLoading.value = false;

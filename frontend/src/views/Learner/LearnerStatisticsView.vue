@@ -70,7 +70,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { useStatsStore } from '@/stores/stats';
 import { useUserStore } from '@/stores/user';
-import { useCourseStore } from '@/stores/course';
+import { useLearnerCourseStore } from '@/stores/learnerCourse';
 import { storeToRefs } from 'pinia';
 
 // 컴포넌트 임포트
@@ -85,7 +85,7 @@ const router = useRouter();
 const workspaceStore = useWorkspaceStore();
 const statsStore = useStatsStore();
 const userStore = useUserStore();
-const courseStore = useCourseStore();
+const courseStore = useLearnerCourseStore();
 
 const {
     learnerWorkspaceTopCardStats,

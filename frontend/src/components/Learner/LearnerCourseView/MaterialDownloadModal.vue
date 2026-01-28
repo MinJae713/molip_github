@@ -20,7 +20,7 @@
                             <span class="size-1.5 rounded-full bg-indigo-brand"></span>
                             공통 자료
                             <span class="text-xs font-normal text-slate-400 ml-1">{{ courseStore.courseMaterials.length
-                                }}개 파일</span>
+                            }}개 파일</span>
                         </h3>
                     </div>
                     <div class="space-y-2">
@@ -66,8 +66,8 @@
 
 <script setup lang="ts">
 import { onMounted, watch } from 'vue';
-import { useCourseStore } from '@/stores/course';
-import { useSessionStore } from '@/stores/session';
+import { useLearnerCourseStore } from '@/stores/learnerCourse';
+import { useLearnerSessionStore } from '@/stores/learnerSession';
 import DownloadCard from './DownloadCard.vue';
 
 const props = defineProps<{
@@ -82,8 +82,8 @@ const emit = defineEmits<{
     (e: 'update:modelValue', value: boolean): void;
 }>();
 
-const courseStore = useCourseStore();
-const sessionStore = useSessionStore();
+const courseStore = useLearnerCourseStore();
+const sessionStore = useLearnerSessionStore();
 
 // Load data when modal opens
 watch(() => props.modelValue, async (newVal) => {

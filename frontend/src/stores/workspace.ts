@@ -14,7 +14,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   // --- GETTERS (Computed) ---
   // 현재 워크스페이스에서의 내 역할
   const currentRole = computed(() => {
-    return currentWorkspace.value?.role ?? null;
+    return currentWorkspace.value?.my_role ?? null;
   });
 
   // --- ACTIONS ---
@@ -36,8 +36,9 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   async function searchWorkspaces(query: string): Promise<Workspace[]> {
     if (!query.trim()) return [];
     try {
-      const response = await api.get("/workspaces/search", {
-        params: { query },
+      // json-server standard: q=query or name_like=query
+      const response = await api.get("/workspaces", {
+        params: { q: query },
       });
       return response.data;
     } catch (error) {
@@ -60,7 +61,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
         status: 1, // 1: 대기 중
         applied_at: new Date().toISOString(),
       };
-      await api.post(`/workspaces/${workspaceId}/join`, payload);
+      await api.post("/applications", payload);
       await fetchMyWorkspaces(true);
       return true;
     } catch (error) {
@@ -125,7 +126,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       const response = await api.patch(`/workspaces/${id}`, payload);
       if (
         currentWorkspace.value &&
-        String(currentWorkspace.value.id) === String(id)
+        String(currentWorkspace.value.workspace_id) === String(id)
       ) {
         currentWorkspace.value = {
           ...currentWorkspace.value,
@@ -145,11 +146,11 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     try {
       await api.delete(`/workspaces/${id}`);
       myWorkspaces.value = myWorkspaces.value.filter(
-        (ws) => String(ws.id) !== String(id),
+        (ws) => String(ws.workspace_id) !== String(id),
       );
       if (
         currentWorkspace.value &&
-        String(currentWorkspace.value.id) === String(id)
+        String(currentWorkspace.value.workspace_id) === String(id)
       ) {
         currentWorkspace.value = null;
       }

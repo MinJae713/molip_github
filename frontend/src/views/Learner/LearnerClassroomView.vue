@@ -55,13 +55,13 @@ import CurriculumList from '@/components/Learner/LearnerCourseView/CourseCurricu
 import CourseSidebar from '@/components/Learner/LearnerCourseView/CourseSidebar.vue';
 
 import { useRoute } from 'vue-router';
-import { useCourseStore } from '@/stores/course';
-import { useSessionStore } from '@/stores/session';
+import { useLearnerCourseStore } from '@/stores/learnerCourse';
+import { useLearnerSessionStore } from '@/stores/learnerSession';
 
 import { onMounted } from 'vue';
 
-const courseStore = useCourseStore()
-const sessionStore = useSessionStore()
+const courseStore = useLearnerCourseStore()
+const sessionStore = useLearnerSessionStore()
 
 const route = useRoute();
 

@@ -4,25 +4,27 @@ import { ref } from "vue";
 import api from "@/api";
 import type { Course, Material } from "@/types";
 
-// 카테고리별 테마를 여기서 관리 (필요 시 export 혹은 컴포넌트 이동)
-// const CATEGORY_THEME_MAP: Record<... > = { ... };
+// [리팩토링 노트]
+// 이 스토어는 '수강생(Learner)'이 수강 중인 코스를 관리하는 역할에 집중합니다.
+// 강사가 관리하는 코스 정보는 `stores/trainerCourse.ts`를 사용하세요.
 
-export const useCourseStore = defineStore("course", () => {
-  const myEnrolledCourses = ref<Course[]>([]);
-  const workspaceCourses = ref<Course[]>([]);
-  const myLikedCourses = ref<Course[]>([]);
-  const courseInfo = ref<Course | null>(null);
+export const useLearnerCourseStore = defineStore("learnerCourse", () => {
+  // --- 상태 (State) ---
+  const myEnrolledCourses = ref<Course[]>([]); // 내가 수강 신청한 강의
+  const workspaceCourses = ref<Course[]>([]); // 현재 워크스페이스의 전체 공개 강의 (수강신청용 목록)
+  const myLikedCourses = ref<Course[]>([]); // 찜한 강의
+
+  const courseInfo = ref<Course | null>(null); // (수강생 뷰) 현재 접속한 강의 상세 정보
+  const courseMaterials = ref<Material[]>([]); // (수강생 뷰) 강의 자료 목록
+
   const isLoading = ref(false);
   const myCoursesAttendanceRate = ref<number | null>(null);
 
-  // materialsCache: courseId -> Material[]
+  // 캐싱용
   const materialsCache = ref<Map<string | number, Material[]>>(new Map());
-  const courseMaterials = ref<Material[]>([]);
-
-  // Optimization: Track last fetched workspace ID to avoid refetching same data
   const lastWorkspaceId = ref<string | number | null>(null);
 
-  // API 응답을 Course 타입으로 변환하는 함수
+  // --- 헬퍼 함수 ---
   const mapCourseData = (data: any[]): Course[] => {
     return data.map((course: any) => ({
       course_id: course.course_id || course.id,
@@ -32,8 +34,8 @@ export const useCourseStore = defineStore("course", () => {
       tag: course.tag,
       sub_category: course.sub_category || course.sub_tag,
       category: course.category,
-      enrollment_status: course.status, // Assuming backend sends status correctly mapped or processed here
-      course_status: course.status, // Simplification for mock
+      enrollment_status: course.status,
+      course_status: course.status,
       progress_rate: course.progress_rate ?? course.progress ?? 0,
       current_lessons: course.current_lessons ?? course.currentLessons ?? 0,
       total_lessons: course.total_lessons ?? course.totalLessons ?? 0,
@@ -45,7 +47,9 @@ export const useCourseStore = defineStore("course", () => {
     }));
   };
 
-  // 현재 워크스페이스에서 제공하는 모든 강의 목록 가져오기
+  // --- 액션 (Actions) ---
+
+  // [R] 워크스페이스 내 개설된 전체 강의 목록 (수강 신청 가능 목록)
   async function fetchCoursesByWorkspace(
     workspaceId: string | number,
     forceRefresh = false,
@@ -55,60 +59,73 @@ export const useCourseStore = defineStore("course", () => {
       lastWorkspaceId.value === workspaceId &&
       workspaceCourses.value.length > 0
     ) {
-      return; // Use cached data
+      return;
     }
 
     isLoading.value = true;
     try {
       const response = await api.get(`/workspaces/${workspaceId}/courses`);
       const allCourses = mapCourseData(response.data);
-      // Filter if needed, though backend should ideally handle it
+      // 워크스페이스 ID로 필터링 (Backend에서 해주면 좋음)
       workspaceCourses.value = allCourses.filter(
         (c) => String(c.workspace_id) === String(workspaceId),
       );
       lastWorkspaceId.value = workspaceId;
     } catch (error) {
-      console.error("워크스페이스 강의 로드 실패:", error);
+      console.error("[Learner] 워크스페이스 강의 로드 실패:", error);
     } finally {
       isLoading.value = false;
     }
   }
 
-  // 내가 참가한 강의 목록 조회
-  async function fetchMyEnrolledCourses() {
+  // [R] 내가 수강 중인 강의 목록
+  async function fetchMyEnrolledCourses(
+    workspaceId?: string | number,
+    userId?: string | number,
+    role = "LEARNER",
+  ) {
     isLoading.value = true;
     try {
-      const response = await api.get("/members/me/courses");
+      let response;
+      if (workspaceId) {
+        response = await api.get(
+          `/workspaces/${workspaceId}/me/courses?role=${role}`,
+        );
+      } else {
+        response = await api.get("/members/me/courses"); // 글로벌 조회 (routes.json에서 role=LEARNER로 매핑됨)
+      }
       myEnrolledCourses.value = mapCourseData(response.data);
     } catch (error) {
-      console.error("참가 강의 목록 로드 실패:", error);
+      console.error("[Learner] 내 수강 강의 로드 실패:", error);
     } finally {
       isLoading.value = false;
     }
   }
 
-  // 찜한 강의 목록
+  // [R] 찜한 강의 목록
   async function fetchLikeCourses() {
     isLoading.value = true;
     try {
       const response = await api.get("/members/me/course-likes");
       myLikedCourses.value = mapCourseData(response.data);
     } catch (error) {
-      console.error("찜한 강의 목록 로드 실패:", error);
+      console.error("[Learner] 찜한 강의 로드 실패:", error);
     } finally {
       isLoading.value = false;
     }
   }
 
-  // 강의 찜하기 및 취소
+  // [U] 강의 찜하기 토글
   async function toggleCourseLike(
     courseId: string | number,
     isCurrentlyLiked: boolean,
   ) {
     try {
       if (isCurrentlyLiked) {
-        // Mock: Fetch likes to find ID then delete
-        const response = await api.get(`/course_likes?courseId=${courseId}`);
+        // [수정] RESTful API 사용 (routes.json 매핑 활용)
+        const response = await api.get(
+          `/members/me/course-likes?courseId=${courseId}`,
+        );
         const likeRecord = response.data[0];
         if (likeRecord) {
           await api.delete(`/members/me/course-likes/${likeRecord.id}`);
@@ -119,7 +136,7 @@ export const useCourseStore = defineStore("course", () => {
         });
       }
 
-      // Update local state
+      // 로컬 상태 즉시 업데이트 (낙관적 업데이트)
       const updateState = (list: Course[]) => {
         const target = list.find(
           (c) => String(c.course_id) === String(courseId),
@@ -128,15 +145,13 @@ export const useCourseStore = defineStore("course", () => {
       };
       updateState(workspaceCourses.value);
       updateState(myEnrolledCourses.value);
-      updateState(myLikedCourses.value); // Also update liked list locally if present
-
-      // Invalidate if needed, or simple toggle is enough for UI
+      updateState(myLikedCourses.value);
     } catch (error) {
       console.error("찜 기능 처리 실패:", error);
     }
   }
 
-  // 강의 수강 신청
+  // [C] 강의 수강 신청
   async function enrollCourse(
     courseId: string | number,
     memberId: string | number,
@@ -148,7 +163,8 @@ export const useCourseStore = defineStore("course", () => {
         status: 1,
         applied_at: new Date().toISOString(),
       };
-      await api.post(`/courses/${courseId}/enroll`, payload);
+      // RESTful: POST /enrollments
+      await api.post("/enrollments", payload);
       return true;
     } catch (error) {
       console.error("수강 신청 실패:", error);
@@ -156,7 +172,7 @@ export const useCourseStore = defineStore("course", () => {
     }
   }
 
-  // 출석률
+  // [R] 내 출석률 조회
   const fetchMyCoursesAttendanceRate = async (
     year?: number,
     month?: number,
@@ -175,12 +191,12 @@ export const useCourseStore = defineStore("course", () => {
       }
       return data;
     } catch (error) {
-      console.error("강의 출석률 로드 실패:", error);
+      console.error("출석률 로드 실패:", error);
       return null;
     }
   };
 
-  // 코스 정보
+  // [R] 단일 강의 상세 정보 (수강생 뷰)
   const fetchCourseInfo = async (courseId: string | number) => {
     try {
       const response = await api.get(`/courses/${courseId}`);
@@ -188,29 +204,29 @@ export const useCourseStore = defineStore("course", () => {
       courseInfo.value = mapped[0] || null;
       return mapped[0] || null;
     } catch (error) {
-      console.error("강의 정보 로드 실패:", error);
+      console.error("강의 상세 정보 로드 실패:", error);
       courseInfo.value = null;
       return null;
     }
   };
 
-  // 세션 정보
+  // [R] 강의 세션 목록 조회 (수강생용)
+  // 강사는 별도의 세션 관리 API를 사용할 수 있음
   const fetchCourseSessions = async (courseId: string | number) => {
     try {
       const response = await api.get(`/courses/${courseId}/sessions`);
       return response.data;
     } catch (error) {
-      console.error("세션 데이터 로드 실패:", error);
+      console.error("세션 목록 로드 실패:", error);
       return [];
     }
   };
 
-  // 강의 자료 가져오기 (Caching implemented)
+  // [R] 강의 자료 조회
   async function fetchCourseMaterials(
     courseId: string | number,
     forceRefresh = false,
   ) {
-    // Check Cache
     if (!forceRefresh && materialsCache.value.has(courseId)) {
       courseMaterials.value = materialsCache.value.get(courseId) || [];
       return;
@@ -219,11 +235,8 @@ export const useCourseStore = defineStore("course", () => {
     isLoading.value = true;
     try {
       const response = await api.get(`/courses/${courseId}/materials`);
-      const materials = response.data;
-
-      // Update Cache and State
-      materialsCache.value.set(courseId, materials);
-      courseMaterials.value = materials;
+      materialsCache.value.set(courseId, response.data);
+      courseMaterials.value = response.data;
     } catch (error) {
       console.error("강의 자료 로드 실패:", error);
       courseMaterials.value = [];
@@ -233,6 +246,7 @@ export const useCourseStore = defineStore("course", () => {
   }
 
   return {
+    // State
     myEnrolledCourses,
     workspaceCourses,
     myLikedCourses,
@@ -240,6 +254,8 @@ export const useCourseStore = defineStore("course", () => {
     myCoursesAttendanceRate,
     courseInfo,
     courseMaterials,
+
+    // Actions
     fetchMyEnrolledCourses,
     fetchCoursesByWorkspace,
     toggleCourseLike,

@@ -130,7 +130,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { Course } from '@/types';
-import { useCourseStore } from '@/stores/course';
+import { useLearnerCourseStore } from '@/stores/learnerCourse';
 
 const props = defineProps<{
     course: Course;
@@ -143,7 +143,7 @@ defineEmits<{
     (e: 'enter-course', courseId: string | number): void;
 }>();
 
-const courseStore = useCourseStore();
+const courseStore = useLearnerCourseStore();
 
 const toggleLike = async () => {
     if (props.course.course_id) {

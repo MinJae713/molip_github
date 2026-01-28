@@ -11,8 +11,8 @@
         <div class="p-5 flex flex-col flex-1">
             <div class="mb-4">
                 <div class="flex justify-between text-xs mb-1.5 font-bold">
-                    <span :class="styles.textAccent">{{ course.progress }}% 진행중</span>
-                    <span class="text-slate-400">{{ course.currentLessons }}/{{ course.totalLessons }} 강의</span>
+                    <span :class="styles.textAccent">{{ course.progress_rate }}% 진행중</span>
+                    <span class="text-slate-400">{{ course.current_lessons }}/{{ course.total_lessons }} 강의</span>
                 </div>
                 <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                     <div :class="['h-full rounded-full transition-all duration-700 ease-out', styles.barColor]"
@@ -50,7 +50,7 @@ defineEmits<{
     (e: 'resume'): void;
 }>();
 
-const clampedProgress = computed(() => Math.min(100, Math.max(0, props.course.progress)));
+const clampedProgress = computed(() => Math.min(100, Math.max(0, props.course.progress_rate)));
 
 const styles = computed(() => {
     const themes = {
@@ -79,6 +79,6 @@ const styles = computed(() => {
             button: 'border-amber-200 text-amber-600 hover:bg-amber-50'
         }
     };
-    return themes[props.course.theme || 'indigo'] || themes.indigo;
+    return themes.indigo;
 });
 </script>

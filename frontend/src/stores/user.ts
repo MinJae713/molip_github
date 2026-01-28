@@ -40,7 +40,7 @@ export const useUserStore = defineStore("user", () => {
     }
   }
 
-  // ✅ [Helper] 가짜 JWT 생성기 (Mock Login용)
+  // 목업용 가짜 jwt 생성기
   function createMockJwt(userId: number, role: string) {
     const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
     const payload = btoa(
