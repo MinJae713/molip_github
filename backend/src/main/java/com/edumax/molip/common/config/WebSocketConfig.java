@@ -8,6 +8,8 @@ import com.edumax.molip.domain.quiz.handler.SttWebSocketInterceptor;
 import com.edumax.molip.domain.quiz.handler.VoiceForwardHandler;
 import com.edumax.molip.domain.session.handler.EmotionForwardHandler;
 import com.edumax.molip.domain.session.handler.EmotionWebSocketInterceptor;
+import com.edumax.molip.domain.session.janus.JwtHandshakeInterceptor;
+import com.edumax.molip.domain.session.janus.SessionJanusHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -38,14 +40,18 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSocketConfigurer {
   private final StringRedisTemplate redisTemplate;
-  private final VoiceForwardHandler voiceForwardHandler;
-  private final EmotionForwardHandler emotionForwardHandler;
   private final JwtTokenProvider jwtTokenProvider;
+
+  private final VoiceForwardHandler voiceForwardHandler; // 생성자 주입
+  private final EmotionForwardHandler emotionForwardHandler;
+  private final SessionJanusHandler sessionJanusHandler;
+
+  private final JwtHandshakeInterceptor jwtHandshakeInterceptor;
 
   @Override
   public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
     registry
-        .addHandler(voiceForwardHandler, "/voice/*") // 경로 패턴 설정
+        .addHandler(voiceForwardHandler, "/voice/{roomId}") // 경로 패턴 설정
         .addInterceptors(new SttWebSocketInterceptor()) // 인터셉터 등록
         .setAllowedOriginPatterns("*");
 
@@ -53,6 +59,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSoc
         .addHandler(emotionForwardHandler, "/emotion/*") // 경로 패턴 설정
         .addInterceptors(new EmotionWebSocketInterceptor()) // 인터셉터 등록
         .setAllowedOriginPatterns("*");
+
+    registry
+        .addHandler(sessionJanusHandler, "/ws/janus")
+        .addInterceptors(jwtHandshakeInterceptor)
+        .setAllowedOrigins("*");
   }
 
   @Override
