@@ -27,10 +27,39 @@ public class SessionJanusService {
     }
 
     public void destroyRoom(long roomId) {
-        // 방 삭제 로직 (필요 시 구현)
-        // Janus VideoRoom plugin does not have a direct "destroy room" via HTTP easily accessible 
-        // without attaching a handle first, or using admin API.
-        // For now, we focus on creation. Destruction might be handled by Janus or script.
+        Map<String, Object> sessionResp = createSession();
+        if (sessionResp == null || !sessionResp.containsKey("data")) {
+            throw new RuntimeException("Failed to create Janus session");
+        }
+        long sessionId = ((Number) ((Map<String, Object>) sessionResp.get("data")).get("id")).longValue();
+        
+        Map<String, Object> attachResp = attachPlugin(sessionId);
+        if (attachResp == null || !attachResp.containsKey("data")) {
+             destroySession(sessionId);
+             throw new RuntimeException("Failed to attach Janus plugin");
+        }
+        long handleId = ((Number) ((Map<String, Object>) attachResp.get("data")).get("id")).longValue();
+
+        try {
+            Map<String, Object> body = new HashMap<>();
+            body.put("request", "destroy");
+            body.put("room", roomId);
+            body.put("secret", "secret_videoclassroom_secret"); // 방 관리 비밀번호
+            
+            Map<String, Object> messageReq = new HashMap<>();
+            messageReq.put("janus", "message");
+            messageReq.put("body", body);
+            messageReq.put("transaction", newTransaction());
+            
+            restTemplate.postForObject(janusUrl + "/" + sessionId + "/" + handleId, messageReq, Map.class);
+            
+        } catch (Exception e) {
+            // 이미 방이 없거나 실패해도 로그만 남기고 진행 (DB 정합성을 위해)
+            System.err.println("Failed to destroy Janus room: " + e.getMessage());
+        } finally {
+            detachHandle(sessionId, handleId);
+            destroySession(sessionId);
+        }
     }
 
     @SuppressWarnings("unchecked")

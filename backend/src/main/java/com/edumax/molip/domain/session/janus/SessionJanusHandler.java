@@ -173,48 +173,51 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
         }
     }
     
-    // (2) publish 요청 가로채기 (강제 display name 적용)
+    // (2) publish 요청 가로채기 (강제 display name 적용 & 녹화 설정)
     else if (payload.contains("\"publish\"") || payload.contains("\"configure\"")) {
         try {
             Map<String, Object> json = objectMapper.readValue(payload, new TypeReference<>() {});
             Map<String, Object> body = (Map<String, Object>) json.get("body");
             
             if (body != null && ("publish".equals(body.get("request")) || "configure".equals(body.get("request")))) {
-                // Role과 DisplayName 가져오기
+                
+                // 1. 사용자 정보 가져오기
                 String role = (String) clientSession.getAttributes().get("role");
                 String displayName = (String) clientSession.getAttributes().get("displayName");
                 Long courseId = (Long) clientSession.getAttributes().get("courseId");
                 Long sessionId = (Long) clientSession.getAttributes().get("sessionId");
                 
                 if (role != null && displayName != null) {
-                    // [변조] display name 강제
-                    if (body.containsKey("display")) {
-                         body.put("display", displayName);
-                    } else if ("publish".equals(body.get("request"))) {
-                        body.put("display", displayName);
+                    
+                    // 2. Display Name 강제 적용 (위변조 방지)
+                    // - publish 요청이면 무조건 삽입
+                    // - configure 요청에 display가 포함되어 있다면 무조건 덮어쓰기
+                    boolean isPublish = "publish".equals(body.get("request"));
+                    if (isPublish || body.containsKey("display")) {
+                        body.put("display", displayName); 
                     }
                     
-                    // [녹화 강제 로직 복구]
-                    // 1. 강사인 경우 녹화 설정 강제 (Publish 요청 시)
-                    if ("TEACHER".equals(role) && "publish".equals(body.get("request"))) {
+                    // 3. 녹화 설정 (강사: 강제 녹화, 학생: 녹화 금지)
+                    if ("TEACHER".equals(role) && isPublish) {
                          // 강사는 무조건 녹화 시작
-                         // 사용자가 요청한 파일명 형식: UUID + courseId + sessionId + timestamp
                          String uuid = java.util.UUID.randomUUID().toString().replace("-", "");
                          String timestamp = String.valueOf(System.currentTimeMillis());
                          
-                         // courseId, sessionId가 null일 수 있으므로 체크
                          if (courseId == null) courseId = 0L;
                          if (sessionId == null) sessionId = 0L;
                          
                          String filename = String.format("%s_%d_%d_%s", uuid, courseId, sessionId, timestamp);
                          
+                         // 프론트에서 보낸 값이 있더라도 덮어씀 (Map.put은 덮어쓰기임)
                          body.put("record", true);
                          body.put("filename", filename);
-                         body.put("rec_dir", "/opt/janus/recordings"); // [중요] 녹화 경로 강제 주입
+                         body.put("rec_dir", "/opt/janus/recordings");
                          
                          log.info("Enforcing recording for TEACHER: {} in /opt/janus/recordings", filename);
-                    } else if ("STUDENT".equals(role) && "publish".equals(body.get("request"))) {
+                         
+                    } else if ("STUDENT".equals(role) && isPublish) {
                         // 학생은 절대 녹화 금지
+                        // 프론트가 record: true를 보내도 여기서 false로 덮어씌워짐
                         body.put("record", false);
                         body.remove("filename");
                         body.remove("rec_dir");

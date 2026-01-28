@@ -220,6 +220,30 @@ public class SessionServiceImpl implements SessionService {
   }
 
   @Override
+  @Transactional
+  public void stopSession(Long sessionId, Long memberId) {
+    Session session = sessionRepository.findById(sessionId)
+        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 세션입니다. ID: " + sessionId));
+
+    // 1. 권한 체크 (강사만 종료 가능)
+    if (!session.getCourse().getLeaner().getMember().getId().equals(memberId)) {
+        throw new IllegalStateException("해당 세션을 종료할 권한이 없습니다.");
+    }
+    
+    // 2. 이미 종료된 방인지 체크
+    if (session.getJanusRoomId() == null) {
+        throw new IllegalStateException("이미 종료되었거나 시작되지 않은 세션입니다.");
+    }
+
+    // 3. Janus 방 삭제
+    sessionJanusService.destroyRoom(session.getJanusRoomId());
+
+    // 4. DB 정보 초기화
+    session.setJanusRoomId(null);
+    session.setPin(null);
+  }
+
+  @Override
   public SessionSimpleResponse getSessionSimple(Long sessionId, Long memberId) {
     Session session = sessionRepository.findById(sessionId)
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 세션입니다. ID: " + sessionId));
@@ -241,6 +265,20 @@ public class SessionServiceImpl implements SessionService {
     List<ExitQuiz> exitQuizzes = session.getExitQuizzes();
     
     return SessionDetailResponse.of(session, exitQuizzes);
+  }
+
+  @Override
+  public com.edumax.molip.domain.session.dto.response.SessionConnectionResponse getSessionConnection(Long sessionId, Long memberId) {
+    Session session = sessionRepository.findById(sessionId)
+        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 세션입니다. ID: " + sessionId));
+
+    validateSessionAccess(session, memberId);
+
+    if (session.getJanusRoomId() == null) {
+        throw new IllegalStateException("아직 시작되지 않은 세션입니다.");
+    }
+
+    return com.edumax.molip.domain.session.dto.response.SessionConnectionResponse.from(session);
   }
 
   private void validateSessionAccess(Session session, Long memberId) {

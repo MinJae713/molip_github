@@ -60,6 +60,15 @@ public class SessionController {
     return ResponseEntity.ok(response);
   }
 
+  @GetMapping("/{sessionId}/connection")
+  public ResponseEntity<com.edumax.molip.domain.session.dto.response.SessionConnectionResponse> getSessionConnection(
+      @PathVariable Long sessionId,
+      @AuthenticationPrincipal MemberUserDetails userDetails) {
+    
+    return ResponseEntity.ok(sessionService.getSessionConnection(sessionId, userDetails.getMemberId()));
+  }
+
+
   @PutMapping("/{sessionId}")
   public ResponseEntity<String> updateSession(
       @PathVariable Long sessionId,
@@ -93,6 +102,19 @@ public class SessionController {
       
     SessionStartResponse response = sessionService.startSession(sessionId, userDetails.getMemberId());
     return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/{sessionId}/stop")
+  public ResponseEntity<String> stopSession(
+      @PathVariable Long sessionId,
+      @AuthenticationPrincipal MemberUserDetails userDetails) {
+      
+    try {
+        sessionService.stopSession(sessionId, userDetails.getMemberId());
+        return ResponseEntity.ok("세션이 종료되었습니다.");
+    } catch (Exception e) {
+        return ResponseEntity.status(400).body(e.getMessage());
+    }
   }
 }
 

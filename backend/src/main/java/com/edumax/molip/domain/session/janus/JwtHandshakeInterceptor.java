@@ -48,10 +48,11 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
       if (auth.getPrincipal() instanceof com.edumax.molip.common.model.MemberUserDetails) {
           com.edumax.molip.common.model.MemberUserDetails userDetails = (com.edumax.molip.common.model.MemberUserDetails) auth.getPrincipal();
           attributes.put("memberId", userDetails.getMemberId());
-          attributes.put("memberName", userDetails.getUsername()); // 이름 저장 (실제 이름인지 확인 필요)
+          // [수정] getUsername()(이메일) 대신 getDisplayName()(실명) 사용
+          attributes.put("memberName", userDetails.getDisplayName()); 
       }
       
-      attributes.put("username", auth.getName()); // 이것도 저장해둠
+      attributes.put("username", auth.getName()); // 이것도 저장해둠 (Email)
       
       log.info("WebSocket Handshake Authorized: username={}, memberId={}", auth.getName(), attributes.get("memberId"));
       return true;
