@@ -15,4 +15,6 @@ public class QuestionMessage {
   private Long memberId;
   private String questionId;
   private String content;
+  private String name;
+  private String timestamp;
 }

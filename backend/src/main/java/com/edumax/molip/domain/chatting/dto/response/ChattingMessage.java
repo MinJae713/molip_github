@@ -17,4 +17,5 @@ public class ChattingMessage {
   private String name;
   private String profileImageUrl;
   private String content;
+  private String timestamp;
 }
