@@ -1,29 +1,56 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import { useMemberStore } from '@/stores/member';
+import { useCourseStore } from '@/stores/course'; // 강의 스토어 추가
 import StatusBadge from '@/components/common/CommonComponents/StatusBadge.vue';
 import MemberDetailModal from './MemberDetailModal.vue';
 import RoleChangeModal from './RoleChangeModal.vue';
 import ConfirmModal from '@/components/common/CommonComponents/ConfirmModal.vue';
 import type { WorkspaceMember } from '@/types';
 
-// 임시 데이터 (실제는 store/props로 관리 권장)
-const members = ref<WorkspaceMember[]>([
-  { id: 1, name: '이정훈', email: 'jh.lee@techcorp.com', role: 'Admin', joinedAt: '2023.11.12', lastLogin: '2024.05.21 14:32', status: 'ACTIVE', profileImage: '', workspace_id: 1 },
-  { id: 2, name: '김철수', email: 'cs.kim@techcorp.com', role: 'Instructor', joinedAt: '2024.01.05', lastLogin: '2024.05.20 09:15', status: 'ACTIVE', profileImage: '', workspace_id: 1 },
-  { id: 3, name: '박영희', email: 'yh.park@techcorp.com', role: 'Learner', joinedAt: '2024.02.20', lastLogin: '2024.05.21 16:04', status: 'ACTIVE', profileImage: '', workspace_id: 1 },
-]);
+// 초기화
+const route = useRoute();
+const memberStore = useMemberStore();
+const courseStore = useCourseStore();
+const workspaceId = route.params.id as string;
+
+// 데이터 연결 (Store 상태 참조)
+const members = computed(() => memberStore.members || []);
+const isLoading = computed(() => memberStore.isLoading || courseStore.isLoading);
 
 // 필터링 상태
 const searchQuery = ref('');
-const selectedCourse = ref('전체 강의');
-const courseOptions = ['전체 강의', '리더십 역량 강화', '비즈니스 이메일', '영업 제안서 마스터'];
+const selectedCourseName = ref('전체 강의');
 
-// 1. [검색 및 강의 필터링된 목록]
+// 초기 데이터 로드 (멤버 및 워크스페이스 내 강의 목록)
+onMounted(async () => {
+  if (workspaceId) {
+    await Promise.all([
+      memberStore.fetchMembers(workspaceId),
+      courseStore.fetchCoursesByWorkspace(workspaceId)
+    ]);
+  }
+});
+
+// 동적 강의 옵션 생성
+const courseOptions = computed(() => {
+  const titles = courseStore.workspaceCourses.map(c => c.title);
+  return ['전체 강의', ...titles];
+});
+
+// 1. 검색 및 강의 필터링된 목록 (오류 방어 코드 포함)
 const filteredMembers = computed(() => {
   return members.value.filter(m => {
-    const matchName = m.name.toLowerCase().includes(searchQuery.value.toLowerCase());
-    // 실제 구현 시에는 member 객체 내의 courses 데이터를 비교해야 함 (현재는 전체 표시)
-    const matchCourse = selectedCourse.value === '전체 강의' ? true : true; 
+    // 이름 검색: undefined 방지
+    const name = m?.name || ''; 
+    const matchName = name.toLowerCase().includes(searchQuery.value.toLowerCase());
+    
+    // 강의 필터: 멤버 객체의 courses 배열 내 선택한 강의명 포함 여부 확인
+    const matchCourse = selectedCourseName.value === '전체 강의' 
+      ? true 
+      : (m.courses && m.courses.includes(selectedCourseName.value));
+    
     return matchName && matchCourse;
   });
 });
@@ -35,11 +62,11 @@ const isAllSelected = computed(() =>
 );
 
 const selectedMembersData = computed(() => 
-  members.value.filter(m => selectedIds.value.includes(m.id))
+  members.value.filter(m => selectedIds.value.includes(m.member_id))
 );
 
 const toggleAll = () => {
-  selectedIds.value = isAllSelected.value ? [] : filteredMembers.value.map(m => m.id);
+  selectedIds.value = isAllSelected.value ? [] : filteredMembers.value.map(m => m.member_id);
 };
 
 // 3. 모달 상태 관리
@@ -54,7 +81,7 @@ const openDetail = (member: WorkspaceMember) => {
 const openRoleChange = (member?: WorkspaceMember) => {
   if (member) {
     selectedMember.value = member;
-    selectedIds.value = [member.id];
+    selectedIds.value = [member.member_id];
   }
   modals.value.role = true;
 };
@@ -62,9 +89,18 @@ const openRoleChange = (member?: WorkspaceMember) => {
 const openStatusConfirm = (member?: WorkspaceMember) => {
   if (member) {
     selectedMember.value = member;
-    selectedIds.value = [member.id];
+    selectedIds.value = [member.member_id];
   }
   modals.value.status = true;
+};
+
+// 4. 액션 실행 (상태 일괄 변경)
+const handleDeactivate = async () => {
+  const success = await memberStore.updateMultipleStatuses(selectedIds.value, 'INACTIVE');
+  if (success) {
+    modals.value.status = false;
+    selectedIds.value = [];
+  }
 };
 </script>
 
@@ -83,7 +119,7 @@ const openStatusConfirm = (member?: WorkspaceMember) => {
         </div>
         <div class="relative min-w-40">
           <select 
-            v-model="selectedCourse"
+            v-model="selectedCourseName"
             class="w-full pl-3 pr-10 py-2 bg-white border border-slate-200 rounded-lg text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all cursor-pointer"
           >
             <option v-for="course in courseOptions" :key="course" :value="course">{{ course }}</option>
@@ -123,41 +159,52 @@ const openStatusConfirm = (member?: WorkspaceMember) => {
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-50">
-          <tr 
-            v-for="member in filteredMembers" 
-            :key="member.id" 
-            @click="openDetail(member)" 
-            class="hover:bg-indigo-50/30 transition-colors group cursor-pointer"
-          >
-            <td class="p-4 text-center" @click.stop>
-              <input type="checkbox" v-model="selectedIds" :value="member.id" class="rounded border-slate-300 text-indigo-600 cursor-pointer" />
-            </td>
-            <td class="p-4">
-              <div class="flex items-center gap-3">
-                <div class="size-9 rounded-full bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
-                  <img v-if="member.profileImage" :src="member.profileImage" class="size-full object-cover" />
-                  <div v-else class="size-full flex items-center justify-center bg-indigo-50 text-indigo-600 font-bold text-[11px]">{{ member.name[0] }}</div>
-                </div>
-                <div>
-                  <div class="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{{ member.name }}</div>
-                  <div class="text-[11px] text-slate-400 font-medium">{{ member.email }}</div>
-                </div>
+          <tr v-if="isLoading">
+            <td colspan="5" class="p-20 text-center">
+              <div class="flex flex-col items-center gap-2">
+                <div class="size-8 border-4 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin"></div>
+                <p class="text-xs text-slate-400 font-medium">데이터 로딩 중...</p>
               </div>
             </td>
-            <td class="p-4">
-              <StatusBadge :variant="(member.role.toLowerCase() as any)" class="scale-90 origin-left" />
-            </td>
-            <td class="p-4">
-              <div class="text-xs font-bold text-slate-600 mb-0.5">{{ member.joinedAt }}</div>
-              <div class="text-[10px] text-slate-400 font-medium">{{ member.lastLogin }}</div>
-            </td>
-            <td class="p-4 text-center">
-              <StatusBadge :variant="(member.status.toLowerCase() as any)" show-dot />
-            </td>
           </tr>
-          <tr v-if="filteredMembers.length === 0">
-            <td colspan="5" class="p-12 text-center text-slate-400 text-sm">검색 결과가 없습니다.</td>
-          </tr>
+
+          <template v-else>
+            <tr 
+              v-for="member in filteredMembers" 
+              :key="member.member_id" 
+              @click="openDetail(member)" 
+              class="hover:bg-indigo-50/30 transition-colors group cursor-pointer"
+            >
+              <td class="p-4 text-center" @click.stop>
+                <input type="checkbox" v-model="selectedIds" :value="member.member_id" class="rounded border-slate-300 text-indigo-600 cursor-pointer" />
+              </td>
+              <td class="p-4">
+                <div class="flex items-center gap-3">
+                  <div class="size-9 rounded-full bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
+                    <img v-if="member.profile_image_url" :src="member.profile_image_url" class="size-full object-cover" />
+                    <div v-else class="size-full flex items-center justify-center bg-indigo-50 text-indigo-600 font-bold text-[11px]">{{ (member.name || '?')[0] }}</div>
+                  </div>
+                  <div>
+                    <div class="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{{ member.name || '이름 없음' }}</div>
+                    <div class="text-[11px] text-slate-400 font-medium">{{ member.email }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="p-4">
+                <StatusBadge v-if="member.role" :variant="(member.role.toLowerCase() as any)" class="scale-90 origin-left" />
+              </td>
+              <td class="p-4">
+                <div class="text-xs font-bold text-slate-600 mb-0.5">{{ member.joinedAt }}</div>
+                <div class="text-[10px] text-slate-400 font-medium">{{ member.lastLogin }}</div>
+              </td>
+              <td class="p-4 text-center">
+                <StatusBadge v-if="member.status" :variant="(member.status.toLowerCase() as any)" show-dot />
+              </td>
+            </tr>
+            <tr v-if="filteredMembers.length === 0">
+              <td colspan="5" class="p-12 text-center text-slate-400 text-sm">검색 결과가 없습니다.</td>
+            </tr>
+          </template>
         </tbody>
       </table>
     </div>
@@ -178,13 +225,15 @@ const openStatusConfirm = (member?: WorkspaceMember) => {
 
   <ConfirmModal
     v-if="modals.status"
-    :isOpen="modals.status" title="계정 비활성화" variant="danger"
+    :isOpen="modals.status" 
+    title="계정 비활성화" 
+    variant="danger"
     @close="modals.status = false"
+    @confirm="handleDeactivate"
   >
     <div class="flex flex-col items-center text-center py-2">
       <p class="text-sm text-slate-600 leading-relaxed">
-        선택한 <strong class="text-slate-900">{{ selectedIds.length }}명</strong>의 계정을 비활성화하시겠습니까?<br>
-        접속 권한은 즉시 박탈되나, 학습 데이터는 보관됩니다.
+        선택한 <strong class="text-slate-900">{{ selectedIds.length }}명</strong>의 계정을 비활성화하시겠습니까?
       </p>
     </div>
   </ConfirmModal>

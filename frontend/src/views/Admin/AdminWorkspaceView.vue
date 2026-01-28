@@ -36,7 +36,6 @@ const adminStats = [
 </script>
 
 <template>
-  <h1 class="text-lg font-bold text-slate-800">관리자 워크스페이스</h1>
   <div class="min-h-screen bg-[#F8FAFC] px-6 lg:px-10 pt-4 pb-10 space-y-6">
 
     <section>
