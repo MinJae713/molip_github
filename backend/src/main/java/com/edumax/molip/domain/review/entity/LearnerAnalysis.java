@@ -45,7 +45,7 @@ public class LearnerAnalysis {
 
   /** 분위기 그래프 */
   @OneToMany(mappedBy = "learnerAnalysis")
-  private List<FeelingGraph> feelingGraphs;
+  private List<EmotionGraph> emotionGraph;
 
   /** AI 분석 타임라인 */
   @OneToMany(mappedBy = "learnerAnalysis")

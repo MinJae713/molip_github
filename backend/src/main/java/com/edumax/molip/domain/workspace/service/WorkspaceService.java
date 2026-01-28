@@ -5,7 +5,6 @@ import com.edumax.molip.domain.workspace.dto.response.FindMyStatsResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceCoursesByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
-
 import java.util.List;
 
 public interface WorkspaceService {
@@ -17,5 +16,6 @@ public interface WorkspaceService {
 
   FindMyStatsResponse findMyStats(Long workspaceId); // 내 워크스페이스 통계 조회
 
-  List<FindWorkspaceCoursesByIdResponse> findWorkspaceCoursesById(Long workspaceId, Long memberId); // 워크스페이스별 강의 목록 조회
+  List<FindWorkspaceCoursesByIdResponse> findWorkspaceCoursesById(
+      Long workspaceId, Long memberId); // 워크스페이스별 강의 목록 조회
 }

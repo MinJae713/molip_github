@@ -4,8 +4,10 @@ import com.edumax.molip.common.jwt.JwtTokenProvider;
 import com.edumax.molip.common.model.MemberUserDetails;
 import com.edumax.molip.common.model.RedisProfile;
 import com.edumax.molip.common.util.JacksonUtil;
-import com.edumax.molip.domain.quiz.handler.GetRoomIdInterceptor;
+import com.edumax.molip.domain.quiz.handler.SttWebSocketInterceptor;
 import com.edumax.molip.domain.quiz.handler.VoiceForwardHandler;
+import com.edumax.molip.domain.session.handler.EmotionForwardHandler;
+import com.edumax.molip.domain.session.handler.EmotionWebSocketInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -36,14 +38,20 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSocketConfigurer {
   private final StringRedisTemplate redisTemplate;
-  private final VoiceForwardHandler voiceForwardHandler; // 생성자 주입
+  private final VoiceForwardHandler voiceForwardHandler;
+  private final EmotionForwardHandler emotionForwardHandler;
   private final JwtTokenProvider jwtTokenProvider;
 
   @Override
   public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
     registry
-        .addHandler(voiceForwardHandler, "/voice/{roomId}") // 경로 패턴 설정
-        .addInterceptors(new GetRoomIdInterceptor()) // 인터셉터 등록
+        .addHandler(voiceForwardHandler, "/voice/*") // 경로 패턴 설정
+        .addInterceptors(new SttWebSocketInterceptor()) // 인터셉터 등록
+        .setAllowedOriginPatterns("*");
+
+    registry
+        .addHandler(emotionForwardHandler, "/emotion/*") // 경로 패턴 설정
+        .addInterceptors(new EmotionWebSocketInterceptor()) // 인터셉터 등록
         .setAllowedOriginPatterns("*");
   }
 

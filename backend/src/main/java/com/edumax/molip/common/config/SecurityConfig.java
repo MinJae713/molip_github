@@ -83,7 +83,7 @@ public class SecurityConfig {
                         "/api/member/register",
                         "/api/member/logout")
                     .permitAll()
-                    .requestMatchers("/uploads/**", "/message/**")
+                    .requestMatchers("/uploads/**", "/message/**", "/emotion/**", "/voice/**")
                     .permitAll()
                     .requestMatchers("/api/admin/**")
                     .hasRole("ADMIN")
