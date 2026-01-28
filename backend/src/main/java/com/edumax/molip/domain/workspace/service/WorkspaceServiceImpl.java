@@ -59,10 +59,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
   @Override
   public List<FindWorkspaceResponse> findWorkspaces(Long memberId) {
-    List<Workspace> workspaceList = workspaceRepository.findAll();
-    List<FindWorkspaceResponse> result = new ArrayList<>();
-    workspaceList.forEach(workspace -> result.add(findWorkspace(workspace, memberId)));
-    return result;
+    List<Workspace> workspaces = workspaceRepository.findAll();
+    return workspaces.stream().map(workspace -> findWorkspace(workspace, memberId)).toList();
   }
 
   @Override
@@ -79,11 +77,6 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     String name = workspace.getName();
     String description = workspace.getDescription();
     String logoUrl = workspace.getLogoUrl();
-    Boolean isSearchable = workspace.getIsSearchable();
-    List<WorkspaceRegister> workspaceRegisters =
-        workspace.getWorkspaceRegisters();
-    List<InviteCode> inviteCodes =
-        workspace.getInviteCodes();
     List<WorkspaceMember> workspaceMembers =
         workspace.getWorkspaceMembers();
     List<Course> courses = workspace.getCourses();
@@ -210,8 +203,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     // 위에서 예외 나오는 경우? -> 현재 사용자가 입력 받은 워스 멤버가 아니라면 에러남?
     // 프론트에서 그런 경우가 있나?
     List<Course> courses = workspace.getCourses();
-    List<FindWorkspaceCoursesByIdResponse> result = new ArrayList<>();
-    courses.forEach(course -> {
+    return courses.stream().map(course -> {
       Long courseId = course.getCourseId();
       String title = course.getTitle();
       String description = course.getDescription();
@@ -233,22 +225,21 @@ public class WorkspaceServiceImpl implements WorkspaceService {
       Boolean enrollmentStatus = courseApplyRepository.
           findByWorkspaceMemberAndCourse(workspaceMember, course).
           isPresent();
-      result.add(FindWorkspaceCoursesByIdResponse.builder()
-              .course_id(courseId)
-              .workspace_id(workspaceId)
-              .title(title)
-              .description(description)
-              .category(category)
-              .sub_category(subCategory) // null도 ㄱㄴ
-              .current_lessons(currentLessons)
-              .total_lessons(totalLessons)
-              .is_liked(isLiked)
-              .d_day(dDay)
-              .status(status)
-              .enrollment_status(enrollmentStatus)
-          .build());
-    });
-    return result;
+      return FindWorkspaceCoursesByIdResponse.builder()
+          .course_id(courseId)
+          .workspace_id(workspaceId)
+          .title(title)
+          .description(description)
+          .category(category)
+          .sub_category(subCategory) // null도 ㄱㄴ
+          .current_lessons(currentLessons)
+          .total_lessons(totalLessons)
+          .is_liked(isLiked)
+          .d_day(dDay)
+          .status(status)
+          .enrollment_status(enrollmentStatus)
+          .build();
+    }).toList();
   }
 
   @Override
@@ -257,19 +248,18 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         .orElseThrow(NoMemberException::new);
     List<WorkspaceMember> workspaceMembers =
         workspaceMemberRepository.findByMember(member);
-    List<FindWorkspaceResponse> result = new ArrayList<>();
-    workspaceMembers.stream().sorted(new Comparator<WorkspaceMember>() {
-      @Override
-      public int compare(WorkspaceMember o1, WorkspaceMember o2) {
-        return o2.getWorkspaceMemberId().compareTo(o1.getWorkspaceMemberId());
-      }
-    }).forEach(workspaceMember ->
-        result.add(findWorkspace(workspaceMember.getWorkspace(), memberId)));
-    return result;
+    return workspaceMembers.stream().sorted(new Comparator<WorkspaceMember>() {
+          @Override
+          public int compare(WorkspaceMember o1, WorkspaceMember o2) {
+            return o2.getWorkspaceMemberId().compareTo(o1.getWorkspaceMemberId());
+          }
+        }).map(workspaceMember -> findWorkspace(workspaceMember.getWorkspace(), memberId)).toList();
   }
 
   @Override
   public List<FindWorkspaceResponse> searchWorkspaces(String searchQuery, Long memberId) {
-    return List.of();
+    // 일단 워스 이름으로만 검색되도록 구현!!
+    List<Workspace> workspaces = workspaceRepository.findByNameContaining(searchQuery);
+    return workspaces.stream().map(workspace -> findWorkspace(workspace, memberId)).toList();
   }
 }
