@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useLiveStore } from '@/stores/live';
+import { useQuizStore } from '@/stores/quiz';
+import QuizGenerationModal from '@/components/Live/Sidebar/QuizGenerationModal.vue';
 import { useTimer } from '@/composables/useTimer';
 
 const liveStore = useLiveStore();
+const quizStore = useQuizStore();
 const { startTimer } = useTimer();
 
-// 모달 상태 관리
+// 모달 상태 관리 (쉬는 시간은 로컬, 퀴즈는 스토어)
 const isTimeModalOpen = ref(false);
 const timeOptions = [5, 10, 15, 20];
 
@@ -14,8 +17,13 @@ const timeOptions = [5, 10, 15, 20];
 const handleStartBreak = (minutes: number) => {
   liveStore.isBreakTime = true; 
   startTimer(minutes * 60);     
-  isTimeModalOpen.value = false; // 시작 후 모달 닫기
+  isTimeModalOpen.value = false;
   console.log(`${minutes}분 쉬는 시간 시작`);
+};
+
+// 퀴즈 모달 열기 함수 (Store 액션 활용)
+const openQuizModal = () => {
+  quizStore.toggleModal(true); // store에 정의한 toggleModal 함수 호출
 };
 </script>
 
@@ -94,7 +102,7 @@ const handleStartBreak = (minutes: number) => {
         쉬는 시간
       </button>
 
-      <button class="flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95">
+      <button @click="openQuizModal" class="flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95">
         <span class="material-symbols-outlined text-lg">quiz</span>
         퇴실 퀴즈
       </button>
@@ -103,6 +111,8 @@ const handleStartBreak = (minutes: number) => {
         <span class="material-symbols-outlined text-lg">settings</span>
         설정
       </button>
+
+      <QuizGenerationModal />
     </div>
   </div>
 </template>

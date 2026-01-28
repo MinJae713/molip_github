@@ -1,221 +1,192 @@
-import type { Participant } from "@/types/live";
-import { defineStore } from "pinia";
-import { ref } from "vue";
-import api from "@/api";
-import { useLearnerCourseStore } from "./learnerCourse";
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+import api from '@/api';
+import { useCourseStore } from './course';
+import { useQuizStore } from './quiz'; // 퀴즈 스토어와 연동
+import type { Participant } from '@/types/live';
 
-export const useLiveStore = defineStore("live", () => {
-  const courseStore = useLearnerCourseStore();
+export const useLiveStore = defineStore('live', () => {
+  const courseStore = useCourseStore();
+  const quizStore = useQuizStore();
 
   // --- [1] 상태 (State) ---
-
-  // 강의 및 세션 정보
-  const liveTitle = ref("");
-  const currentSessionTitle = ref("");
+  const liveTitle = ref('');
+  const currentSessionTitle = ref('');
+  const isLiveStarted = ref(false);
   const isBreakTime = ref(false);
-  const isLiveStarted = ref(false); // 수업 시작 여부
-  const recordingId = ref<string | null>(null); // 백엔드에서 받은 녹화 고유 ID
-  // 미디어 상태 (카메라, 마이크, 화면공유)
+
+  // 미디어 상태
   const isMicOn = ref(false);
   const isCamOn = ref(false);
   const myStream = ref<MediaStream | null>(null);
   const isScreenSharing = ref(false);
   const screenStream = ref<MediaStream | null>(null);
 
-  // 참여자 및 AI 분석 상태
-  const aiAnalysisActive = ref(true);
-  const participants = ref<Participant[]>([
-    {
-      id: "1",
-      name: "김철수",
-      avatar: "https://i.pravatar.cc/150?u=1",
-      isCameraOn: true,
-      isMicOn: true,
-      concentrationScore: 92,
-      status: "focus",
-    },
-    {
-      id: "2",
-      name: "이영희",
-      avatar: "https://i.pravatar.cc/150?u=2",
-      isCameraOn: false,
-      isMicOn: true,
-      concentrationScore: 45,
-      status: "distracted",
-    },
-  ]);
+  // 참여자 및 분석
+  const participants = ref<Participant[]>([]);
   const selectedStudent = ref<Participant | null>(null);
+  const aiAnalysisActive = ref(true);
 
-  // --- [2] 액션: 라이브 초기화 및 종료 ---
+  // 실시간 통신 (WS & STT)
+  const socket = ref<WebSocket | null>(null);
+  const isRecordingVoice = ref(false);
+  let mediaRecorder: MediaRecorder | null = null;
+  let voiceInterval: number | null = null;
 
-  /** 라이브 입장 시 실행: 강의 및 세션 정보를 세팅합니다. */
-  async function initLiveRoom(
-    courseId: string | number,
-    sessionId: string | number,
-  ) {
+  // --- [2] computed (Getters) ---
+  const participantCount = computed(() => participants.value.length);
+
+  // --- [3] 액션: 라이브 생명주기 ---
+
+  /** 라이브 방 입장 및 초기화 */
+  async function initLiveRoom(courseId: string | number, sessionId: string | number) {
     try {
-      // 1. 코스 정보 로드
-      if (
-        !courseStore.courseInfo ||
-        String(courseStore.courseInfo.course_id) !== String(courseId)
-      ) {
-        await courseStore.fetchCourseInfo(courseId);
-      }
-
-      // 2. 세션 리스트 로드 및 현재 세션 찾기
+      if (!courseStore.courseInfo) await courseStore.fetchCourseInfo(courseId);
       const sessions = await courseStore.fetchCourseSessions(courseId);
-      const currentSession = sessions.find(
-        (s: any) =>
-          String(s.session_id) === String(sessionId) ||
-          String(s.id) === String(sessionId),
-      );
+      const currentSession = sessions.find((s: any) => String(s.session_id) === String(sessionId));
 
-      // 3. 라이브 헤더용 데이터 할당
-      liveTitle.value = courseStore.courseInfo?.title || "강의 제목 없음";
-      currentSessionTitle.value = currentSession?.title || "세션 정보 없음";
+      liveTitle.value = courseStore.courseInfo?.title || '실시간 강의';
+      currentSessionTitle.value = currentSession?.title || '세션 정보 없음';
 
-      // 4. 참여자 목록 로드
       await fetchParticipants(courseId);
+      connectSocket(); // 입장 시 자동 소켓 연결
     } catch (error) {
       console.error("라이브 초기화 실패:", error);
-      liveTitle.value = "라이브 강의 (연결 실패)";
-      currentSessionTitle.value = "세션 정보를 불러올 수 없습니다.";
     }
   }
 
-  /** 라이브 세션 종료: 모든 미디어 자원을 해제하고 상태를 초기화합니다. */
-  async function endLiveSession() {
-    try {
-      if (myStream.value) {
-        myStream.value.getTracks().forEach((track) => track.stop());
-        myStream.value = null;
-      }
-      if (screenStream.value) {
-        screenStream.value.getTracks().forEach((track) => track.stop());
-        screenStream.value = null;
-      }
+  /** 라이브 종료 및 자원 해제 */
+  function endLiveSession() {
+    stopVoiceRecording();
+    [myStream.value, screenStream.value].forEach(stream => {
+      stream?.getTracks().forEach(track => track.stop());
+    });
 
-      isMicOn.value = false;
-      isCamOn.value = false;
-      isScreenSharing.value = false;
-      selectedStudent.value = null;
-      isBreakTime.value = false;
-
-      console.log("라이브 세션이 안전하게 종료되었습니다.");
-    } catch (error) {
-      console.error("세션 종료 중 에러 발생:", error);
+    if (socket.value) {
+      socket.value.close();
+      socket.value = null;
     }
+
+    isLiveStarted.value = false;
+    myStream.value = null;
+    screenStream.value = null;
   }
 
-  // --- [3] 액션: 미디어 제어 ---
+  // --- [4] 액션: 미디어 제어 (Janus 연동 지점) ---
 
   async function toggleCamera() {
     try {
       if (isCamOn.value) {
-        myStream.value?.getVideoTracks().forEach((track) => track.stop());
+        myStream.value?.getVideoTracks().forEach(t => t.stop());
         isCamOn.value = false;
       } else {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: isMicOn.value,
-        });
-        myStream.value = stream;
+        myStream.value = await navigator.mediaDevices.getUserMedia({ video: true, audio: isMicOn.value });
         isCamOn.value = true;
       }
-    } catch (error) {
-      console.error("카메라 연결 실패:", error);
-      alert("카메라 권한을 허용해주세요.");
-    }
+    } catch (e) { alert("카메라 권한이 필요합니다."); }
   }
 
   async function toggleMic() {
-    if (myStream.value) {
-      const audioTrack = myStream.value.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        isMicOn.value = audioTrack.enabled;
-      }
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-        });
-        myStream.value = stream;
-        isMicOn.value = true;
-      } catch (error) {
-        console.error("마이크 연결 실패:", error);
-      }
+    const audioTrack = myStream.value?.getAudioTracks()[0];
+    if (audioTrack) {
+      audioTrack.enabled = !audioTrack.enabled;
+      isMicOn.value = audioTrack.enabled;
     }
   }
 
-  async function toggleScreenShare() {
+  // --- [5] 액션: 웹소켓 & STT & 퀴즈 엔진 ---
+
+  function connectSocket() {
+    if (socket.value?.readyState === WebSocket.OPEN) return;
+
+    const wsUrl = `${import.meta.env.VITE_WS_URL}/live`;
+    socket.value = new WebSocket(wsUrl);
+
+    socket.value.onmessage = (event) => {
+      const { type, payload } = JSON.parse(event.data);
+
+      switch (type) {
+        case 'QUIZ_GENERATED':
+          // AI가 퀴즈 생성 시 퀴즈 스토어의 추천 리스트에 추가
+          quizStore.recommendedQuizzes.unshift(payload);
+          // 알림 로직 추가 가능 (예: Toast 메시지)
+          break;
+        case 'STUDENT_CONCENTRATION':
+          updateParticipantScore(payload.userId, payload.score);
+          break;
+      }
+    };
+  }
+
+  /** 강사 음성 10초 단위 서버 전송 (STT 엔진용) */
+  async function startVoiceRecording() {
+    if (isRecordingVoice.value) return;
+
     try {
-      if (isScreenSharing.value) {
-        screenStream.value?.getTracks().forEach((track) => track.stop());
-        screenStream.value = null;
-        isScreenSharing.value = false;
-      } else {
-        const stream = await navigator.mediaDevices.getDisplayMedia({
-          video: true,
-          audio: true,
-        });
-        const videoTrack = stream.getVideoTracks()[0];
-        if (videoTrack) {
-          videoTrack.onended = () => {
-            isScreenSharing.value = false;
-            screenStream.value = null;
-          };
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+      mediaRecorder.ondataavailable = async (e) => {
+        if (e.data.size > 0 && socket.value?.readyState === WebSocket.OPEN) {
+          // Binary 데이터로 전송하여 효율화
+          socket.value.send(e.data);
         }
-        screenStream.value = stream;
-        isScreenSharing.value = true;
-      }
-    } catch (err) {
-      console.error("화면 공유 실패:", err);
-    }
+      };
+
+      mediaRecorder.start();
+      isRecordingVoice.value = true;
+
+      // 10초마다 chunk 생성 강제 실행
+      voiceInterval = window.setInterval(() => {
+        mediaRecorder?.requestData();
+      }, 10000);
+
+    } catch (err) { console.error('STT 시작 실패:', err); }
   }
 
-  // --- [4] 액션: 참여자 관리 ---
+  function stopVoiceRecording() {
+    if (voiceInterval) clearInterval(voiceInterval);
+    mediaRecorder?.stop();
+    isRecordingVoice.value = false;
+  }
 
+  /** 최종 확정된 퀴즈 수강생들에게 브로드캐스팅 */
+  function publishQuiz(quizData: any) {
+    if (!socket.value || socket.value.readyState !== WebSocket.OPEN) return;
+
+    socket.value.send(JSON.stringify({
+      type: 'PUBLISH_QUIZ',
+      payload: {
+        ...quizData,
+        sentAt: new Date().toISOString()
+      }
+    }));
+  }
+
+  // --- [6] 액션: 참여자 관리 ---
   async function fetchParticipants(courseId: string | number) {
     try {
-      const response = await api.get(`/courses/${courseId}/participants`);
-      participants.value = response.data;
-    } catch (error) {
-      console.error("참여자 목록 로드 실패 (Mock 데이터 유지):", error);
-    }
+      const { data } = await api.get(`/courses/${courseId}/participants`);
+      participants.value = data;
+    } catch (e) { console.error("참여자 로드 실패"); }
   }
 
   function updateParticipantScore(id: string, score: number) {
-    const p = participants.value.find((p) => p.id === id);
-    if (p) p.concentrationScore = score;
-  }
-
-  function selectStudent(participant: Participant) {
-    selectedStudent.value = participant;
-    // TODO: Janus subscribe logic 추가 예정
+    const p = participants.value.find(p => p.id === id);
+    if (p) {
+      p.concentrationScore = score;
+      p.status = score > 70 ? 'focus' : 'distracted';
+    }
   }
 
   return {
-    liveTitle,
-    currentSessionTitle,
-    isBreakTime,
-    isMicOn,
-    isCamOn,
-    myStream,
-    isScreenSharing,
-    screenStream,
-    aiAnalysisActive,
-    participants,
-    selectedStudent,
-    initLiveRoom,
-    endLiveSession,
-    toggleCamera,
-    toggleMic,
-    toggleScreenShare,
-    updateParticipantScore,
-    fetchParticipants,
-    selectStudent,
-    isLiveStarted,
-    recordingId,
+    liveTitle, currentSessionTitle, isLiveStarted, isBreakTime,
+    isMicOn, isCamOn, myStream, isScreenSharing, screenStream,
+    participants, selectedStudent, participantCount, aiAnalysisActive,
+    initLiveRoom, endLiveSession, toggleCamera, toggleMic,
+    startVoiceRecording, stopVoiceRecording, publishQuiz,
+    // [NEW] Exports
+    socket,
+    isRecordingVoice
   };
 });

@@ -177,3 +177,15 @@ export interface LearnerSessionReport {
   course_id: string;
   sessions: SessionReportItem[];
 }
+
+// 퀴즈
+export interface QuizItem {
+  id: number;
+  question: string;
+  options?: string[];
+  type: 'single' | 'multiple' | 'subjective';
+  timeRange?: string;
+  reason?: string;
+  isEditing?: boolean;
+  answer?: string;
+}
