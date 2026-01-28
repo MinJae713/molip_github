@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class JoinWorkspaceRequest {
+
   @NotNull(message = "워크스페이스 아이디는 필수값입니다.")
   @Positive(message = "워크스페이스 아이디는 양수여야 합니다.")
   private Long workspaceId;

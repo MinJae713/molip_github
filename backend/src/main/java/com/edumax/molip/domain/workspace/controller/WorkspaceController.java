@@ -1,17 +1,32 @@
 package com.edumax.molip.domain.workspace.controller;
 
 import com.edumax.molip.common.model.MemberUserDetails;
+import com.edumax.molip.domain.workspace.dto.request.ChangeWorkspaceMemberRoleRequest;
+import com.edumax.molip.domain.workspace.dto.request.CreateJoinCodeRequest;
+import com.edumax.molip.domain.workspace.dto.request.CreateWorkspaceRequest;
+import com.edumax.molip.domain.workspace.dto.request.InactiveWorkspaceMemberRequest;
 import com.edumax.molip.domain.workspace.dto.request.JoinWorkspaceRequest;
+import com.edumax.molip.domain.workspace.dto.request.UpdateWorkspaceRequest;
+import com.edumax.molip.domain.workspace.dto.response.ChangeWorkspaceMemberRoleResponse;
+import com.edumax.molip.domain.workspace.dto.response.CreateJoinCodeResponse;
+import com.edumax.molip.domain.workspace.dto.response.CreateWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.DeleteJoinCodeResponse;
+import com.edumax.molip.domain.workspace.dto.response.DeleteWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindJoinCodesResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindMyStatsResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceCoursesByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
 import com.edumax.molip.domain.workspace.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,7 +54,6 @@ public class WorkspaceController {
     return ResponseEntity.ok(workspaceService.findWorkspaceById(workspaceId, member.getMemberId()));
   }
 
-  @Transactional
   @PostMapping("/join")
   public ResponseEntity<JoinWorkspaceResponse> joinWorkspace(
       @RequestBody JoinWorkspaceRequest joinWorkspaceRequest,
@@ -72,5 +86,61 @@ public class WorkspaceController {
       @PathVariable(name = "search_query") String searchQuery,
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(workspaceService.searchWorkspaces(searchQuery, member.getMemberId()));
+  }
+
+  @PostMapping
+  public ResponseEntity<CreateWorkspaceResponse> createWorkspace(
+      @RequestBody CreateWorkspaceRequest createWorkspaceRequest,
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.createWorkspace(createWorkspaceRequest));
+  }
+
+  @PatchMapping
+  public ResponseEntity<UpdateWorkspaceResponse> updateWorkspace(
+      @RequestBody UpdateWorkspaceRequest updateWorkspaceRequest,
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.updateWorkspace(updateWorkspaceRequest));
+  }
+
+  @DeleteMapping("/{workspace_id}")
+  public ResponseEntity<DeleteWorkspaceResponse> deleteWorkspace(
+      @PathVariable(name = "workspace_id") Long workspaceId,
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.deleteWorkspace(workspaceId));
+  }
+
+  @PatchMapping("/inactive")
+  public ResponseEntity<InactiveWorkspaceMemberResponse> inactiveWorkspaceMember(
+      @RequestBody InactiveWorkspaceMemberRequest inactiveWorkspaceMemberRequest,
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.inactiveWorkspaceMember(inactiveWorkspaceMemberRequest));
+  }
+
+  @PatchMapping("/changeRole")
+  public ResponseEntity<ChangeWorkspaceMemberRoleResponse> changeWorkspaceMemberRole(
+      @RequestBody ChangeWorkspaceMemberRoleRequest changeWorkspaceMemberRoleRequest,
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.changeWorkspaceMemberRole(changeWorkspaceMemberRoleRequest));
+  }
+
+  @PostMapping("/joinCode")
+  public ResponseEntity<CreateJoinCodeResponse> createJoinCode(
+      @RequestBody CreateJoinCodeRequest createJoinCodeRequest,
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.createJoinCode(createJoinCodeRequest));
+  }
+
+  @GetMapping("/{workspace_id}/joinCode")
+  public ResponseEntity<List<FindJoinCodesResponse>> findJoinCodes(
+      @PathVariable(name = "workspace_id") Long workspaceId,
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.findJoinCodes(workspaceId));
+  }
+
+  @DeleteMapping("/joinCode/{join_code_id}")
+  public ResponseEntity<DeleteJoinCodeResponse> deleteJoinCode(
+      @PathVariable(name = "join_code_id") Long joinCodeId,
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.deleteJoinCode(joinCodeId));
   }
 }

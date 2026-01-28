@@ -1,10 +1,23 @@
 package com.edumax.molip.domain.workspace.service;
 
+import com.edumax.molip.domain.workspace.dto.request.ChangeWorkspaceMemberRoleRequest;
+import com.edumax.molip.domain.workspace.dto.request.CreateJoinCodeRequest;
+import com.edumax.molip.domain.workspace.dto.request.CreateWorkspaceRequest;
+import com.edumax.molip.domain.workspace.dto.request.InactiveWorkspaceMemberRequest;
 import com.edumax.molip.domain.workspace.dto.request.JoinWorkspaceRequest;
+import com.edumax.molip.domain.workspace.dto.request.UpdateWorkspaceRequest;
+import com.edumax.molip.domain.workspace.dto.response.ChangeWorkspaceMemberRoleResponse;
+import com.edumax.molip.domain.workspace.dto.response.CreateJoinCodeResponse;
+import com.edumax.molip.domain.workspace.dto.response.CreateWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.DeleteJoinCodeResponse;
+import com.edumax.molip.domain.workspace.dto.response.DeleteWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindJoinCodesResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindMyStatsResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceCoursesByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
 
 import java.util.List;
 
@@ -19,7 +32,23 @@ public interface WorkspaceService {
 
   List<FindWorkspaceCoursesByIdResponse> findWorkspaceCoursesById(Long workspaceId, Long memberId); // 워크스페이스별 강의 목록 조회
 
-  List<FindWorkspaceResponse> findMyWorkspaces(Long memberId);
+  List<FindWorkspaceResponse> findMyWorkspaces(Long memberId); // 내 워크스페이스 목록 조회
 
-  List<FindWorkspaceResponse> searchWorkspaces(String searchQuery, Long memberId);
+  List<FindWorkspaceResponse> searchWorkspaces(String searchQuery, Long memberId); // 워크스페이스 검색
+
+  CreateWorkspaceResponse createWorkspace(CreateWorkspaceRequest createWorkspaceRequest); // 워크스페이스 생성
+
+  UpdateWorkspaceResponse updateWorkspace(UpdateWorkspaceRequest updateWorkspaceRequest); // 워크스페이스 수정
+
+  DeleteWorkspaceResponse deleteWorkspace(Long workspaceId); // 워크스페이스 삭제
+
+  InactiveWorkspaceMemberResponse inactiveWorkspaceMember(InactiveWorkspaceMemberRequest inactiveWorkspaceMemberRequest); // 워크스페이스 멤버 비활성화
+
+  ChangeWorkspaceMemberRoleResponse changeWorkspaceMemberRole(ChangeWorkspaceMemberRoleRequest changeWorkspaceMemberRoleRequest); // 워크스페이스 멤버 역할 변경
+
+  CreateJoinCodeResponse createJoinCode(CreateJoinCodeRequest createJoinCodeRequest); // 워크스페이스 초대코드 생성
+
+  List<FindJoinCodesResponse> findJoinCodes(Long workspaceId); // 워크스페이스 초대코드 목록 조회
+
+  DeleteJoinCodeResponse deleteJoinCode(Long joinCodeId); // 워크스페이스 초대코드 삭제
 }

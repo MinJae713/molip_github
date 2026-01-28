@@ -12,11 +12,24 @@ import com.edumax.molip.domain.member.repository.MemberRepository;
 import com.edumax.molip.domain.review.entity.LearnerAnalysis;
 import com.edumax.molip.domain.review.repository.LearnerAnalysisRepository;
 import com.edumax.molip.domain.session.entity.Session;
+import com.edumax.molip.domain.workspace.dto.request.ChangeWorkspaceMemberRoleRequest;
+import com.edumax.molip.domain.workspace.dto.request.CreateJoinCodeRequest;
+import com.edumax.molip.domain.workspace.dto.request.CreateWorkspaceRequest;
+import com.edumax.molip.domain.workspace.dto.request.InactiveWorkspaceMemberRequest;
 import com.edumax.molip.domain.workspace.dto.request.JoinWorkspaceRequest;
+import com.edumax.molip.domain.workspace.dto.request.UpdateWorkspaceRequest;
+import com.edumax.molip.domain.workspace.dto.response.ChangeWorkspaceMemberRoleResponse;
+import com.edumax.molip.domain.workspace.dto.response.CreateJoinCodeResponse;
+import com.edumax.molip.domain.workspace.dto.response.CreateWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.DeleteJoinCodeResponse;
+import com.edumax.molip.domain.workspace.dto.response.DeleteWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindJoinCodesResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindMyStatsResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceCoursesByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
 import com.edumax.molip.domain.workspace.entity.InviteCode;
 import com.edumax.molip.domain.workspace.entity.Workspace;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
@@ -37,6 +50,7 @@ import com.edumax.molip.domain.workspace.types.WorkspaceMemberStatus;
 import com.edumax.molip.domain.workspace.types.WorkspaceRegisterStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -115,6 +129,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   }
 
   @Override
+  @Transactional
   public JoinWorkspaceResponse joinWorkspace(JoinWorkspaceRequest joinWorkspaceRequest) {
     Long workspaceId = joinWorkspaceRequest.getWorkspaceId();
     Workspace workspace = workspaceRepository.findById(workspaceId)
@@ -261,5 +276,54 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     // 일단 워스 이름으로만 검색되도록 구현!!
     List<Workspace> workspaces = workspaceRepository.findByNameContaining(searchQuery);
     return workspaces.stream().map(workspace -> findWorkspace(workspace, memberId)).toList();
+  }
+
+  @Override
+  @Transactional
+  public CreateWorkspaceResponse createWorkspace(CreateWorkspaceRequest createWorkspaceRequest) {
+    return null;
+  }
+
+  @Override
+  @Transactional
+  public UpdateWorkspaceResponse updateWorkspace(UpdateWorkspaceRequest updateWorkspaceRequest) {
+    return null;
+  }
+
+  @Override
+  @Transactional
+  public DeleteWorkspaceResponse deleteWorkspace(Long workspaceId) {
+    return null;
+  }
+
+  @Override
+  @Transactional
+  public InactiveWorkspaceMemberResponse inactiveWorkspaceMember(
+      InactiveWorkspaceMemberRequest inactiveWorkspaceMemberRequest) {
+    return null;
+  }
+
+  @Override
+  @Transactional
+  public ChangeWorkspaceMemberRoleResponse changeWorkspaceMemberRole(
+      ChangeWorkspaceMemberRoleRequest changeWorkspaceMemberRoleRequest) {
+    return null;
+  }
+
+  @Override
+  @Transactional
+  public CreateJoinCodeResponse createJoinCode(CreateJoinCodeRequest createJoinCodeRequest) {
+    return null;
+  }
+
+  @Override
+  public List<FindJoinCodesResponse> findJoinCodes(Long workspaceId) {
+    return List.of();
+  }
+
+  @Override
+  @Transactional
+  public DeleteJoinCodeResponse deleteJoinCode(Long joinCodeId) {
+    return null;
   }
 }
