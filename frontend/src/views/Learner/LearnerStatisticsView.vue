@@ -52,7 +52,8 @@
             <!-- 주간 학습 참여도 -->
             <WeeklyLearningChart :weekly-data="learnerWeeklyStats" />
             <!-- 세션별 집중도 트렌드 -->
-            <SessionConcentrationChart :stats="learnerSessionStats" :session_name="currentCourseName" />
+            <SessionConcentrationChart :stats="learnerSessionStats" :session_name="currentCourseName"
+                :is-all="selectedCourseId === 'all'" />
         </div>
 
         <!-- 상세 리포트 테이블 영역 -->

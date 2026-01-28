@@ -273,6 +273,7 @@
   ],
   "sessions": [
     {
+      "id": 1,
       "session_id": 1,
       "course_id": 4,
       "title": "LLM의 이해와 프롬프트 기초",
@@ -283,6 +284,7 @@
       "end_at": "15:00:00"
     },
     {
+      "id": 2,
       "session_id": 2,
       "course_id": 4,
       "title": "Zero-shot & Few-shot Prompting",
@@ -293,6 +295,7 @@
       "end_at": "15:30:00"
     },
     {
+      "id": 3,
       "session_id": 3,
       "course_id": 4,
       "title": "Chain of Thought (CoT) 심화",
@@ -761,6 +764,13 @@
       "status": 1,
       "applied_at": "2026-01-23T06:08:44.207Z",
       "id": 4
+    },
+    {
+      "courseId": "8",
+      "memberId": "1",
+      "status": 1,
+      "applied_at": "2026-01-27T08:33:00.217Z",
+      "id": 5
     }
   ],
   "attendance_rate": [
@@ -1015,13 +1025,41 @@
       "workspace_id": 1,
       "course_id": "all",
       "weekly_data": [
-        { "label": "월", "time": 1.5, "percentage": 30 },
-        { "label": "화", "time": 3.5, "percentage": 75 },
-        { "label": "수", "time": 2.5, "percentage": 50 },
-        { "label": "목", "time": 2.0, "percentage": 40 },
-        { "label": "금", "time": 4.0, "percentage": 85 },
-        { "label": "토", "time": 0.5, "percentage": 10 },
-        { "label": "일", "time": 0.2, "percentage": 5 }
+        {
+          "label": "월",
+          "time": 1.5,
+          "percentage": 30
+        },
+        {
+          "label": "화",
+          "time": 3.5,
+          "percentage": 75
+        },
+        {
+          "label": "수",
+          "time": 2.5,
+          "percentage": 50
+        },
+        {
+          "label": "목",
+          "time": 2,
+          "percentage": 40
+        },
+        {
+          "label": "금",
+          "time": 4,
+          "percentage": 85
+        },
+        {
+          "label": "토",
+          "time": 0.5,
+          "percentage": 10
+        },
+        {
+          "label": "일",
+          "time": 0.2,
+          "percentage": 5
+        }
       ]
     },
     {
@@ -1030,13 +1068,41 @@
       "workspace_id": 1,
       "course_id": "1",
       "weekly_data": [
-        { "label": "월", "time": 0.0, "percentage": 0 },
-        { "label": "화", "time": 2.0, "percentage": 40 },
-        { "label": "수", "time": 0.0, "percentage": 0 },
-        { "label": "목", "time": 1.5, "percentage": 30 },
-        { "label": "금", "time": 3.0, "percentage": 60 },
-        { "label": "토", "time": 0.0, "percentage": 0 },
-        { "label": "일", "time": 0.0, "percentage": 0 }
+        {
+          "label": "월",
+          "time": 0,
+          "percentage": 0
+        },
+        {
+          "label": "화",
+          "time": 2,
+          "percentage": 40
+        },
+        {
+          "label": "수",
+          "time": 0,
+          "percentage": 0
+        },
+        {
+          "label": "목",
+          "time": 1.5,
+          "percentage": 30
+        },
+        {
+          "label": "금",
+          "time": 3,
+          "percentage": 60
+        },
+        {
+          "label": "토",
+          "time": 0,
+          "percentage": 0
+        },
+        {
+          "label": "일",
+          "time": 0,
+          "percentage": 0
+        }
       ]
     },
     {
@@ -1045,13 +1111,41 @@
       "workspace_id": 1,
       "course_id": "2",
       "weekly_data": [
-        { "label": "월", "time": 1.0, "percentage": 20 },
-        { "label": "화", "time": 0.5, "percentage": 10 },
-        { "label": "수", "time": 1.5, "percentage": 30 },
-        { "label": "목", "time": 1.0, "percentage": 20 },
-        { "label": "금", "time": 0.5, "percentage": 10 },
-        { "label": "토", "time": 0.0, "percentage": 0 },
-        { "label": "일", "time": 0.0, "percentage": 0 }
+        {
+          "label": "월",
+          "time": 1,
+          "percentage": 20
+        },
+        {
+          "label": "화",
+          "time": 0.5,
+          "percentage": 10
+        },
+        {
+          "label": "수",
+          "time": 1.5,
+          "percentage": 30
+        },
+        {
+          "label": "목",
+          "time": 1,
+          "percentage": 20
+        },
+        {
+          "label": "금",
+          "time": 0.5,
+          "percentage": 10
+        },
+        {
+          "label": "토",
+          "time": 0,
+          "percentage": 0
+        },
+        {
+          "label": "일",
+          "time": 0,
+          "percentage": 0
+        }
       ]
     },
     {
@@ -1060,13 +1154,41 @@
       "workspace_id": 1,
       "course_id": "3",
       "weekly_data": [
-        { "label": "월", "time": 0.0, "percentage": 0 },
-        { "label": "화", "time": 0.0, "percentage": 0 },
-        { "label": "수", "time": 0.0, "percentage": 0 },
-        { "label": "목", "time": 0.0, "percentage": 0 },
-        { "label": "금", "time": 0.0, "percentage": 0 },
-        { "label": "토", "time": 0.0, "percentage": 0 },
-        { "label": "일", "time": 0.0, "percentage": 0 }
+        {
+          "label": "월",
+          "time": 0,
+          "percentage": 0
+        },
+        {
+          "label": "화",
+          "time": 0,
+          "percentage": 0
+        },
+        {
+          "label": "수",
+          "time": 0,
+          "percentage": 0
+        },
+        {
+          "label": "목",
+          "time": 0,
+          "percentage": 0
+        },
+        {
+          "label": "금",
+          "time": 0,
+          "percentage": 0
+        },
+        {
+          "label": "토",
+          "time": 0,
+          "percentage": 0
+        },
+        {
+          "label": "일",
+          "time": 0,
+          "percentage": 0
+        }
       ]
     }
   ],
@@ -1076,9 +1198,21 @@
       "user_id": 1,
       "workspace_id": 1,
       "course_id": "all",
-      "labels": ["월간 평균", "주간 평균", "최근 세션"],
-      "my_scores": [85, 88, 92],
-      "avg_scores": [80, 82, 85],
+      "labels": [
+        "월간 평균",
+        "주간 평균",
+        "최근 세션"
+      ],
+      "my_scores": [
+        85,
+        88,
+        92
+      ],
+      "avg_scores": [
+        80,
+        82,
+        85
+      ],
       "current_focus": 88
     },
     {
@@ -1086,9 +1220,27 @@
       "user_id": 1,
       "workspace_id": 1,
       "course_id": "1",
-      "labels": ["1회차", "2회차", "3회차", "4회차", "5회차"],
-      "my_scores": [100, 20, 40, 20, 20],
-      "avg_scores": [80, 90, 60, 70, 70],
+      "labels": [
+        "1회차",
+        "2회차",
+        "3회차",
+        "4회차",
+        "5회차"
+      ],
+      "my_scores": [
+        100,
+        20,
+        40,
+        20,
+        20
+      ],
+      "avg_scores": [
+        80,
+        90,
+        60,
+        70,
+        70
+      ],
       "current_focus": 92
     },
     {
@@ -1096,9 +1248,21 @@
       "user_id": 1,
       "workspace_id": 1,
       "course_id": "2",
-      "labels": ["1회차", "2회차", "3회차"],
-      "my_scores": [50, 60, 55],
-      "avg_scores": [70, 75, 72],
+      "labels": [
+        "1회차",
+        "2회차",
+        "3회차"
+      ],
+      "my_scores": [
+        50,
+        60,
+        55
+      ],
+      "avg_scores": [
+        70,
+        75,
+        72
+      ],
       "current_focus": 55
     },
     {

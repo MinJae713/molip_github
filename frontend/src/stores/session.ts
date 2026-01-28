@@ -7,6 +7,7 @@ import type { Session } from "@/types";
 export const useSessionStore = defineStore("session", () => {
   // 제공 데이터
   const sessionsList = ref<Session[]>([]);
+  const currentSession = ref<Session | null>(null);
   // 로딩상태관리
   const isLoading = ref(false);
   const error = ref<string | null>(null);
@@ -31,8 +32,8 @@ export const useSessionStore = defineStore("session", () => {
   async function fetchSessionMaterials(sessionId: string | number) {
     isLoading.value = true;
     try {
-      const response = await api.get(`/sessions/${sessionId}`);
-      sessionsList.value = response.data;
+      const response = await api.get(`/sessions/${sessionId}/materials`);
+      currentSessionMaterials.value = response.data;
     } catch (err: any) {
       console.error("강의 세션 불러오기 실패!: ", err);
       error.value = err;

@@ -1,8 +1,6 @@
 <template>
     <div class="fixed inset-0 z-50 bg-white flex flex-col font-sans">
-        <!-- 하드코딩된 제목 전달 -->
-        <p>111 {{ sessionStore.currentSessionInfo[0].title }}</p>
-        <ReviewHeader :title="sessionStore.currentSessionInfo[0].title" session-number="01" @close="$emit('close')" />
+        <ReviewHeader :title="sessionStore.currentSessionInfo?.title" session-number="01" @close="$emit('close')" />
         <main class="flex-1 overflow-hidden bg-white">
             <div class="h-full flex flex-col lg:flex-row">
                 <!-- 메인 콘텐츠 -->
