@@ -12,8 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
@@ -72,7 +70,6 @@ public class Course {
 
   @ManyToOne
   @JoinColumn(name = "workspace_member_id", nullable = false)
-  @OnDelete(action = OnDeleteAction.CASCADE)
   private WorkspaceMember leaner; // 테이블엔 workspace_member_id로 반영됨
 
   @Enumerated(EnumType.STRING)
@@ -80,37 +77,36 @@ public class Course {
   private CourseCategory category;
 
   /** 수강 신청 */
-  @OneToMany(mappedBy = "course")
+  @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<CourseApply> courseApplies = new ArrayList<>();
 
   /** 강의 찜 */
-  @OneToMany(mappedBy = "course")
+  @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<Zzim> zzims = new ArrayList<>();
 
   /** 강의 수강생 */
-  @OneToMany(mappedBy = "course")
+  @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<CourseLearner> courseLearners = new ArrayList<>();
 
   /** 강의 수료 */
-  @OneToMany(mappedBy = "course")
+  @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<CourseCertificated> courseCertificateds = new ArrayList<>();
 
   /** 강의 세션 */
-  @OneToMany(mappedBy = "course")
+  @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<Session> sessions = new ArrayList<>();
 
   /** 공통 첨부 파일 */
-  @OneToMany(mappedBy = "course")
+  @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<CommonAttachment> commonAttachments = new ArrayList<>();
 
   @ManyToOne
   @JoinColumn(name = "workspace_id", nullable = false)
-  @OnDelete(action = OnDeleteAction.CASCADE)
   private Workspace workspace;
 }
