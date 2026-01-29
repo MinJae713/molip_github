@@ -15,6 +15,8 @@ import com.edumax.molip.domain.workspace.dto.response.DeleteWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindJoinCodesResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindMyStatsResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceCoursesByIdResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegistersResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
@@ -144,5 +146,27 @@ public class WorkspaceController {
       @PathVariable(name = "join_code_id") Long joinCodeId,
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(workspaceService.deleteJoinCode(joinCodeId));
+  }
+
+  @GetMapping("/{workspaceId}/member")
+  public ResponseEntity<List<FindWorkspaceMemberResponse>> findWorkspaceMembers(
+      @PathVariable(name = "workspaceId") Long workspaceId,
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.findWorkspaceMembers(workspaceId));
+  }
+
+  @GetMapping("/{workspaceId}/member/{workspaceMemberId}")
+  public ResponseEntity<FindWorkspaceMemberResponse> findWorkspaceMember(
+      @PathVariable(name = "workspaceId") Long workspaceId,
+      @PathVariable(name = "workspaceMemberId") Long workspaceMemberId,
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.findWorkspaceMember(workspaceId, workspaceMemberId));
+  }
+
+  @GetMapping("/{workspaceId}/register")
+  public ResponseEntity<List<FindWorkspaceRegistersResponse>> findWorkspaceRegisters(
+      @PathVariable(name = "workspaceId") Long workspaceId,
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(workspaceService.findWorkspaceRegisters(workspaceId));
   }
 }

@@ -25,6 +25,8 @@ import com.edumax.molip.domain.workspace.dto.response.DeleteWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindJoinCodesResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindMyStatsResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceCoursesByIdResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegistersResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
@@ -382,5 +384,20 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   @Transactional
   public DeleteJoinCodeResponse deleteJoinCode(Long joinCodeId) {
     return null;
+  }
+
+  @Override
+  public List<FindWorkspaceMemberResponse> findWorkspaceMembers(Long workspaceId) {
+    return List.of();
+  }
+
+  @Override
+  public FindWorkspaceMemberResponse findWorkspaceMember(Long workspaceId, Long workspaceMemberId) {
+    return null;
+  }
+
+  @Override
+  public List<FindWorkspaceRegistersResponse> findWorkspaceRegisters(Long workspaceId) {
+    return List.of();
   }
 }

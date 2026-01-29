@@ -13,12 +13,12 @@ import lombok.NoArgsConstructor;
 @Builder
 public class FindJoinCodesResponse {
   private Long joinCodeId;
-  private String join_code_name;
-  private String identify_value;
+  private String joinCodeName;
+  private String identifyValue;
 
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
-  private LocalDateTime created_at;
+  private LocalDateTime createdAt;
 
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
-  private LocalDateTime ended_date;
+  private LocalDateTime endedDate;
 }
