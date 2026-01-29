@@ -3,12 +3,10 @@ package com.edumax.molip.common.util;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
-import tools.jackson.datatype.jsr310.JavaTimeModule;
 
 @Component
 public class JacksonUtil {
-  private static final JsonMapper jsonMapper =
-      JsonMapper.builder().addModule(new JavaTimeModule()).build();
+  private static final JsonMapper jsonMapper = JsonMapper.builder().build();
 
   public static String toJson(Object object) {
     try {

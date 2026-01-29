@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/session")
+@RequestMapping("/api/session")
 public class SessionController {
   private final SessionService sessionService;
 
