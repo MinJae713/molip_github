@@ -1,17 +1,18 @@
 package com.edumax.molip.domain.session.controller;
 
 import com.edumax.molip.common.model.MemberUserDetails;
+import com.edumax.molip.domain.session.dto.SendConcentrateMessage;
 import com.edumax.molip.domain.session.dto.request.SessionCreateRequest;
 import com.edumax.molip.domain.session.dto.request.SessionUpdateRequest;
 import com.edumax.molip.domain.session.dto.response.SessionDetailResponse;
 import com.edumax.molip.domain.session.dto.response.SessionSimpleResponse;
 import com.edumax.molip.domain.session.dto.response.SessionStartResponse;
 import com.edumax.molip.domain.session.service.SessionService;
-import com.edumax.molip.domain.session.service.SessionServiceImpl;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,18 +28,42 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/session")
 public class SessionController {
   private final SessionService sessionService;
-  private final SessionServiceImpl sessionServiceImpl;
+
+  @MessageMapping("/concentrate/{sessionId}/{memberId}")
+  public void processConcentration(
+      @PathVariable String sessionId,
+      @PathVariable Long memberId,
+      SendConcentrateMessage sendMessage) {
+    // TODO
+    //    int diff = sessionService.getConcentrateDiff(sendMessage.empty(), sendMessage.focusOn(),
+    // sendMessage.movement());
+    //    boolean isFever = sessionService.isFeverState(sendMessage.empty(), sendMessage.focusOn(),
+    // sendMessage.movement());
+    //    sessionService.processConcentration(sessionId, memberId, diff);
+  }
 
   @PostMapping("/start/{sessionId}")
-  public ResponseEntity<Map<String, String>> startCourse(@PathVariable String sessionId) {
-    sessionServiceImpl.startCourse(sessionId);
+  public ResponseEntity<?> startSession(@PathVariable String sessionId) {
+    // 강의 시작할때 필요한 작업
     return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "강의 시작"));
   }
 
   @PostMapping("/end/{sessionId}")
-  public ResponseEntity<?> endCourse(@PathVariable String sessionId) {
-    sessionServiceImpl.endCourse(sessionId);
+  public ResponseEntity<?> endSession(@PathVariable String sessionId) {
+    sessionService.endSession(sessionId);
     return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "강의 종료"));
+  }
+
+  @PostMapping("/start/analysis/{sessionId}")
+  public ResponseEntity<Map<String, String>> startAnalysis(@PathVariable String sessionId) {
+    sessionService.startAnalysis(sessionId);
+    return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "분석 시작"));
+  }
+
+  @PostMapping("/end/analysis/{sessionId}")
+  public ResponseEntity<?> endAnalysis(@PathVariable String sessionId) {
+    sessionService.endAnalysis(sessionId);
+    return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "분석 종료"));
   }
 
   @PostMapping

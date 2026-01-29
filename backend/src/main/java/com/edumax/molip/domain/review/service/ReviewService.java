@@ -26,7 +26,7 @@ public class ReviewService {
         .forEach(
             tuple -> {
               timelineList.add((long) tuple.getScore().doubleValue());
-              textList.add(tuple.getValue().split(":")[1]);
+              textList.add(tuple.getValue().split("|")[1]);
             });
 
     scriptInsertRepository.bulkInsertScripts(timelineList, textList, sessionId);

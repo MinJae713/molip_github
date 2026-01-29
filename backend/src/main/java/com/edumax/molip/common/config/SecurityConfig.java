@@ -80,10 +80,10 @@ public class SecurityConfig {
                         "/error")
                     .permitAll()
                     .requestMatchers(
-                        "/api/member/refresh",
-                        "/api/member/login",
-                        "/api/member/register",
-                        "/api/member/logout")
+                        "/api/members/refresh",
+                        "/api/members/login",
+                        "/api/members/register",
+                        "/api/members/logout")
                     .permitAll()
                     .requestMatchers("/uploads/**", "/message/**", "/emotion/**", "/voice/**")
                     .permitAll()
