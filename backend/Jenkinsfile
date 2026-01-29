@@ -38,15 +38,15 @@ pipeline {
             }
         }
 
+
         stage('Deploy') {
-            stage('Deploy') {
-                steps {
-                    // 경로 앞에 /home/ubuntu/ 를 붙여줍니다.
-                    sh "docker compose -f /home/ubuntu/docker-compose.yml pull molip-api"
-                    sh "docker compose -f /home/ubuntu/docker-compose.yml up -d molip-api"
-                }
+            steps {
+                // 경로 앞에 /home/ubuntu/ 를 붙여줍니다.
+                sh "docker compose -f /home/ubuntu/docker-compose.yml pull molip-api"
+                sh "docker compose -f /home/ubuntu/docker-compose.yml up -d molip-api"
             }
         }
+
 
         stage('Cleanup') {
             steps {
