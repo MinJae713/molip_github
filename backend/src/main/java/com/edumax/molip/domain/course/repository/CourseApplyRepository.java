@@ -8,6 +8,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+@SuppressWarnings("PMD.MethodNamingConventions")
 public interface CourseApplyRepository extends JpaRepository<CourseApply, Long> {
   boolean existsByCourseCourseIdAndWorkspaceMemberMemberIdAndIsAppliedTrue(
       Long courseId, Long memberId);
@@ -19,4 +20,7 @@ public interface CourseApplyRepository extends JpaRepository<CourseApply, Long> 
 
   Optional<CourseApply> findByWorkspaceMemberAndCourse(
       WorkspaceMember workspaceMember, Course course);
+
+  Optional<CourseApply> findByCourse_CourseIdAndWorkspaceMember_WorkspaceMemberId(
+      Long courseId, Long workspaceMemberId);
 }
