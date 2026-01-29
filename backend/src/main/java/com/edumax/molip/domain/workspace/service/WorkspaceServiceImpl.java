@@ -47,15 +47,14 @@ import com.edumax.molip.domain.workspace.repository.WorkspaceRepository;
 import com.edumax.molip.domain.workspace.types.WorkspaceMemberRole;
 import com.edumax.molip.domain.workspace.types.WorkspaceMemberStatus;
 import com.edumax.molip.domain.workspace.types.WorkspaceRegisterStatus;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -92,8 +91,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     String name = workspace.getName();
     String description = workspace.getDescription();
     String logoUrl = workspace.getLogoUrl();
-    List<WorkspaceMember> workspaceMembers =
-        workspace.getWorkspaceMembers();
+    List<WorkspaceMember> workspaceMembers = workspace.getWorkspaceMembers();
     List<Course> courses = workspace.getCourses();
 
     WorkspaceRegister workspaceRegister =
@@ -146,7 +144,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     // PENDING, APPROVE, REJECTED
     LocalDateTime appliedAt = joinWorkspaceRequest.getAppliedAt();
     switch (status) {
-      case PENDING: {
+      case PENDING:
+        {
           // 사용자 워크스페이스 가입 신청
           // 워크 스페이스 가입 대기에 추가 (PENDING)
           if (workspaceRegisterRepository.findByMemberAndWorkspace(member, workspace).isPresent()) {
@@ -160,7 +159,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                   .build());
           break;
         }
-      case APPROVE: {
+      case APPROVE:
+        {
           // 관리자 워크스페이스 가입 승인
           if (role == null) {
             throw new NoWorkspaceMemberRoleException();
@@ -188,7 +188,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                   .build());
           break;
         }
-      case REJECTED: {
+      case REJECTED:
+        {
           // 관리자 워크스페이스 가입 반려
           WorkspaceRegister workspaceRegister =
               workspaceRegisterRepository
@@ -278,45 +279,52 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
   @Override
   public List<FindWorkspaceResponse> findMyWorkspaces(Long memberId) {
-    Member member = memberRepository.findById(memberId)
-        .orElseThrow(NoMemberException::new);
-    List<WorkspaceMember> workspaceMembers =
-        workspaceMemberRepository.findByMember(member);
-    return workspaceMembers.stream().sorted(new Comparator<WorkspaceMember>() {
-      @Override
-      public int compare(WorkspaceMember o1, WorkspaceMember o2) {
-        return o2.getWorkspaceMemberId().compareTo(o1.getWorkspaceMemberId());
-      }
-    }).map(workspaceMember -> findWorkspace(workspaceMember.getWorkspace(), memberId)).toList();
+    Member member = memberRepository.findById(memberId).orElseThrow(NoMemberException::new);
+    List<WorkspaceMember> workspaceMembers = workspaceMemberRepository.findByMember(member);
+    return workspaceMembers.stream()
+        .sorted(
+            new Comparator<WorkspaceMember>() {
+              @Override
+              public int compare(WorkspaceMember o1, WorkspaceMember o2) {
+                return o2.getWorkspaceMemberId().compareTo(o1.getWorkspaceMemberId());
+              }
+            })
+        .map(workspaceMember -> findWorkspace(workspaceMember.getWorkspace(), memberId))
+        .toList();
   }
 
   @Override
   public FindWorkspaceResponse searchWorkspaces(String searchQuery, Long memberId) {
     // 워스 가입 코드가 일치한 것으로 검색
     Optional<InviteCode> inviteCode = inviteCodeRepository.findByCodeName(searchQuery);
-    return inviteCode.isPresent() ?
-        findWorkspace(inviteCode.orElse(null).getWorkspace(), memberId): null;
+    return inviteCode.isPresent()
+        ? findWorkspace(inviteCode.orElse(null).getWorkspace(), memberId)
+        : null;
   }
 
   @Override
   @Transactional
-  public CreateWorkspaceResponse createWorkspace(CreateWorkspaceRequest createWorkspaceRequest, Long memberId) {
+  public CreateWorkspaceResponse createWorkspace(
+      CreateWorkspaceRequest createWorkspaceRequest, Long memberId) {
     String name = createWorkspaceRequest.getName();
     String description = createWorkspaceRequest.getDescription();
-    String logoImage = createWorkspaceRequest.getLogo_image(); // 임시
 
-    Member member = memberRepository.findById(memberId).
-        orElseThrow(NoMemberException::new);
-    if (member.getRole() != Member.Role.ADMIN)
+    Member member =
+        memberRepository
+            .findById(memberId)
+            .orElseThrow(NoMemberException::new);
+    if (member.getRole() != Member.Role.ADMIN) {
       throw new NoAdminException();
+    }
 
-    workspaceRepository.save(Workspace.builder()
-        .name(name)
-        .description(description)
-        .logoUrl("더미 - S3 연동 이후 URL이 들어감")
-        .isSearchable(true)
-        .member(member)
-        .build());
+    workspaceRepository.save(
+        Workspace.builder()
+            .name(name)
+            .description(description)
+            .logoUrl("더미 - S3 연동 이후 URL이 들어감")
+            .isSearchable(true)
+            .member(member)
+            .build());
     return CreateWorkspaceResponse.builder().apiResult(true).build();
   }
 
@@ -324,17 +332,19 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   @Transactional
   public UpdateWorkspaceResponse updateWorkspace(UpdateWorkspaceRequest updateWorkspaceRequest) {
     Long workspaceId = updateWorkspaceRequest.getWorkspace_id();
-    Workspace workspace = workspaceRepository.findById(workspaceId)
-        .orElseThrow(NoWorkspaceException::new);
+    Workspace workspace =
+        workspaceRepository.findById(workspaceId).orElseThrow(NoWorkspaceException::new);
     String name = updateWorkspaceRequest.getName();
-    if (name != null && !name.isEmpty())
+    if (name != null && !name.isEmpty()) {
       workspace.setName(name);
+    }
     String description = updateWorkspaceRequest.getDescription();
-    if (description != null && !description.isEmpty())
+    if (description != null && !description.isEmpty()) {
       workspace.setDescription(description);
-//    String logoImage = updateWorkspaceRequest.getLogo_image(); // 임시
-//    if (logoImage != null && !logoImage.isEmpty())
-//      workspace.setLogoUrl(logoImage);
+    }
+    //    String logoImage = updateWorkspaceRequest.getLogo_image(); // 임시
+    //    if (logoImage != null && !logoImage.isEmpty())
+    //      workspace.setLogoUrl(logoImage);
     // 임시
     workspaceRepository.save(workspace);
     return UpdateWorkspaceResponse.builder().apiResult(true).build();

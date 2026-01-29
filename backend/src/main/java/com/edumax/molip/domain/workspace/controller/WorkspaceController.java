@@ -24,7 +24,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -92,7 +91,8 @@ public class WorkspaceController {
   public ResponseEntity<CreateWorkspaceResponse> createWorkspace(
       @RequestBody CreateWorkspaceRequest createWorkspaceRequest,
       @AuthenticationPrincipal MemberUserDetails member) {
-    return ResponseEntity.ok(workspaceService.createWorkspace(createWorkspaceRequest, member.getMemberId()));
+    return ResponseEntity.ok(
+        workspaceService.createWorkspace(createWorkspaceRequest, member.getMemberId()));
   }
 
   @PatchMapping
@@ -113,14 +113,16 @@ public class WorkspaceController {
   public ResponseEntity<InactiveWorkspaceMemberResponse> inactiveWorkspaceMember(
       @RequestBody InactiveWorkspaceMemberRequest inactiveWorkspaceMemberRequest,
       @AuthenticationPrincipal MemberUserDetails member) {
-    return ResponseEntity.ok(workspaceService.inactiveWorkspaceMember(inactiveWorkspaceMemberRequest));
+    return ResponseEntity.ok(
+        workspaceService.inactiveWorkspaceMember(inactiveWorkspaceMemberRequest));
   }
 
   @PatchMapping("/changeRole")
   public ResponseEntity<ChangeWorkspaceMemberRoleResponse> changeWorkspaceMemberRole(
       @RequestBody ChangeWorkspaceMemberRoleRequest changeWorkspaceMemberRoleRequest,
       @AuthenticationPrincipal MemberUserDetails member) {
-    return ResponseEntity.ok(workspaceService.changeWorkspaceMemberRole(changeWorkspaceMemberRoleRequest));
+    return ResponseEntity.ok(
+        workspaceService.changeWorkspaceMemberRole(changeWorkspaceMemberRoleRequest));
   }
 
   @PostMapping("/joinCode")

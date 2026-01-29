@@ -10,5 +10,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class CreateJoinCodeResponse {
-  private String identify_value; // 생성된 식별 값
+  private String identifyValue; // 생성된 식별 값
 }

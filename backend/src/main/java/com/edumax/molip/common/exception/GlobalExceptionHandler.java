@@ -30,10 +30,7 @@ public class GlobalExceptionHandler {
   // 발생");
   //    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
   //  }
-  @ExceptionHandler({
-      NoMemberException.class,
-      NoAdminException.class
-  })
+  @ExceptionHandler({NoMemberException.class, NoAdminException.class})
   public ResponseEntity<ErrorResponse> handleMemberBadRequestException(RuntimeException e) {
     ErrorResponse body = ErrorResponse.create(e, HttpStatus.BAD_REQUEST, e.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
