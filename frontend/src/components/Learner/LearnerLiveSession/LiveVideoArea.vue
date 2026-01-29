@@ -40,12 +40,15 @@
             </div>
         </div>
 
-        <!-- 내 카메라 pip -->
-        <div
-            class="absolute top-6 right-6 w-48 aspect-video rounded-xl bg-slate-800 border-2 border-white/20 shadow-2xl overflow-hidden group/pip hover:scale-105 transition-transform duration-300">
-            <div class="absolute top-6 right-6 w-48 aspect-video ...">
-                <video ref="pipVideoRef" autoplay playsinline muted class="w-full h-full object-cover"></video>
-                <span class="absolute bottom-2 left-2 text-[10px] text-white bg-black/40 px-1">
+        <!-- 내 카메라 pip (Draggable) -->
+        <div ref="pipContainerRef"
+            class="absolute w-48 aspect-video rounded-xl bg-slate-800 border-2 border-white/20 shadow-2xl overflow-hidden group/pip cursor-move active:cursor-grabbing hover:scale-105 transition-transform duration-300 z-40"
+            :style="{ top: `${pipPos.y}px`, left: `${pipPos.x}px` }" @mousedown="startDrag">
+            <div class="relative w-full h-full pointer-events-none">
+                <!-- localStream이 우선, 없으면 pipStream (기존 로직) -->
+                <video ref="pipVideoRef" autoplay playsinline muted
+                    class="w-full h-full object-cover transform scale-x-[-1]"></video>
+                <span class="absolute bottom-2 left-2 text-[10px] text-white bg-black/40 px-1 rounded">
                     {{ userRole === 'TRAINER' ? 'Professor (Me)' : 'Me' }}
                 </span>
             </div>
@@ -63,6 +66,7 @@ const props = defineProps<{
     showWarning: boolean;
     mainStream: MediaStream | null;
     pipStream: MediaStream | null;
+    localStream?: MediaStream | null;
     userRole?: string | null;
 }>();
 
@@ -85,13 +89,70 @@ watch(
 );
 
 // PIP Stream Binding
+// PIP Stream Binding (LocalStream 우선)
 watch(
-    () => props.pipStream,
-    (newStream) => {
+    () => [props.pipStream, props.localStream],
+    ([newPip, newLocal]) => {
         if (pipVideoRef.value) {
-            pipVideoRef.value.srcObject = newStream;
+            // 로컬 스트림이 있으면 우선 표시 (Self-View)
+            if (newLocal) {
+                pipVideoRef.value.srcObject = newLocal;
+            } else if (newPip) {
+                pipVideoRef.value.srcObject = newPip;
+            } else {
+                pipVideoRef.value.srcObject = null;
+            }
         }
     },
     { immediate: true }
 );
+
+// --- Draggable Logic ---
+const pipContainerRef = ref<HTMLElement | null>(null);
+const isDragging = ref(false);
+const pipPos = ref({ x: window.innerWidth - 240, y: 80 }); // 초기 위치 (우측 상단, top-6 right-6 등 CSS와 일치시키거나 적절히 조정)
+const dragOffset = ref({ x: 0, y: 0 });
+
+function startDrag(e: MouseEvent) {
+    if (!pipContainerRef.value) return;
+    isDragging.value = true;
+    dragOffset.value = {
+        x: e.clientX - pipPos.value.x,
+        y: e.clientY - pipPos.value.y
+    };
+
+    // 전역 이벤트 등록 (드래그 중 마우스가 요소 밖으로 나가도 끊기지 않게)
+    window.addEventListener('mousemove', onDrag);
+    window.addEventListener('mouseup', stopDrag);
+}
+
+function onDrag(e: MouseEvent) {
+    if (!isDragging.value) return;
+
+    // 새 위치 계산
+    let newX = e.clientX - dragOffset.value.x;
+    let newY = e.clientY - dragOffset.value.y;
+
+    // 경계 체크 (화면 밖으로 나가지 않게)
+    // Container video size (VideoArea 전체)를 기준으로 하면 좋지만,
+    // 여기서는 window 기준으로 간단히 제한 (전체화면 가정)
+    // 실제 컴포넌트 크기 내에서만 움직이게 하려면, 부모 요소의 getBoundingClientRect() 참조 필요
+
+    // 임시: 안전하게 화면 내 부유
+    const maxX = window.innerWidth - (pipContainerRef.value?.offsetWidth || 192);
+    const maxY = window.innerHeight - (pipContainerRef.value?.offsetHeight || 108);
+
+    if (newX < 0) newX = 0;
+    if (newY < 0) newY = 0;
+    if (newX > maxX) newX = maxX;
+    if (newY > maxY) newY = maxY;
+
+    pipPos.value = { x: newX, y: newY };
+}
+
+function stopDrag() {
+    isDragging.value = false;
+    window.removeEventListener('mousemove', onDrag);
+    window.removeEventListener('mouseup', stopDrag);
+}
 </script>

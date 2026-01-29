@@ -92,7 +92,6 @@ const handleEndSession = async () => {
 
             <!-- 2. 채팅 패널 -->
             <ChatPanel v-else-if="activeTab === 'chat'" />
-
             <!-- 3. 질문 패널 -->
             <QnAPanel v-else />
           </Transition>

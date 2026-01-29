@@ -25,25 +25,38 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
 
   // --- 헬퍼 함수 ---
   const mapCourseData = (data: any[]): Course[] => {
-    return data.map((course: any) => ({
-      course_id: course.course_id || course.id,
-      workspace_id: course.workspace_id,
-      title: course.title,
-      description: course.description || "",
-      tag: course.tag,
-      sub_category: course.sub_category || course.sub_tag,
-      category: course.category,
-      enrollment_status: course.status,
-      course_status: course.status,
-      progress_rate: course.progress_rate ?? course.progress ?? 0,
-      current_lessons: course.current_lessons ?? course.currentLessons ?? 0,
-      total_lessons: course.total_lessons ?? course.totalLessons ?? 0,
-      is_mandatory: course.is_mandatory,
-      d_day: course.d_day,
-      is_liked: course.is_liked,
-      duration: course.duration,
-      request_date: course.request_date,
-    }));
+    return data.map((course: any) => {
+      // Normalize Status Logic
+      let rawStatus =
+        course.enrollment_status ?? course.status ?? course.enrollmentStatus;
+      // Map 'PROCEED' -> 'active' for frontend compatibility
+      if (rawStatus === "PROCEED" || rawStatus === "ACTIVE")
+        rawStatus = "active";
+      if (rawStatus === "RECRUITING") rawStatus = "recruiting";
+
+      return {
+        courseId: course.course_id || course.id || course.courseId,
+        workspaceId: course.workspace_id || course.workspaceId,
+        title: course.title,
+        description: course.description || "",
+        tag: course.tag,
+        subCategory:
+          course.sub_category || course.sub_tag || course.subCategory,
+        category: course.category,
+        enrollmentStatus: rawStatus,
+        courseStatus:
+          course.course_status ?? course.status ?? course.courseStatus,
+        progressRate:
+          course.progress_rate ?? course.progress ?? course.progressRate ?? 0,
+        currentLessons: course.current_lessons ?? course.currentLessons ?? 0,
+        totalLessons: course.total_lessons ?? course.totalLessons ?? 0,
+        isMandatory: course.is_mandatory ?? course.isMandatory,
+        dDay: course.d_day ?? course.dDay,
+        isLiked: course.is_liked ?? course.isLiked,
+        duration: course.duration,
+        requestDate: course.request_date ?? course.requestDate,
+      };
+    });
   };
   // 워크스페이스 내 개설된 전체 강의 목록 (수강 신청 가능 목록)
   async function fetchCoursesByWorkspace(
@@ -61,11 +74,10 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
     isLoading.value = true;
     try {
       const response = await api.get(`/workspaces/${workspaceId}/courses`);
+      console.log("디버깅1!!!", response.data);
       const allCourses = mapCourseData(response.data);
       // 워크스페이스 ID로 필터링 (Backend에서 해주면 좋음)
-      workspaceCourses.value = allCourses.filter(
-        (c) => String(c.workspace_id) === String(workspaceId),
-      );
+      workspaceCourses.value = allCourses;
       lastWorkspaceId.value = workspaceId;
     } catch (error) {
       console.error("[Learner] 워크스페이스 강의 로드 실패:", error);
@@ -84,13 +96,9 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
     try {
       let response;
       if (workspaceId) {
-        response = await api.get(
-          `/workspaces/${workspaceId}/me/courses?role=${role}`,
-        );
-      } else {
-        response = await api.get("/members/me/courses"); // 글로벌 조회 (routes.json에서 role=LEARNER로 매핑됨)
+        response = await api.get(`/courses/me`);
+        myEnrolledCourses.value = mapCourseData(response.data);
       }
-      myEnrolledCourses.value = mapCourseData(response.data);
     } catch (error) {
       console.error("[Learner] 내 수강 강의 로드 실패:", error);
     } finally {
@@ -135,9 +143,9 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
       // 로컬 상태 즉시 업데이트 (낙관적 업데이트)
       const updateState = (list: Course[]) => {
         const target = list.find(
-          (c) => String(c.course_id) === String(courseId),
+          (c) => String(c.courseId) === String(courseId),
         );
-        if (target) target.is_liked = !isCurrentlyLiked;
+        if (target) target.isLiked = !isCurrentlyLiked;
       };
       updateState(workspaceCourses.value);
       updateState(myEnrolledCourses.value);

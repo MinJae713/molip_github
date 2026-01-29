@@ -72,7 +72,7 @@
 
         <!-- Action Buttons Group -->
         <div class="flex flex-col gap-2 min-w-[140px] sm:self-center items-stretch">
-            <button v-if="session.state === 'live'" @click="enterSession"
+            <button v-if="session.isActive === false" @click="enterSession"
                 class="w-full px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow-md transition-all flex items-center justify-center gap-2 group">
                 <span class="material-symbols-outlined text-[18px]">login</span> 입장하기
                 <span
@@ -138,7 +138,7 @@ const router = useRouter();
 const enterSession = () => {
     const route = router.resolve({
         name: 'learnerLiveSession',
-        params: { sessionId: props.session.session_id }
+        params: { sessionId: props.session.sessionId }
     });
     window.open(route.href, '_blank', 'noopener,noreferrer');
 }

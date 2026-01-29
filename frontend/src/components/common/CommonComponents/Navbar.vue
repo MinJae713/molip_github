@@ -5,7 +5,7 @@
 interface UserInfo {
     name: string;
     email: string;
-    profile_image_url: string;
+    profileImageUrl: string;
 }
 
 interface Props {
@@ -22,7 +22,7 @@ const props = withDefaults(defineProps<Props>(), {
     user: () => ({
         name: '',
         email: '',
-        profile_image_url: ''
+        profileImageUrl: ''
     })
 });
 
@@ -96,7 +96,7 @@ const handleLogout = () => {
 
                     <div
                         class="size-9 rounded-full custom-gradient p-[2px] flex items-center justify-center bg-indigo-500 text-white">
-                        <img v-if="user.profile_image_url" :src="user.profile_image_url" :alt="user.name"
+                        <img v-if="user.profileImageUrl" :src="user.profileImageUrl" :alt="user.name"
                             class="rounded-full w-full h-full object-cover border-2 border-dark-navy-900" />
                         <span v-else class="material-symbols-outlined text-xl">person</span>
                     </div>

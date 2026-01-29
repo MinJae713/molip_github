@@ -21,8 +21,8 @@
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
-                <WorkSpaceCardSmall v-for="workspace in activeWorkspaces" :key="workspace.workspace_id"
-                    :workspace="workspace" @click="goToWorkspace(workspace.workspace_id)" />
+                <WorkSpaceCardSmall v-for="workspace in activeWorkspaces" :key="workspace.workspaceId"
+                    :workspace="workspace" @click="goToWorkspace(workspace.workspaceId)" />
                 <div class="glass-panel border-dashed border-2 border-slate-300 bg-slate-50 p-4 flex items-center justify-center gap-2 hover:border-indigo-300 hover:text-indigo-600 text-slate-500 cursor-pointer transition-colors group"
                     @click="openSearchModal">
                     <span class="material-symbols-outlined group-hover:animate-bounce text-indigo-400">add_circle</span>
@@ -37,7 +37,7 @@
                 <h3 class="text-xl font-bold text-slate-900">내가 듣고 있는 강의</h3>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <CourseProgressCard v-for="course in ongoingCourses" :key="course.course_id" :course="course" />
+                <CourseProgressCard v-for="course in ongoingCourses" :key="course.courseId" :course="course" />
             </div>
         </section>
     </div>
@@ -66,12 +66,12 @@ onMounted(() => {
 
 // 참여 중(2)인 워크스페이스만 필터링
 const activeWorkspaces = computed(() => {
-    return workspaceStore.myWorkspaces.filter(ws => ws.my_status === 2);
+    return workspaceStore.myWorkspaces.filter(ws => ws.myStatus === 2);
 });
 
 // 진행률이 100%보다 작은 것들만 필터링.
 const ongoingCourses = computed(() => {
-    return courseStore.myEnrolledCourses.filter((course: Course) => course.progress_rate < 100);
+    return courseStore.myEnrolledCourses.filter((course: Course) => course.progressRate < 100);
 });
 
 const handleProfileImageUpdate = async (file: File) => {
@@ -81,8 +81,8 @@ const handleProfileImageUpdate = async (file: File) => {
 
 const goToWorkspace = (id: number | string) => {
     // Find the workspace to get its role
-    const workspace = workspaceStore.myWorkspaces.find(ws => ws.workspace_id === id);
-    const role = workspace?.my_role || 'LEARNER';
+    const workspace = workspaceStore.myWorkspaces.find(ws => ws.workspaceId === id);
+    const role = workspace?.myRole || 'LEARNER';
 
     if (role === 'TRAINER') {
         router.push({ name: 'workspaceTrainer', params: { id } });
