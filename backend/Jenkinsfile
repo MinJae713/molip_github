@@ -1,0 +1,62 @@
+pipeline {
+    agent any
+
+    environment {
+        // 도커 허브 자격 증명 ID
+        DOCKER_CREDS = 'docker-hub-creds'
+        DOCKER_IMAGE = 'pneum44/molip-api'
+        DOCKER_TAG = 'latest'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // GitLab master 브랜치 코드 가져오기 (전체 프로젝트가 내려받아짐)
+                checkout scm
+            }
+        }
+
+        stage('Backend Build & Push') {
+            steps {
+                // backend 폴더 안으로 진입하여 작업 수행
+                dir('backend') {
+                    script {
+                        // 1. 메이븐 빌드 (pom.xml이 backend 폴더 안에 있으므로)
+                        sh 'mvn clean package -DskipTests'
+
+                        // 2. 도커 로그인 및 빌드/푸시
+                        docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDS}") {
+                            // backend 폴더 내의 Dockerfile을 사용하여 빌드
+                            sh "docker build --platform linux/amd64 -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                            sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                // 배포는 호스트 서버의 docker-compose.yml 위치를 기준으로 실행
+                // 만약 docker-compose.yml이 저장소 루트에 있다면 dir('backend') 밖에서 실행합니다.
+                sh "docker compose pull molip-api"
+                sh "docker compose up -d molip-api"
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                sh "docker image prune -f"
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "🎉 [성공] Backend 배포가 완료되었습니다!"
+        }
+        failure {
+            echo "❌ [실패] Backend 빌드 중 에러가 발생했습니다. 로그를 확인하세요."
+        }
+    }
+}
