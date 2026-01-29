@@ -3,6 +3,10 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useLiveStore } from '@/stores/live';
 
+// 스토어 임포트
+import { useTrainerLiveStore } from '@/stores/trainerlive';
+const trainerLiveStore = useTrainerLiveStore();
+
 // [컴포넌트 임포트]
 import LiveHeader from '@/components/Live/Console/LiveHeader.vue';
 import LiveControlPanel from '@/components/Live/Console/LiveControlPanel.vue';
@@ -23,16 +27,13 @@ import QnAPanel from '@/components/Live/Sidebar/QnAPanel.vue';
 
 const router = useRouter();
 const liveStore = useLiveStore();
-
 // --- UI 상태 관리 ---
 const isEndModalOpen = ref(false); // 수업 종료 확인 모달
 const activeTab = ref<'status' | 'chat' | 'qna'>('status'); // 사이드바 활성 탭 (기본: 상태)
-
 onMounted(async () => {
   // 초기 데이터 로드 (실제 환경에 맞게 전달)
   await liveStore.initLiveRoom('1', '1');
 });
-
 // --- 수업 종료 로직 ---
 const handleEndSession = async () => {
   await liveStore.endLiveSession();

@@ -18,6 +18,7 @@ import LoginView from "@/views/Common/LoginView.vue";
 import TrainerWorkspaceView from "@/views/Trainer/TrainerWorkspaceView.vue";
 import TrainerMyCoursesView from "@/views/Trainer/TrainerMyCoursesView.vue";
 import TrainerLiveSessionView from "@/views/Trainer/TrainerLiveSessionView.vue";
+import TrainerCourseView from "@/views/Trainer/TrainerCourseView.vue";
 // 관리자 라우트
 import AdminWorkspaceView from "@/views/Admin/AdminWorkspaceView.vue";
 import AdminWorkspaceSettingsView from "@/views/Admin/AdminWorkspaceSettingsView.vue";
@@ -150,6 +151,11 @@ const router = createRouter({
           path: "courses",
           name: "workspaceTrainerCourses",
           component: TrainerMyCoursesView,
+        },
+        {
+          path: "courses/:courseId",
+          name: "workspaceTrainerCourseDetail",
+          component: TrainerCourseView,
         },
       ],
     },

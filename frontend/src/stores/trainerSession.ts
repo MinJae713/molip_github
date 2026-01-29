@@ -11,7 +11,7 @@ export const useTrainerSessionStore = defineStore("trainerSession", () => {
 
   // 2. 액션 (Actions)
 
-  // [R] 관리 중인 코스의 세션 목록 조회
+  // 관리 중인 코스의 세션 목록 조회
   async function fetchManagedSessions(
     workspaceId: string | number,
     courseId: string | number,
@@ -44,7 +44,7 @@ export const useTrainerSessionStore = defineStore("trainerSession", () => {
     }
   }
 
-  // [C] 세션 생성
+  // 세션 생성
   async function createSession(
     workspaceId: string | number,
     courseId: string | number,
@@ -63,7 +63,7 @@ export const useTrainerSessionStore = defineStore("trainerSession", () => {
     }
   }
 
-  // [U] 세션 수정
+  // 세션 수정
   async function updateSession(
     sessionId: string | number,
     payload: Partial<Session>,
@@ -77,7 +77,7 @@ export const useTrainerSessionStore = defineStore("trainerSession", () => {
     }
   }
 
-  // [D] 세션 삭제
+  // 세션 삭제
   async function deleteSession(sessionId: string | number) {
     try {
       await api.delete(`/sessions/${sessionId}`);
@@ -88,7 +88,7 @@ export const useTrainerSessionStore = defineStore("trainerSession", () => {
     }
   }
 
-  // [U] 라이브 세션 시작/종료 상태 변경 (강사 전용)
+  // 라이브 세션 시작/종료 상태 변경 (강사 전용)
   async function updateSessionState(
     sessionId: string | number,
     state: "live" | "ended" | "upcoming",

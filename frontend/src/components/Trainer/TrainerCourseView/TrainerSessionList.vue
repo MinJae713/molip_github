@@ -59,11 +59,12 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-2">
+
                                     <span class="p-1.5 rounded-md"
                                         :class="session.type === 'Live 강의' ? 'bg-indigo-50 text-indigo-600' : 'bg-orange-50 text-orange-600'">
-                                        <span class="material-symbols-outlined text-[18px]">{{ session.type === 'Live
-                                            강의'
-                                            ? 'videocam' : 'assignment' }}</span>
+                                        <span class="material-symbols-outlined text-[18px]">
+                                            {{ session.type === 'Live 강의' ? 'videocam' : 'assignment' }}
+                                        </span>
                                     </span>
                                     <span class="text-sm font-medium text-slate-600">{{ session.type }}</span>
                                 </div>
@@ -88,10 +89,11 @@
                                     </span>
                                 </div>
                             </td>
+                            <!-- 관리 -->
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center gap-2">
-                                    <button v-if="session.status === '예정'"
-                                        class="bg-indigo-brand hover:bg-indigo-dark text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1.5">
+                                    <button v-if="session.status === '예정'" @click="$emit('start-live', session)"
+                                        class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1.5">
                                         <span class="material-symbols-outlined text-[16px]">play_arrow</span>
                                         라이브 시작
                                     </button>
@@ -123,6 +125,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+
+const emit = defineEmits(['start-live']);
 
 // 임시 데이터
 const sessions = ref([

@@ -24,7 +24,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     if (isLoaded.value && !forceUpdate) return;
 
     try {
-      const response = await api.get("/members/me/workspaces");
+      const response = await api.get("/workspaces/me");
       myWorkspaces.value = response.data;
       isLoaded.value = true;
     } catch (error) {

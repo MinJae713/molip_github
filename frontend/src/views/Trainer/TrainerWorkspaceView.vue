@@ -56,7 +56,8 @@
             <!-- 코스(강의 영역) -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" v-if="workspaceAllCourses.length > 0">
                 <TrainerDashboardCourseCard v-for="course in workspaceAllCourses" :key="course.course_id"
-                    :course="course" @open-curriculum="openCurriculumModal" />
+                    :course="course"
+                    @open-curriculum="(courseId) => currentWorkspaceId && openCurriculumModal(currentWorkspaceId, courseId)" />
             </div>
             <div v-else class="text-center py-20 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                 <p class="text-slate-500">등록된 강의가 없습니다.</p>
@@ -94,7 +95,10 @@ import TrainerCourseCurriculumModal from '@/components/Trainer/TrainerWorkspace/
 const route = useRoute();
 // 스토어 할당
 
-
+const currentWorkspaceId = computed(() => {
+    const id = route.params.id;
+    return Array.isArray(id) ? id[0] : id;
+});
 
 const searchQuery = ref('');
 const sortOption = ref<'newest' | 'deadline' | 'oldest'>('newest');
@@ -105,13 +109,13 @@ const selectedCourse = ref<Course>({} as Course);
 const mockSessions = ref<Session[]>([]);
 
 // 커리큘럼 확인 모달 열기
-const openCurriculumModal = async (courseId: string | number) => {
+const openCurriculumModal = async (workspaceId: string | number, courseId: string | number) => {
     const course = workspaceAllCourses.value.find(c => String(c.course_id) === String(courseId));
     if (course) {
         selectedCourse.value = course;
         try {
             // Fetch sessions using store
-            await trainerSessionStore.fetchManagedSessions(courseId);
+            await trainerSessionStore.fetchManagedSessions(workspaceId, courseId);
             mockSessions.value = managedSessions.value;
         } catch (e) {
             console.error('세션 목록 로드 실패', e);

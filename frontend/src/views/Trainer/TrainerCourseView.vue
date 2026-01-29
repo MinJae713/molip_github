@@ -21,7 +21,7 @@
         <div>
             <!-- 세션 일정 관리 -->
             <div v-if="activeTab === 'session'">
-                <TrainerSessionList />
+                <TrainerSessionList @start-live="handleStartLive" />
             </div>
             <!-- 다른 탭 placeholder -->
             <div v-else class="py-20 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
@@ -33,9 +33,16 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import TrainerCourseDetailHeader from '@/components/Trainer/TrainerCourseView/TrainerCourseDetailHeader.vue';
 import TrainerCourseStats from '@/components/Trainer/TrainerCourseView/TrainerCourseStats.vue';
 import TrainerSessionList from '@/components/Trainer/TrainerCourseView/TrainerSessionList.vue';
+const router = useRouter();
+// 테스트용 임시 코드
+import api from "@/api";
+import { useTrainerLiveStore } from '@/stores/trainerlive';
+const trainerLiveStore = useTrainerLiveStore();
+
 
 const activeTab = ref('session');
 const tabs = [
@@ -44,4 +51,36 @@ const tabs = [
     { id: 'material', label: '자료실' },
     { id: 'stats', label: '교육통계' }
 ];
+
+interface LiveSessionData {
+    janusRoomId: number;
+    pin: string;
+    sessionId: number;
+    updatedAt: number; // 데이터의 최신성을 확인하기 위한 타임스탬프
+}
+
+const handleStartLive = async (session: any) => {
+    try {
+        const response = await api.post(`https://i14a309.p.ssafy.io/api/session/16/start`);
+        const { janusRoomId, pin, sessionId } = response.data;
+        const liveData: LiveSessionData = {
+            janusRoomId,
+            pin,
+            sessionId,
+            updatedAt: Date.now()
+        };
+        localStorage.setItem('live_session_info', JSON.stringify(liveData));
+        console.log("성공 응답 및 로컬스토리지 저장 완료:", liveData);
+        alert("라이브가 성공적으로 시작되었습니다.");
+        // 라이브 세션 입장
+        const route = router.resolve({
+            name: 'trainerLiveSession',
+        });
+        window.open(route.href, '_blank', 'noopener,noreferrer');
+
+    } catch (error: any) {
+        console.error("프론트 에러 로그:", error.response?.data || error.message);
+        alert(`에러 발생: ${error.response?.status} - 서버 메시지를 확인하세요.`);
+    }
+};
 </script>

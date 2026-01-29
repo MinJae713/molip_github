@@ -59,7 +59,7 @@
 </template>
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { useTrainerCourseStore } from '@/stores/trainerCourse';
@@ -71,6 +71,7 @@ import CreateCourseModal from '@/components/Trainer/TrainerMyCoursesView/CreateC
 const trainerCourseStore = useTrainerCourseStore();
 const userStore = useUserStore();
 const route = useRoute();
+const router = useRouter();
 const activeTab = ref('ongoing');
 const isCreateModalOpen = ref(false);
 
@@ -124,11 +125,16 @@ const displayedCourses = computed(() => {
     }
 });
 
+
 const handleEnterCourse = (courseId: string | number) => {
-    console.log('강사 강의실 입장:', courseId);
-    // 강사 전용 강의실 라우트로 이동하도록 변경 필요
-    // router.push({ name: 'workspaceTrainerClassroom', ... });
-    alert(`강의실 입장: ${courseId} (개발 중)`);
+    console.log('강의실 입장:', courseId);
+    router.push({
+        name: 'workspaceTrainerCourseDetail',
+        params: {
+            id: workspaceId.value,
+            courseId: courseId
+        }
+    });
 };
 
 // 강사는 수강신청이 아니라 과정 개설/수정 버튼이 필요함

@@ -34,7 +34,7 @@
                     <div class="flex justify-between items-end mb-2">
                         <span class="text-xs font-bold text-slate-700">진도율</span>
                         <span class="text-lg font-bold text-indigo-600">{{ displayCourse('progress_rate') || 0
-                        }}%</span>
+                            }}%</span>
                     </div>
                     <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                         <div class="bg-indigo-600 h-full rounded-full"
@@ -116,10 +116,6 @@ onMounted(async () => {
         }
     }
 });
-
-/**
- * 표시할 데이터를 결정하는 헬퍼 (패치된 데이터 우선, 아니면 props 데이터)
- */
 const displayCourse = (field: string) => {
     if (nowCouse.value && nowCouse.value[field] !== undefined) {
         return nowCouse.value[field];
