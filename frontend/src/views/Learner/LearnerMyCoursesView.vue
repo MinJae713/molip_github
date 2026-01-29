@@ -139,7 +139,7 @@ const displayedCourses = computed(() => {
 const handleEnterCourse = (courseId: string | number) => {
     console.log('강의실 입장:', courseId);
     router.push({
-        name: 'workspaceLearnerClassroom',
+        name: 'workspaceLearnerCourseDetail',
         params: {
             id: workspaceId.value,
             courseId: courseId

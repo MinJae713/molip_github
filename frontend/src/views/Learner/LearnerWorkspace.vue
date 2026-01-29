@@ -151,7 +151,7 @@ const handleEnterCourse = (courseId: string | number) => {
     if (!currentWorkspaceId) return;
 
     router.push({
-        name: 'workspaceLearnerClassroom',
+        name: 'workspaceLearnerCourseDetail',
         params: {
             id: currentWorkspaceId,
             courseId: courseId

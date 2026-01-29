@@ -7,8 +7,7 @@
             <TrainerMyCoursesStats :ongoingCount="trainerOngoingCourses.length"
                 :completedCount="completedCourses.length" :attendanceRate="0" />
         </div>
-        <!-- 탭 네비게이션 -->
-        <div class="border-b border-slate-200">
+        <div class="border-b border-slate-200 flex items-center justify-between">
             <nav aria-label="Tabs" class="flex gap-8">
                 <a v-for="tab in tabs" :key="tab.id" :class="[
                     'border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2 transition-colors',
@@ -27,6 +26,11 @@
                     </span>
                 </a>
             </nav>
+
+            <button @click="handleAddCourse"
+                class="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors">
+                과정 추가하기
+            </button>
         </div>
         <!-- 강의 목록 -->
         <div v-if="displayedCourses.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

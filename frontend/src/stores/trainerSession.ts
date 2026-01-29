@@ -12,10 +12,15 @@ export const useTrainerSessionStore = defineStore("trainerSession", () => {
   // 2. 액션 (Actions)
 
   // [R] 관리 중인 코스의 세션 목록 조회
-  async function fetchManagedSessions(courseId: string | number) {
+  async function fetchManagedSessions(
+    workspaceId: string | number,
+    courseId: string | number,
+  ) {
     isLoading.value = true;
     try {
-      const response = await api.get(`/courses/${courseId}/sessions`);
+      const response = await api.get(
+        `/workspaces/${workspaceId}/me/courses?role=TRAINER`,
+      );
       managedSessions.value = response.data;
     } catch (error) {
       console.error("세션 목록 로드 실패:", error);
@@ -41,6 +46,7 @@ export const useTrainerSessionStore = defineStore("trainerSession", () => {
 
   // [C] 세션 생성
   async function createSession(
+    workspaceId: string | number,
     courseId: string | number,
     payload: Partial<Session>,
   ) {
@@ -49,7 +55,7 @@ export const useTrainerSessionStore = defineStore("trainerSession", () => {
         ...payload,
         course_id: Number(courseId),
       });
-      await fetchManagedSessions(courseId); // 목록 갱신
+      await fetchManagedSessions(workspaceId, courseId); // 목록 갱신
       return true;
     } catch (error) {
       console.error("세션 생성 실패:", error);

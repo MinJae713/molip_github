@@ -1,47 +1,27 @@
 {
-  "/members/me/courses/attendance-rate": "/mock_attendance_stats",
-  "/members/me/workspaces": "/mock_my_workspaces",
+  "/members/me/courses/attendance-rate*": "/attendance_rate",
+  "/members/me/workspaces": "/my_workspaces",
+  "/members/me/course-likes/:id": "/course_likes/:id",
+  "/members/me/course-likes": "/course_likes",
+  "/members/me/courses/:id": "/my_all_courses/:id",
+  "/members/me/courses": "/my_all_courses",
+  "/workspaces/*/me/courses*": "/my_all_courses",
+  "/workspaces/:workspaceId/courses/:courseId/stats/:userId": "/learner_workspace_top_card_stats?workspace_id=:workspaceId&course_id=:courseId&user_id=:userId",
+  "/workspaces/:workspaceId/stats/:userId": "/learner_workspace_top_card_stats?workspace_id=:workspaceId&user_id=:userId",
+  "/workspaces/:workspace_id/my-stats?role=:user_role": "/my_stats",
+  "/workspaces/:workspaceId/courses/:courseId/weekly-stats/:userId": "/learner_weekly_stats?workspace_id=:workspaceId&course_id=:courseId&user_id=:userId",
+  "/workspaces/:workspaceId/weekly-stats/:userId": "/learner_weekly_stats?workspace_id=:workspaceId&user_id=:userId",
+  "/workspaces/:id/join": "/workspace_registers",
+  "/workspaces/:id/courses": "/workspace_all_courses",
+  "/workspace/:workspaceId/learner/courses/:courseId": "/sessions_list?course_id=:courseId",
+  "/workspaces/search": "/workspaces",
+  "/workspaces/:workspaceId/courses/:courseId/session-stats/:userId": "/learner_session_stats?workspace_id=:workspaceId&course_id=:courseId&user_id=:userId",
+  "/workspaces/:workspaceId/courses/:courseId/session-reports/:userId": "/learner_session_reports?workspace_id=:workspaceId&course_id=:courseId&user_id=:userId",
 
-  "/members/me/course-likes/:id": "/mock_liked_courses/:id",
-  "/members/me/course-likes": "/mock_liked_courses",
-
-  "/members/me/courses/:id": "/mock_my_enrolled_courses/:id",
-  "/members/me/courses": "/mock_my_courses_unified?role=LEARNER",
-
-  "/members/:id": "/mock_users/:id",
-  "/members": "/mock_users",
-
-  "/workspaces/:workspaceId/courses/:courseId/session-stats/:userId": "/mock_session_concentration?workspace_id=:workspaceId&course_id=:courseId&user_id=:userId",
-  "/workspaces/:workspaceId/courses/:courseId/session-reports/:userId": "/mock_session_reports?workspace_id=:workspaceId&course_id=:courseId&user_id=:userId",
-  "/workspaces/:workspaceId/courses/:courseId/stats/:userId": "/mock_learner_stats_top?workspace_id=:workspaceId&course_id=:courseId&user_id=:userId",
-  "/workspaces/:workspaceId/courses/:courseId/weekly-stats/:userId": "/mock_learner_stats_weekly?workspace_id=:workspaceId&course_id=:courseId&user_id=:userId",
-
-  "/workspaces/:workspaceId/me/courses": "/mock_my_courses_unified?workspace_id=:workspaceId",
-  "/workspaces/:workspaceId/my-stats": "/mock_my_workspace_stats?workspace_id=:workspaceId",
-
-  "/workspaces/:workspaceId/stats/:userId": "/mock_learner_stats_top?workspace_id=:workspaceId&user_id=:userId",
-  "/workspaces/:workspaceId/weekly-stats/:userId": "/mock_learner_stats_weekly?workspace_id=:workspaceId&user_id=:userId",
-
-  "/workspaces/search": "/mock_public_workspaces",
-  "/workspaces": "/mock_public_workspaces",
-
-  "/applications": "/mock_workspace_applications",
-  "/workspaces/:id/join": "/mock_workspace_applications",
-
-  "/workspace/:workspaceId/learner/classroom/:courseId": "/mock_sessions_list?course_id=:courseId",
-
-  "/courses/:id/materials": "/mock_course_materials?course_id=:id",
-  "/courses/:id/enroll": "/mock_enrollments",
-  "/courses/:courseId/sessions": "/mock_sessions?course_id=:courseId",
-  "/courses/:courseId/participants": "/mock_users",
-  "/courses/:id": "/mock_course_details/:id",
-  "/courses": "/mock_course_details",
-
-  "/enrollments": "/mock_enrollments",
-
-  "/sessions/:id/materials": "/mock_session_materials?session_id=:id",
-  "/sessions/:id": "/mock_sessions/:id",
-
-  "/admin_courses": "/mock_admin_courses",
-  "/workspace_all_courses": "/mock_workspace_courses"
+  "/courses/:courseId/sessions": "/sessions",
+  "/courses/:id/enroll": "/course_enrollments",
+  "/courses/:id/materials": "/course_materials?course_id=:id",
+  "/courses/:id": "/workspace_all_courses/:id",
+  "/sessions/:id": "/sessions?session_id=:id",
+  "/sessions/:id/materials": "/session_materials?session_id=:id"
 }

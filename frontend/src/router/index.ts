@@ -26,7 +26,7 @@ import AdminJoinRequestView from "@/views/Admin/AdminJoinRequestView.vue";
 import AdminInviteCenterView from "@/views/Admin/AdminInviteCenterView.vue";
 // 학습자 라우트
 import LearnerMyCoursesView from "@/views/Learner/LearnerMyCoursesView.vue";
-import LearnerClassroomView from "@/views/Learner/LearnerClassroomView.vue";
+import LearnerCourseView from "@/views/Learner/LearnerCourseView.vue";
 import LearnerLiveSessionView from "@/views/Learner/LearnerLiveSessionView.vue";
 import LearnerWorkspace from "@/views/Learner/LearnerWorkspace.vue";
 import LearnerStatisticsView from "@/views/Learner/LearnerStatisticsView.vue";
@@ -93,9 +93,9 @@ const router = createRouter({
           component: LearnerMyCoursesView,
         },
         {
-          path: "classroom/:courseId",
-          name: "workspaceLearnerClassroom",
-          component: LearnerClassroomView,
+          path: "courses/:courseId",
+          name: "workspaceLearnerCourseDetail",
+          component: LearnerCourseView,
         },
         {
           path: "my-stats",

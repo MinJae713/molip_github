@@ -54,7 +54,7 @@ export const useLearnerSessionStore = defineStore("learnerSession", () => {
 
     try {
       const response = await api.get(
-        `/workspace/${workspaceId}/learner/classroom/${courseId}`,
+        `/workspace/${workspaceId}/learner/courses/${courseId}`,
       );
       sessionsList.value = response.data;
     } catch (err: any) {

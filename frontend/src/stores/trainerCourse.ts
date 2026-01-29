@@ -31,12 +31,11 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
   // 내 코스 가져오기
   async function fetchMyCourses(workspaceId: string | number, role: string) {
     isLoading.value = true;
-    // 디버깅용: 호출 시 어떤 값이 들어오는지 확인
     console.log(`[API Request] workspaceId: ${workspaceId}, role: ${role}`);
     try {
-      //진짜경로는 실제 서버 적용할때 목업 서버 바보라서 계속 꼬임
-      //const response = await api.get(`/workspaces/:workspaceId/me/courses?role=TRAINER`,
-      const response = await api.get(`/mock_my_courses_unified`);
+      const response = await api.get(
+        `/workspaces/${workspaceId}/me/courses?role=TRAINER`,
+      );
       // json-server 필터링 결과가 정상적으로 배열로 오는지 확인
       console.log("[API Success] 응답 데이터:", response.data);
 
