@@ -309,10 +309,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     String name = createWorkspaceRequest.getName();
     String description = createWorkspaceRequest.getDescription();
 
-    Member member =
-        memberRepository
-            .findById(memberId)
-            .orElseThrow(NoMemberException::new);
+    Member member = memberRepository.findById(memberId).orElseThrow(NoMemberException::new);
     if (member.getRole() != Member.Role.ADMIN) {
       throw new NoAdminException();
     }
