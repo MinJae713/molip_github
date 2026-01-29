@@ -6,6 +6,7 @@ import com.edumax.molip.domain.chatting.entity.ReviewChattingRoom;
 import com.edumax.molip.domain.chatting.entity.SessionChattingMessage;
 import com.edumax.molip.domain.course.entity.Course;
 import com.edumax.molip.domain.course.entity.CourseApply;
+import com.edumax.molip.domain.course.entity.CourseCertificated;
 import com.edumax.molip.domain.course.entity.Zzim;
 import com.edumax.molip.domain.member.entity.Member;
 import com.edumax.molip.domain.quiz.entity.ExitQuizResult;
@@ -118,4 +119,8 @@ public class WorkspaceMember {
   @OneToMany(mappedBy = "workspaceMember")
   @Builder.Default
   private List<ReviewChattingMessage> reviewChattingMessages = new ArrayList<>();
+
+  @OneToMany(mappedBy = "workspaceMember")
+  @Builder.Default
+  private List<CourseCertificated> courseCertificates = new ArrayList<>();
 }
