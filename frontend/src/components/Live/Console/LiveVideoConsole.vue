@@ -1,12 +1,18 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue';
 import { useLiveStore } from '@/stores/live';
 import LocalVideoView from '../Monitor/LocalVideoView.vue';
 import MediaButton from '../Monitor/MediaButton.vue';
 
 const liveStore = useLiveStore();
+const screenVideoRef = ref<HTMLVideoElement | null>(null);
 
-// 부모 컴포넌트(InstructorConsole)로 종료 이벤트를 보낼 필요가 없어졌으므로 
-// emit 정의는 삭제하거나 유지해도 무방합니다.
+// 화면 공유 스트림 연결
+watch(() => liveStore.screenStream, (stream) => {
+  if (screenVideoRef.value && stream) {
+    screenVideoRef.value.srcObject = stream;
+  }
+});
 </script>
 
 <template>
@@ -16,7 +22,7 @@ const liveStore = useLiveStore();
       
       <template v-if="liveStore.isScreenSharing">
         <video 
-          :srcObject="liveStore.screenStream" 
+          ref="screenVideoRef"
           autoplay 
           class="w-full h-full object-contain"
         ></video>
