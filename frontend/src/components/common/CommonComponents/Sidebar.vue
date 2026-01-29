@@ -1,0 +1,234 @@
+<template>
+    <aside class="w-64 bg-white border-r border-slate-200 flex-none hidden lg:flex flex-col overflow-y-auto z-30">
+        <div class="p-4">
+            <div class="flex items-center gap-3 px-3 py-3 bg-indigo-50/50 rounded-xl border border-indigo-100 mb-6">
+                <div
+                    class="size-10 bg-white rounded-lg border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden">
+                    <img v-if="displayLogo" :src="displayLogo" :alt="displayLogo"
+                        class="w-full h-full object-contain" />
+                    <span v-else class="material-symbols-outlined text-indigo-600">domain</span>
+                </div>
+                <div class="min-w-0">
+                    <div class="text-xs font-bold text-indigo-800 mb-0.5">Current Workspace</div>
+                    <div class="text-sm font-bold text-slate-900 truncate">{{ displayName }}</div>
+                </div>
+            </div>
+            <nav class="space-y-1">
+                <a v-for="item in studyMenus.slice(0, 1)" :key="item.id"
+                    :class="['sidebar-item', { active: currentActiveId === item.id }]" href="#"
+                    @click.prevent="handleNavigate(item.id)">
+                    <span class="material-symbols-outlined text-[20px]">{{ item.icon }}</span>
+                    {{ item.name }}
+                </a>
+
+                <div class="mt-4 mb-1 px-3">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">학습 관리</span>
+                </div>
+                <a v-for="item in studyMenus.slice(1)" :key="item.id"
+                    :class="['sidebar-item', { active: currentActiveId === item.id }]" href="#"
+                    @click.prevent="handleNavigate(item.id)">
+                    <span class="material-symbols-outlined text-[20px]">{{ item.icon }}</span>
+                    {{ item.name }}
+                </a>
+
+                <div class="mt-4 mb-1 px-3">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">커뮤니티</span>
+                </div>
+                <a v-for="item in communityMenus" :key="item.id"
+                    :class="['sidebar-item', { active: currentActiveId === item.id }]" href="#"
+                    @click.prevent="handleNavigate(item.id)">
+                    <span class="material-symbols-outlined text-[20px]">{{ item.icon }}</span>
+                    {{ item.name }}
+                </a>
+                <!-- 관리자 메뉴 -->
+                <div v-if="currentRole === 'admin'">
+                    <div class="mt-4 mb-1 px-3">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
+                        워크스페이스 관리
+                        </span>
+                    </div>
+
+                    <a
+                        v-for="item in adminMenus"
+                        :key="item.id"
+                        :class="['sidebar-item', { active: currentActiveId === item.id }]"
+                        href="#"
+                        @click.prevent="handleNavigate(item.id)"
+                    >
+                        <span class="material-symbols-outlined text-[20px]">
+                        {{ item.icon }}
+                        </span>
+                        {{ item.name }}
+                    </a>
+                </div>
+            </nav>
+        </div>
+
+        <div class="mt-auto p-4 border-t border-slate-100">
+            <a class="sidebar-item text-slate-500" href="#">
+                <span class="material-symbols-outlined text-[20px]">settings</span>
+                설정
+            </a>
+            <a class="sidebar-item text-slate-500" href="#">
+                <span class="material-symbols-outlined text-[20px]">help</span>
+                고객지원
+            </a>
+        </div>
+    </aside>
+</template>
+
+<script setup lang="ts">
+import { onMounted, computed, watch, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useWorkspaceStore } from '@/stores/workspace';
+
+interface MenuItem {
+    id: string;
+    name: string;
+    icon: string;
+    path: string;
+}
+
+const studyMenus: MenuItem[] = [
+    { id: "dashboard", name: "대시보드", icon: "dashboard", path: "#" },
+    { id: "courses", name: "교육과정", icon: "library_books", path: "#" },
+    { id: "my-stats", name: "학습 통계", icon: "analytics", path: "#" }
+];
+
+const communityMenus: MenuItem[] = [
+    { id: "notice", name: "공지사항", icon: "campaign", path: "#" },
+    { id: "qna", name: "Q&A", icon: "help_center", path: "#" }
+];
+
+const adminMenus: MenuItem[] = [
+    { id: 'admin-settings', name: '워크스페이스 설정', icon: 'settings', path: 'workspaceAdminSettings' },
+    { id: 'admin-members', name: '참여진 관리', icon: 'group', path: 'workspaceAdminMembers' },
+    { id: 'admin-requests', name: '가입 신청 관리', icon: 'person_add', path: 'workspaceAdminRequests' },
+    { id: 'admin-invite', name: '초대코드 센터', icon: 'vpn_key', path: 'workspaceAdminInvite' },
+];
+const route = useRoute();
+const router = useRouter();
+const workspaceStore = useWorkspaceStore();
+
+const displayLogo = computed(() => workspaceStore.currentWorkspace?.logo_url);
+const displayName = computed(() => workspaceStore.currentWorkspace?.name || '워크스페이스 선택 안됨');
+
+// 워크스페이스 정보 갱신 함수
+const updateCurrentWorkspace = async () => {
+    const workspaceId = route.params.id;
+    if (workspaceId) {
+        const id = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
+        if (id) {
+            await workspaceStore.setCurrentWorkspaceById(id);
+        }
+    }
+};
+
+onMounted(() => {
+    // 사이드바 메뉴 데이터 로드 (Removed fetch)
+    // 현재 워크스페이스 정보 동기화
+    updateCurrentWorkspace();
+});
+
+
+// [추가] URL의 ID가 바뀔 때마다 (다른 워크스페이스 상세 이동 시) 정보를 갱신합니다.
+watch(() => route.params.id, (newId) => {
+    if (newId) updateCurrentWorkspace();
+});
+
+// 현재 사용자 역할 감지 (route name 기반)
+const currentRole = computed(() => {
+    const name = route.name as string;
+    if (name?.includes('Admin')) return 'admin';
+    if (name?.includes('Trainer')) return 'trainer';
+    if (name?.includes('Learner')) return 'learner';
+    return 'learner'; // 기본값
+});
+
+// 현재 활성화된 메뉴 ID를 route 경로에 따라 자동으로 계산
+const currentActiveId = computed(() => {
+    const path = route.path;
+    const name = route.name as string;
+
+    // courses 경로면 'courses' 활성화
+    if (path.includes('/courses') || name?.includes('Courses')) {
+        return 'courses';
+    }
+    // workspace 메인 경로면 'dashboard' 활성화
+    if (name === 'workspaceLearner' || name === 'workspaceTrainer') {
+        return 'dashboard';
+    }
+    // classroom 경로면 'courses' 활성화
+    if (path.includes('/classroom') || name?.includes('Classroom')) {
+        return 'courses';
+    }
+    // my-stats 경로면 'courses' 활성화
+    if (path.includes('/my-stats') || name?.includes('MyStats')) {
+        return 'my-stats';
+    }
+});
+
+const emit = defineEmits<{
+    (e: 'navigate', id: string): void;
+}>();
+
+const handleNavigate = (id: string) => {
+    const workspaceId = route.params.id;
+    const role = currentRole.value; // 자동으로 현재 역할 감지
+
+    if (id === 'courses' && workspaceId) {
+        if (role === 'trainer') {
+            router.push({ name: 'workspaceTrainerCourses', params: { id: workspaceId } });
+        } else {
+            router.push({ name: 'workspaceLearnerCourses', params: { id: workspaceId } });
+        }
+    } else if (id === 'dashboard' && workspaceId) {
+        if (role === 'trainer') {
+            router.push({ name: 'workspaceTrainer', params: { id: workspaceId } });
+        } else {
+            router.push({ name: 'workspaceLearner', params: { id: workspaceId } });
+        }
+    } else if (id === 'my-stats' && workspaceId) {
+        if (role === 'trainer') {
+            router.push({ name: 'workspaceLearnerMyStats', params: { id: workspaceId } });
+        } else {
+            router.push({ name: 'workspaceLearnerMyStats', params: { id: workspaceId } });
+        }
+    } else {
+        // 다른 메뉴는 기존대로 emit 이벤트 발생
+        emit('navigate', id);
+    }
+};
+</script>
+
+
+<style scoped>
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #475569;
+    /* slate-600 */
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.sidebar-item:hover {
+    background-color: #f8fafc;
+    /* slate-50 */
+    color: #4f46e5;
+    /* indigo-brand */
+}
+
+.sidebar-item.active {
+    background-color: #eef2ff;
+    /* indigo-50 */
+    color: #4f46e5;
+    /* indigo-brand */
+    font-weight: 700;
+}
+</style>
