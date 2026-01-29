@@ -1,5 +1,5 @@
 <template>
-    <div
+    <div ref="containerRef"
         class="flex-1 flex flex-col relative rounded-2xl overflow-hidden border border-slate-200 shadow-xl bg-slate-900 group/video">
         <!-- 강의 화면/강사 화면공유 부분 -->
         <div class="absolute inset-0 flex items-center justify-center bg-slate-800">
@@ -108,10 +108,24 @@ watch(
 );
 
 // --- Draggable Logic ---
+const containerRef = ref<HTMLElement | null>(null);
 const pipContainerRef = ref<HTMLElement | null>(null);
 const isDragging = ref(false);
-const pipPos = ref({ x: window.innerWidth - 240, y: 80 }); // 초기 위치 (우측 상단, top-6 right-6 등 CSS와 일치시키거나 적절히 조정)
+const pipPos = ref({ x: 24, y: 24 });
 const dragOffset = ref({ x: 0, y: 0 });
+const isPipInitialized = ref(false);
+
+// 컨테이너 크기 감지 및 초기 위치 설정
+watch(() => containerRef.value, (newContainer) => {
+    if (newContainer && !isPipInitialized.value) {
+        setTimeout(() => {
+            const containerW = newContainer.offsetWidth;
+            const pipW = 192;
+            pipPos.value = { x: containerW - pipW - 24, y: 24 };
+            isPipInitialized.value = true;
+        }, 100);
+    }
+});
 
 function startDrag(e: MouseEvent) {
     if (!pipContainerRef.value) return;
@@ -127,20 +141,20 @@ function startDrag(e: MouseEvent) {
 }
 
 function onDrag(e: MouseEvent) {
-    if (!isDragging.value) return;
+    if (!isDragging.value || !containerRef.value || !pipContainerRef.value) return;
 
-    // 새 위치 계산
+    // 새 위치 계산 (컨테이너 기준)
     let newX = e.clientX - dragOffset.value.x;
     let newY = e.clientY - dragOffset.value.y;
 
-    // 경계 체크 (화면 밖으로 나가지 않게)
-    // Container video size (VideoArea 전체)를 기준으로 하면 좋지만,
-    // 여기서는 window 기준으로 간단히 제한 (전체화면 가정)
-    // 실제 컴포넌트 크기 내에서만 움직이게 하려면, 부모 요소의 getBoundingClientRect() 참조 필요
+    // 경계 체크 (Container 기준)
+    const containerW = containerRef.value.offsetWidth;
+    const containerH = containerRef.value.offsetHeight;
+    const pipW = pipContainerRef.value.offsetWidth;
+    const pipH = pipContainerRef.value.offsetHeight;
 
-    // 임시: 안전하게 화면 내 부유
-    const maxX = window.innerWidth - (pipContainerRef.value?.offsetWidth || 192);
-    const maxY = window.innerHeight - (pipContainerRef.value?.offsetHeight || 108);
+    const maxX = containerW - pipW;
+    const maxY = containerH - pipH;
 
     if (newX < 0) newX = 0;
     if (newY < 0) newY = 0;
