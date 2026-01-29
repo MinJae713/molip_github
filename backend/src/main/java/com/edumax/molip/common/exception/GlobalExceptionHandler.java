@@ -3,6 +3,8 @@ package com.edumax.molip.common.exception;
 import com.edumax.molip.domain.member.exception.DuplicateEmailException;
 import com.edumax.molip.domain.member.exception.NoAdminException;
 import com.edumax.molip.domain.member.exception.NoMemberException;
+import com.edumax.molip.domain.workspace.exception.InviteCodeExistException;
+import com.edumax.molip.domain.workspace.exception.NoInviteCodeException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceAppliedAtException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceMemberException;
@@ -43,7 +45,9 @@ public class GlobalExceptionHandler {
     WorkspaceRegisterExistException.class,
     WorkspaceMemberExistException.class,
     NoWorkspaceMemberRoleException.class,
-    NoWorkspaceAppliedAtException.class
+    NoWorkspaceAppliedAtException.class,
+    InviteCodeExistException.class,
+    NoInviteCodeException.class
   })
   public ResponseEntity<ErrorResponse> handleWorkspaceBadRequestException(RuntimeException e) {
     ErrorResponse body = ErrorResponse.create(e, HttpStatus.BAD_REQUEST, e.getMessage());

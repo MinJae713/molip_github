@@ -22,11 +22,12 @@ import com.edumax.molip.domain.workspace.dto.response.CreateJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.CreateWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.DeleteJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.DeleteWorkspaceResponse;
-import com.edumax.molip.domain.workspace.dto.response.FindJoinCodesResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindMyStatsResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceCoursesByIdResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberResponse;
-import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegistersResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegisterResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
@@ -35,6 +36,8 @@ import com.edumax.molip.domain.workspace.entity.InviteCode;
 import com.edumax.molip.domain.workspace.entity.Workspace;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import com.edumax.molip.domain.workspace.entity.WorkspaceRegister;
+import com.edumax.molip.domain.workspace.exception.InviteCodeExistException;
+import com.edumax.molip.domain.workspace.exception.NoInviteCodeException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceAppliedAtException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceMemberException;
@@ -55,6 +58,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -139,12 +143,11 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     WorkspaceMemberRole role = joinWorkspaceRequest.getRole();
     Long memberId = joinWorkspaceRequest.getMemberId();
     Member member =
-        memberRepository
-            .findById(memberId)
-            .orElseThrow(NoMemberException::new); // GlobalExceptionHandler
+        memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
     WorkspaceRegisterStatus status = joinWorkspaceRequest.getStatus();
     // PENDING, APPROVE, REJECTED
     LocalDateTime appliedAt = joinWorkspaceRequest.getAppliedAt();
+
     switch (status) {
       case PENDING:
         {
@@ -301,7 +304,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   @Override
   public FindWorkspaceResponse searchWorkspaces(String searchQuery, Long memberId) {
     // 워스 가입 코드가 일치한 것으로 검색
-    Optional<InviteCode> inviteCode = inviteCodeRepository.findByCodeName(searchQuery);
+    Optional<InviteCode> inviteCode = inviteCodeRepository.findByIdentifyValue(searchQuery);
     return inviteCode.isPresent()
         ? findWorkspace(inviteCode.orElse(null).getWorkspace(), memberId)
         : null;
@@ -333,7 +336,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   @Override
   @Transactional
   public UpdateWorkspaceResponse updateWorkspace(UpdateWorkspaceRequest updateWorkspaceRequest) {
-    Long workspaceId = updateWorkspaceRequest.getWorkspace_id();
+    Long workspaceId = updateWorkspaceRequest.getWorkspaceId();
     Workspace workspace =
         workspaceRepository.findById(workspaceId).orElseThrow(NoWorkspaceException::new);
     String name = updateWorkspaceRequest.getName();
@@ -354,7 +357,12 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
   @Override
   @Transactional
-  public DeleteWorkspaceResponse deleteWorkspace(Long workspaceId) {
+  public DeleteWorkspaceResponse deleteWorkspace(Long workspaceId, Long memberId) {
+    Member member =
+        memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
+    if (member.getRole() != Member.Role.ADMIN) {
+      throw new NoAdminException();
+    }
     Workspace workspace =
         workspaceRepository.findById(workspaceId).orElseThrow(NoWorkspaceException::new);
     workspaceRepository.delete(workspace);
@@ -364,7 +372,12 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   @Override
   @Transactional
   public InactiveWorkspaceMemberResponse inactiveWorkspaceMember(
-      InactiveWorkspaceMemberRequest inactiveWorkspaceMemberRequest) {
+      InactiveWorkspaceMemberRequest inactiveWorkspaceMemberRequest, Long memberId) {
+    Member member =
+        memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
+    if (member.getRole() != Member.Role.ADMIN) {
+      throw new NoAdminException();
+    }
     Long workspaceMemberId = inactiveWorkspaceMemberRequest.getWorkspaceMemberId();
     WorkspaceMember workspaceMember =
         workspaceMemberRepository
@@ -378,7 +391,12 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   @Override
   @Transactional
   public ChangeWorkspaceMemberRoleResponse changeWorkspaceMemberRole(
-      ChangeWorkspaceMemberRoleRequest changeWorkspaceMemberRoleRequest) {
+      ChangeWorkspaceMemberRoleRequest changeWorkspaceMemberRoleRequest, Long memberId) {
+    Member member =
+        memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
+    if (member.getRole() != Member.Role.ADMIN) {
+      throw new NoAdminException();
+    }
     Long workspaceMemberId = changeWorkspaceMemberRoleRequest.getWorkspaceMemberId();
     WorkspaceMember workspaceMember =
         workspaceMemberRepository
@@ -393,39 +411,84 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
   @Override
   @Transactional
-  public CreateJoinCodeResponse createJoinCode(CreateJoinCodeRequest createJoinCodeRequest) {
-    //    Long workspaceId = createJoinCodeRequest.getWorkspaceId();
-    //    Workspace workspace =
-    //        workspaceRepository.findById(workspaceId).orElseThrow(NoWorkspaceException::new);
-    //    LocalDateTime endedDate = createJoinCodeRequest.getEndedDate();
-    //    String joinCodeName = createJoinCodeRequest.getJoinCodeName();
-
-    return null;
+  public CreateJoinCodeResponse createJoinCode(
+      CreateJoinCodeRequest createJoinCodeRequest, Long memberId) {
+    Member member =
+        memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
+    if (member.getRole() != Member.Role.ADMIN) {
+      throw new NoAdminException();
+    }
+    Long workspaceId = createJoinCodeRequest.getWorkspaceId();
+    Workspace workspace =
+        workspaceRepository.findById(workspaceId).orElseThrow(NoWorkspaceException::new);
+    String joinCodeName = createJoinCodeRequest.getJoinCodeName();
+    Optional<InviteCode> inviteCode =
+        inviteCodeRepository.findByCodeNameAndWorkspace(joinCodeName, workspace);
+    if (inviteCode.isPresent()) {
+      throw new InviteCodeExistException();
+    }
+    LocalDateTime endedDate = createJoinCodeRequest.getEndedDate();
+    String identifyValue = RandomStringUtils.randomAlphanumeric(50);
+    inviteCodeRepository.save(
+        InviteCode.builder()
+            .expiredAt(endedDate)
+            .codeName(joinCodeName)
+            .identifyValue(identifyValue)
+            .workspace(workspace)
+            .build());
+    return CreateJoinCodeResponse.builder().identifyValue(identifyValue).build();
   }
 
   @Override
-  public List<FindJoinCodesResponse> findJoinCodes(Long workspaceId) {
-    return List.of();
+  public List<FindJoinCodeResponse> findJoinCodes(Long workspaceId, Long memberId) {
+    Member member =
+        memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
+    if (member.getRole() != Member.Role.ADMIN) {
+      throw new NoAdminException();
+    }
+    Workspace workspace =
+        workspaceRepository.findById(workspaceId).orElseThrow(NoWorkspaceException::new);
+    List<InviteCode> inviteCodes = workspace.getInviteCodes();
+    return inviteCodes.stream().map(FindJoinCodeResponse::fromInviteCode).toList();
   }
 
   @Override
   @Transactional
-  public DeleteJoinCodeResponse deleteJoinCode(Long joinCodeId) {
-    return null;
+  public DeleteJoinCodeResponse deleteJoinCode(Long joinCodeId, Long memberId) {
+    Member member =
+        memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
+    if (member.getRole() != Member.Role.ADMIN) {
+      throw new NoAdminException();
+    }
+    InviteCode inviteCode =
+        inviteCodeRepository.findById(joinCodeId).orElseThrow(NoInviteCodeException::new);
+    inviteCodeRepository.delete(inviteCode);
+    return DeleteJoinCodeResponse.builder().apiResult(true).build();
   }
 
   @Override
   public List<FindWorkspaceMemberResponse> findWorkspaceMembers(Long workspaceId) {
-    return List.of();
+    Workspace workspace =
+        workspaceRepository.findById(workspaceId).orElseThrow(NoWorkspaceException::new);
+    List<WorkspaceMember> workspaceMembers = workspace.getWorkspaceMembers();
+    return workspaceMembers.stream().map(FindWorkspaceMemberResponse::from).toList();
   }
 
   @Override
-  public FindWorkspaceMemberResponse findWorkspaceMember(Long workspaceId, Long workspaceMemberId) {
+  public FindWorkspaceMemberByIdResponse findWorkspaceMemberById(
+      Long workspaceId, Long workspaceMemberId) {
+    // 얘는 나머지 테스트 이후 개발 예정
+    //    Workspace workspace =
+    //        workspaceRepository.findById(workspaceId).orElseThrow(NoWorkspaceException::new);
+
     return null;
   }
 
   @Override
-  public List<FindWorkspaceRegistersResponse> findWorkspaceRegisters(Long workspaceId) {
-    return List.of();
+  public List<FindWorkspaceRegisterResponse> findWorkspaceRegisters(Long workspaceId) {
+    Workspace workspace =
+        workspaceRepository.findById(workspaceId).orElseThrow(NoWorkspaceException::new);
+    List<WorkspaceRegister> workspaceRegisters = workspace.getWorkspaceRegisters();
+    return workspaceRegisters.stream().map(FindWorkspaceRegisterResponse::from).toList();
   }
 }

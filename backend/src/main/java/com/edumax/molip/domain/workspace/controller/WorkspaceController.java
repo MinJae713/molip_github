@@ -12,11 +12,12 @@ import com.edumax.molip.domain.workspace.dto.response.CreateJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.CreateWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.DeleteJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.DeleteWorkspaceResponse;
-import com.edumax.molip.domain.workspace.dto.response.FindJoinCodesResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindMyStatsResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceCoursesByIdResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberResponse;
-import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegistersResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegisterResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
@@ -108,7 +109,7 @@ public class WorkspaceController {
   public ResponseEntity<DeleteWorkspaceResponse> deleteWorkspace(
       @PathVariable(name = "workspace_id") Long workspaceId,
       @AuthenticationPrincipal MemberUserDetails member) {
-    return ResponseEntity.ok(workspaceService.deleteWorkspace(workspaceId));
+    return ResponseEntity.ok(workspaceService.deleteWorkspace(workspaceId, member.getMemberId()));
   }
 
   @PatchMapping("/inactive")
@@ -116,7 +117,8 @@ public class WorkspaceController {
       @RequestBody InactiveWorkspaceMemberRequest inactiveWorkspaceMemberRequest,
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(
-        workspaceService.inactiveWorkspaceMember(inactiveWorkspaceMemberRequest));
+        workspaceService.inactiveWorkspaceMember(
+            inactiveWorkspaceMemberRequest, member.getMemberId()));
   }
 
   @PatchMapping("/changeRole")
@@ -124,28 +126,30 @@ public class WorkspaceController {
       @RequestBody ChangeWorkspaceMemberRoleRequest changeWorkspaceMemberRoleRequest,
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(
-        workspaceService.changeWorkspaceMemberRole(changeWorkspaceMemberRoleRequest));
+        workspaceService.changeWorkspaceMemberRole(
+            changeWorkspaceMemberRoleRequest, member.getMemberId()));
   }
 
   @PostMapping("/joinCode")
   public ResponseEntity<CreateJoinCodeResponse> createJoinCode(
       @RequestBody CreateJoinCodeRequest createJoinCodeRequest,
       @AuthenticationPrincipal MemberUserDetails member) {
-    return ResponseEntity.ok(workspaceService.createJoinCode(createJoinCodeRequest));
+    return ResponseEntity.ok(
+        workspaceService.createJoinCode(createJoinCodeRequest, member.getMemberId()));
   }
 
   @GetMapping("/{workspace_id}/joinCode")
-  public ResponseEntity<List<FindJoinCodesResponse>> findJoinCodes(
+  public ResponseEntity<List<FindJoinCodeResponse>> findJoinCodes(
       @PathVariable(name = "workspace_id") Long workspaceId,
       @AuthenticationPrincipal MemberUserDetails member) {
-    return ResponseEntity.ok(workspaceService.findJoinCodes(workspaceId));
+    return ResponseEntity.ok(workspaceService.findJoinCodes(workspaceId, member.getMemberId()));
   }
 
   @DeleteMapping("/joinCode/{join_code_id}")
   public ResponseEntity<DeleteJoinCodeResponse> deleteJoinCode(
       @PathVariable(name = "join_code_id") Long joinCodeId,
       @AuthenticationPrincipal MemberUserDetails member) {
-    return ResponseEntity.ok(workspaceService.deleteJoinCode(joinCodeId));
+    return ResponseEntity.ok(workspaceService.deleteJoinCode(joinCodeId, member.getMemberId()));
   }
 
   @GetMapping("/{workspaceId}/member")
@@ -156,15 +160,16 @@ public class WorkspaceController {
   }
 
   @GetMapping("/{workspaceId}/member/{workspaceMemberId}")
-  public ResponseEntity<FindWorkspaceMemberResponse> findWorkspaceMember(
+  public ResponseEntity<FindWorkspaceMemberByIdResponse> findWorkspaceMemberById(
       @PathVariable(name = "workspaceId") Long workspaceId,
       @PathVariable(name = "workspaceMemberId") Long workspaceMemberId,
       @AuthenticationPrincipal MemberUserDetails member) {
-    return ResponseEntity.ok(workspaceService.findWorkspaceMember(workspaceId, workspaceMemberId));
+    return ResponseEntity.ok(
+        workspaceService.findWorkspaceMemberById(workspaceId, workspaceMemberId));
   }
 
   @GetMapping("/{workspaceId}/register")
-  public ResponseEntity<List<FindWorkspaceRegistersResponse>> findWorkspaceRegisters(
+  public ResponseEntity<List<FindWorkspaceRegisterResponse>> findWorkspaceRegisters(
       @PathVariable(name = "workspaceId") Long workspaceId,
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(workspaceService.findWorkspaceRegisters(workspaceId));

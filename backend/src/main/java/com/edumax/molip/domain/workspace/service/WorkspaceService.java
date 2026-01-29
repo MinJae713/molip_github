@@ -11,11 +11,12 @@ import com.edumax.molip.domain.workspace.dto.response.CreateJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.CreateWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.DeleteJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.DeleteWorkspaceResponse;
-import com.edumax.molip.domain.workspace.dto.response.FindJoinCodesResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindMyStatsResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceCoursesByIdResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberResponse;
-import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegistersResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegisterResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
@@ -44,26 +45,28 @@ public interface WorkspaceService {
   UpdateWorkspaceResponse updateWorkspace(
       UpdateWorkspaceRequest updateWorkspaceRequest); // 워크스페이스 수정
 
-  DeleteWorkspaceResponse deleteWorkspace(Long workspaceId); // 워크스페이스 삭제
+  DeleteWorkspaceResponse deleteWorkspace(Long workspaceId, Long memberId); // 워크스페이스 삭제
 
   InactiveWorkspaceMemberResponse inactiveWorkspaceMember(
-      InactiveWorkspaceMemberRequest inactiveWorkspaceMemberRequest); // 워크스페이스 멤버 비활성화
+      InactiveWorkspaceMemberRequest inactiveWorkspaceMemberRequest,
+      Long memberId); // 워크스페이스 멤버 비활성화
 
   ChangeWorkspaceMemberRoleResponse changeWorkspaceMemberRole(
-      ChangeWorkspaceMemberRoleRequest changeWorkspaceMemberRoleRequest); // 워크스페이스 멤버 역할 변경
+      ChangeWorkspaceMemberRoleRequest changeWorkspaceMemberRoleRequest,
+      Long memberId); // 워크스페이스 멤버 역할 변경
 
   CreateJoinCodeResponse createJoinCode(
-      CreateJoinCodeRequest createJoinCodeRequest); // 워크스페이스 초대코드 생성
+      CreateJoinCodeRequest createJoinCodeRequest, Long memberId); // 워크스페이스 초대코드 생성
 
-  List<FindJoinCodesResponse> findJoinCodes(Long workspaceId); // 워크스페이스 초대코드 목록 조회
+  List<FindJoinCodeResponse> findJoinCodes(Long workspaceId, Long memberId); // 워크스페이스 초대코드 목록 조회
 
-  DeleteJoinCodeResponse deleteJoinCode(Long joinCodeId); // 워크스페이스 초대코드 삭제
+  DeleteJoinCodeResponse deleteJoinCode(Long joinCodeId, Long memberId); // 워크스페이스 초대코드 삭제
 
   List<FindWorkspaceMemberResponse> findWorkspaceMembers(Long workspaceId); // 워크스페이스별 멤버 목록 조회
 
-  FindWorkspaceMemberResponse findWorkspaceMember(
+  FindWorkspaceMemberByIdResponse findWorkspaceMemberById(
       Long workspaceId, Long workspaceMemberId); // 워크스페이스별 멤버 상세 정보 조회
 
-  List<FindWorkspaceRegistersResponse> findWorkspaceRegisters(
+  List<FindWorkspaceRegisterResponse> findWorkspaceRegisters(
       Long workspaceId); // 워크스페이스별 가입 신청 목록 조회
 }

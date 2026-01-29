@@ -1,6 +1,7 @@
 package com.edumax.molip.domain.workspace.entity;
 
 import com.edumax.molip.domain.member.entity.Member;
+import com.edumax.molip.domain.workspace.types.RejectType;
 import com.edumax.molip.domain.workspace.types.WorkspaceRegisterStatus;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -45,13 +46,6 @@ public class WorkspaceRegister {
   @Enumerated(EnumType.STRING)
   @Column(name = "reject_type")
   private RejectType rejectType;
-
-  public enum RejectType {
-    AFFLIATION_MISMATCH,
-    INVITE_CODE_USE_MISS,
-    OVER_CAPACITY,
-    ETC
-  }
 
   @ManyToOne
   @JoinColumn(name = "member_id", nullable = false)
