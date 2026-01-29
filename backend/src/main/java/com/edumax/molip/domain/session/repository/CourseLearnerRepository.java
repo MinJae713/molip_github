@@ -17,6 +17,9 @@ public interface CourseLearnerRepository extends JpaRepository<CourseLearner, Lo
 
   List<CourseLearner> findByWorkspaceMember_Member_Id(Long memberId);
 
+  List<CourseLearner> findByWorkspaceMember_Member_IdAndCourse_Workspace_WorkspaceId(
+      Long memberId, Long workspaceId);
+
   Optional<CourseLearner> findByCourseAndWorkspaceMember(
       Course course, WorkspaceMember workspaceMember);
 }

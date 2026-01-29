@@ -96,7 +96,9 @@ public class CourseController {
 
   @GetMapping("/me")
   public ResponseEntity<List<CourseDetailResponse>> getMyCourses(
+      @RequestParam Long workspaceId,
       @AuthenticationPrincipal MemberUserDetails userDetails) {
-    return ResponseEntity.ok(courseService.getMyCourses(userDetails.getMemberId()));
+    return ResponseEntity.ok(
+        courseService.getMyCourses(userDetails.getMemberId(), workspaceId));
   }
 }

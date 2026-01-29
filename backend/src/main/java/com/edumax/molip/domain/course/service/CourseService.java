@@ -21,5 +21,5 @@ public interface CourseService {
   void approveCourseApplication(
       Long courseId, Long applicantWorkspaceMemberId, Long instructorMemberId);
 
-  List<CourseDetailResponse> getMyCourses(Long memberId);
+  List<CourseDetailResponse> getMyCourses(Long memberId, Long workspaceId);
 }
