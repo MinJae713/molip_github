@@ -39,11 +39,12 @@ pipeline {
         }
 
         stage('Deploy') {
-            steps {
-                // 배포는 호스트 서버의 docker-compose.yml 위치를 기준으로 실행
-                // 만약 docker-compose.yml이 저장소 루트에 있다면 dir('backend') 밖에서 실행합니다.
-                sh "docker compose pull molip-api"
-                sh "docker compose up -d molip-api"
+            stage('Deploy') {
+                steps {
+                    // 경로 앞에 /home/ubuntu/ 를 붙여줍니다.
+                    sh "docker compose -f /home/ubuntu/docker-compose.yml pull molip-api"
+                    sh "docker compose -f /home/ubuntu/docker-compose.yml up -d molip-api"
+                }
             }
         }
 
