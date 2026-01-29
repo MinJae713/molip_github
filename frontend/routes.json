@@ -1,6 +1,6 @@
 {
   "/members/me/courses/attendance-rate*": "/attendance_rate",
-  "/members/me/workspaces": "/my_workspaces",
+  "/workspaces/me/": "/my_workspaces",
   "/members/me/course-likes/:id": "/course_likes/:id",
   "/members/me/course-likes": "/course_likes",
   "/members/me/courses/:id": "/my_all_courses/:id",
