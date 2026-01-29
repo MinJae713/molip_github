@@ -207,6 +207,9 @@ public class WorkspaceServiceImpl implements WorkspaceService {
           }
           break;
         }
+      default:
+        {
+        }
     }
     return JoinWorkspaceResponse.builder().apiResult(true).build();
   }
@@ -352,26 +355,51 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   @Override
   @Transactional
   public DeleteWorkspaceResponse deleteWorkspace(Long workspaceId) {
-    return null;
+    Workspace workspace =
+        workspaceRepository.findById(workspaceId).orElseThrow(NoWorkspaceException::new);
+    workspaceRepository.delete(workspace);
+    return DeleteWorkspaceResponse.builder().apiResult(true).build();
   }
 
   @Override
   @Transactional
   public InactiveWorkspaceMemberResponse inactiveWorkspaceMember(
       InactiveWorkspaceMemberRequest inactiveWorkspaceMemberRequest) {
-    return null;
+    Long workspaceMemberId = inactiveWorkspaceMemberRequest.getWorkspaceMemberId();
+    WorkspaceMember workspaceMember =
+        workspaceMemberRepository
+            .findById(workspaceMemberId)
+            .orElseThrow(NoWorkspaceMemberException::new);
+    workspaceMember.setStatus(WorkspaceMemberStatus.INACTIVE);
+    workspaceMemberRepository.save(workspaceMember);
+    return InactiveWorkspaceMemberResponse.builder().apiResult(true).build();
   }
 
   @Override
   @Transactional
   public ChangeWorkspaceMemberRoleResponse changeWorkspaceMemberRole(
       ChangeWorkspaceMemberRoleRequest changeWorkspaceMemberRoleRequest) {
-    return null;
+    Long workspaceMemberId = changeWorkspaceMemberRoleRequest.getWorkspaceMemberId();
+    WorkspaceMember workspaceMember =
+        workspaceMemberRepository
+            .findById(workspaceMemberId)
+            .orElseThrow(NoWorkspaceMemberException::new);
+    WorkspaceMemberRole workspaceMemberRole =
+        changeWorkspaceMemberRoleRequest.getWorkspaceMemberRole();
+    workspaceMember.setRole(workspaceMemberRole);
+    workspaceMemberRepository.save(workspaceMember);
+    return ChangeWorkspaceMemberRoleResponse.builder().apiResult(true).build();
   }
 
   @Override
   @Transactional
   public CreateJoinCodeResponse createJoinCode(CreateJoinCodeRequest createJoinCodeRequest) {
+    //    Long workspaceId = createJoinCodeRequest.getWorkspaceId();
+    //    Workspace workspace =
+    //        workspaceRepository.findById(workspaceId).orElseThrow(NoWorkspaceException::new);
+    //    LocalDateTime endedDate = createJoinCodeRequest.getEndedDate();
+    //    String joinCodeName = createJoinCodeRequest.getJoinCodeName();
+
     return null;
   }
 

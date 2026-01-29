@@ -9,4 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FindWorkspaceMemberResponse {}
+public class FindWorkspaceMemberResponse {
+  private String dumy;
+}
