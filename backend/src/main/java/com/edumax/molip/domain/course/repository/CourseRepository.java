@@ -9,4 +9,6 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
   List<Course> findByWorkspace_WorkspaceId(Long workspaceId);
 
   List<Course> findByLeaner_Member_Id(Long memberId);
+
+  List<Course> findByLeaner_Member_IdAndWorkspace_WorkspaceId(Long memberId, Long workspaceId);
 }

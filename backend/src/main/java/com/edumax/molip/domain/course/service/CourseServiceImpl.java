@@ -226,13 +226,16 @@ public class CourseServiceImpl implements CourseService {
   }
 
   @Override
-  public java.util.List<CourseDetailResponse> getMyCourses(Long memberId) {
+  public java.util.List<CourseDetailResponse> getMyCourses(Long memberId, Long workspaceId) {
     // 1. 내가 만든 코스 (Owner)
-    java.util.List<Course> ownedCourses = courseRepository.findByLeaner_Member_Id(memberId);
+    java.util.List<Course> ownedCourses =
+        courseRepository.findByLeaner_Member_IdAndWorkspace_WorkspaceId(memberId, workspaceId);
 
     // 2. 내가 수강 중인 코스 (Learner)
     java.util.List<Course> enrolledCourses =
-        courseLearnerRepository.findByWorkspaceMember_Member_Id(memberId).stream()
+        courseLearnerRepository
+            .findByWorkspaceMember_Member_IdAndCourse_Workspace_WorkspaceId(memberId, workspaceId)
+            .stream()
             .map(CourseLearner::getCourse)
             .toList();
 
