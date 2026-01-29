@@ -21,7 +21,7 @@ pipeline {
                 // backend 폴더 안으로 진입하여 작업 수행
                 dir('backend') {
                     script {
-                        // 1. 메이븐 빌드 (pom.xml이 backend 폴더 안에 있으므로)
+                        // 1. 메이븐 빌드
                         sh './mvnw clean package -DskipTests'
 
                         // 2. 도커 로그인 및 빌드/푸시
