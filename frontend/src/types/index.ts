@@ -177,3 +177,16 @@ export interface LearnerSessionReport {
   courseId: string;
   sessions: SessionReportItem[];
 }
+
+export interface QuizItem {
+  id: number;
+  type: 'single' | 'multiple' | 'subjective';
+  question: string;
+  options?: string[]; 
+  correctAnswer: (number | string)[]; // 강사가 설정한 정답
+  userAnswer?: (number | string)[];    // [추가] 수강생이 입력한 정답
+  timeRange?: string;
+  reason?: string;
+  isEditing?: boolean;
+  isCorrect?: boolean;                 // [추가] 채점 결과
+}
