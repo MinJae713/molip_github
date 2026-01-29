@@ -31,7 +31,7 @@ public class EmotionSaveListener {
   private static final String GENERAL_KEY_FORMAT = "review:emotion:session-id:%s";
   private static final String PERSONAL_KEY_FORMAT = "review:emotion:session-id:%s:member-id:%d";
   private static final Duration TTL = Duration.ofDays(1);
-  private static final int BATCH_SIZE = 5; // 100으로 변경필요
+  private static final int BATCH_SIZE = 100;
 
   /** 강의 시작 시 호출 (Controller나 Service에서 호출) */
   public void startLecture(String sessionId) {
@@ -90,10 +90,12 @@ public class EmotionSaveListener {
                         .getStringSerializer()
                         .serialize(generatePersonalKey(item.sessionId(), item.memberId()));
 
+                // score(timeline)를 제외하고 데이터 포맷 구성
+                // 필요하다면 timeline을 데이터 앞에 포함시켜 나중에 정렬 순서를 알 수 있게 유지
                 String perValueStr =
                     String.format(
                         "%d|%s:%.2f,%s:%.2f,%s:%.2f",
-                        item.timeline(),
+                        item.timeline(), // 타임라인 정보는 값 내부에 포함
                         item.emotion1(),
                         item.confidence1(),
                         item.emotion2(),
@@ -108,10 +110,11 @@ public class EmotionSaveListener {
                 byte[] perValue = redisTemplate.getStringSerializer().serialize(perValueStr);
                 byte[] genValue = redisTemplate.getStringSerializer().serialize(genValueStr);
 
-                // ZAdd (score, value)
-                connection.zSetCommands().zAdd(genKey, item.timeline(), genValue);
-                connection.zSetCommands().zAdd(perKey, item.timeline(), perValue);
-                // Expire
+                // [수정] ZAdd 대신 List의 rPush 사용 (오른쪽으로 추가하여 시간순 유지)
+                connection.listCommands().rPush(genKey, genValue);
+                connection.listCommands().rPush(perKey, perValue);
+
+                // Expire 설정 유지
                 connection.keyCommands().expire(genKey, TTL.getSeconds());
                 connection.keyCommands().expire(perKey, TTL.getSeconds());
               }

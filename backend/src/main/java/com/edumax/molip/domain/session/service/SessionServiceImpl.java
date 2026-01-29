@@ -9,6 +9,7 @@ import com.edumax.molip.domain.quiz.repository.ExitQuizAnswerRepository;
 import com.edumax.molip.domain.quiz.repository.ExitQuizRepository;
 import com.edumax.molip.domain.session.dto.request.SessionCreateRequest;
 import com.edumax.molip.domain.session.dto.request.SessionCreateRequest.QuizDto;
+import com.edumax.molip.domain.session.dto.response.AnalysisSignalMessage;
 import com.edumax.molip.domain.session.dto.response.SessionDetailResponse;
 import com.edumax.molip.domain.session.dto.response.SessionSimpleResponse;
 import com.edumax.molip.domain.session.dto.response.SessionStartResponse;
@@ -19,9 +20,12 @@ import com.edumax.molip.domain.session.handler.EmotionSaveListener;
 import com.edumax.molip.domain.session.janus.SessionJanusService;
 import com.edumax.molip.domain.session.repository.SessionRepository;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +33,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class SessionServiceImpl implements SessionService {
+  private final SimpMessagingTemplate messagingTemplate;
+  private final StringRedisTemplate redisTemplate;
   private final EmotionManagerRegistry emotionManagerRegistry;
   private final EmotionSaveListener emotionSaveListener;
   private final SessionRepository sessionRepository;
@@ -38,17 +44,62 @@ public class SessionServiceImpl implements SessionService {
   private final CourseApplyRepository courseApplyRepository;
   private final SessionJanusService sessionJanusService;
 
-  @Override
-  public void startCourse(String sessionId) {
-    emotionSaveListener.startLecture(sessionId);
-    EmotionManager emotionManager = emotionManagerRegistry.getManager(sessionId);
-    emotionManager.startScheduling(0, sessionId);
+  String SESSION_JOIN_FORMAT = "session:join:session-id:%s";
+
+  private String getJoinKey(String sessionId) {
+    return String.format(SESSION_JOIN_FORMAT, sessionId);
   }
 
   @Override
-  public void endCourse(String sessionId) {
+  public void startSession(String sessionId) {
+    System.out.println("Session started: " + sessionId);
+  }
+
+  @Override
+  public void endSession(String sessionId) {
+    String joinKey = getJoinKey(sessionId);
+    redisTemplate.delete(joinKey);
+  }
+
+  @Override
+  public void startAnalysis(String sessionId) {
+    emotionSaveListener.startLecture(sessionId);
+    EmotionManager emotionManager = emotionManagerRegistry.getManager(sessionId);
+    emotionManager.startScheduling(0, sessionId);
+
+    // 모든 참여자에게 분석 시작 시간 보내기
+    String joinKey = getJoinKey(sessionId);
+    List<String> memberList = redisTemplate.opsForList().range(joinKey, 0, -1);
+    List<String> memberIdList = new ArrayList<>();
+    if (memberList != null) {
+      for (String member : memberList) {
+        String[] parts = member.split("|", 2);
+        if (parts.length == 2) {
+          memberIdList.add(parts[0]);
+        }
+      }
+    }
+    sendAnalysisMessage(memberIdList, sessionId);
+  }
+
+  private void sendAnalysisMessage(List<String> memberIdList, String sessionId) {
+    AnalysisSignalMessage analysisSignalMessage =
+        new AnalysisSignalMessage(LocalDateTime.now().toString());
+    for (String memberId : memberIdList) {
+      messagingTemplate.convertAndSend(
+          "/topic/analysis/" + sessionId + "/" + memberId, analysisSignalMessage);
+    }
+  }
+
+  @Override
+  public void endAnalysis(String sessionId) {
     emotionSaveListener.stopLecture(sessionId);
     emotionManagerRegistry.removeManager(sessionId);
+  }
+
+  public void processConcentration(String sessionId, Long memberId) {
+    //    EmotionManager emotionManager = emotionManagerRegistry.getManager(sessionId);
+    //    emotionManager.recordConcentration(memberId, sendMessage.getConcentration());
   }
 
   @Override

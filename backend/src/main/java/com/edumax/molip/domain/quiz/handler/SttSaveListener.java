@@ -24,7 +24,7 @@ public class SttSaveListener {
   public void handleSttResult(SttSaveEvent event) {
     String key = generateKey(event.sessionId());
 
-    String value = event.timeline() + ":" + event.text();
+    String value = event.timeline() + "|" + event.text();
     redisTemplate.opsForZSet().add(key, value, event.timeline());
     redisTemplate.expire(key, TTL);
   }

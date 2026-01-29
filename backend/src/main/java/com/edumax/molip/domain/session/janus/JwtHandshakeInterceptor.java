@@ -1,22 +1,33 @@
 package com.edumax.molip.domain.session.janus;
 
 import com.edumax.molip.common.jwt.JwtTokenProvider;
+import com.edumax.molip.common.model.MemberUserDetails;
+import java.time.Duration;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
-
+  private final StringRedisTemplate redisTemplate;
   private final JwtTokenProvider jwtTokenProvider;
+
+  String SESSION_JOIN_FORMAT = "session:join:session-id:%s";
+
+  String getJoinKey(String sessionId) {
+    return String.format(SESSION_JOIN_FORMAT, sessionId);
+  }
 
   @Override
   public boolean beforeHandshake(
@@ -26,43 +37,48 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
       Map<String, Object> attributes)
       throws Exception {
 
-    // 1. Query String에서 auth 파라미터(토큰) 추출
-    // Spring의 ServletServerHttpRequest를 사용하면 getServletRequest().getParameter("auth")로 쉽게 가능하지만,
-    // 여기서는 일반 ServerHttpRequest 인터페이스를 사용하므로 쿼리 파싱이 필요함.
-    String query = request.getURI().getQuery();
-    String token = null;
+    // [수정] 1. UriComponentsBuilder를 사용한 안전하고 간결한 쿼리 파싱
+    // 기존의 split("&") 방식보다 인코딩 처리 및 예외 상황에 훨씬 견고합니다.
+    MultiValueMap<String, String> queryParams =
+        UriComponentsBuilder.fromUri(request.getURI()).build().getQueryParams();
 
-    if (query != null) {
-      String[] params = query.split("&");
-      for (String param : params) {
-        String[] keyValue = param.split("=", 2); // Split only on first '='
-        if (keyValue.length == 2 && "auth".equals(keyValue[0])) {
-          token = keyValue[1];
-          break;
-        }
-      }
+    String token = queryParams.getFirst("auth");
+    String sessionId = queryParams.getFirst("session");
+
+    // [수정] 2. sessionId 누락 검증 로직 추가
+    // sessionId가 null이면 getJoinKey에서 "null" 문자열이 결합되므로 미리 차단해야 합니다.
+    if (sessionId == null || sessionId.trim().isEmpty()) {
+      log.warn("WebSocket Handshake Failed: sessionId is missing in query parameters");
+      return false;
     }
 
     // 2. 토큰 검증
     if (token != null && jwtTokenProvider.validateToken(token)) {
-      // 3. 인증 정보 추출 및 세션 속성 저장 (Member ID, Role 등)
       Authentication auth = jwtTokenProvider.getAuthentication(token);
 
-      // MemberUserDetails에서 memberId 추출
-      if (auth.getPrincipal() instanceof com.edumax.molip.common.model.MemberUserDetails) {
-        com.edumax.molip.common.model.MemberUserDetails userDetails =
-            (com.edumax.molip.common.model.MemberUserDetails) auth.getPrincipal();
-        attributes.put("memberId", userDetails.getMemberId());
-        // [수정] getUsername()(이메일) 대신 getDisplayName()(실명) 사용
-        attributes.put("memberName", userDetails.getDisplayName());
+      // [수정] Java 16+ Pattern Matching 도입 (형변환 간소화)
+      if (auth.getPrincipal() instanceof MemberUserDetails userDetails) {
+        Long memberId = userDetails.getMemberId();
+        String memberName = userDetails.getDisplayName();
+
+        attributes.put("memberId", memberId);
+        attributes.put("memberName", memberName);
+        attributes.put("username", auth.getName()); // Email
+
+        String joinKey = getJoinKey(sessionId);
+        String joinValue = memberId + "|" + memberName;
+
+        // [수정] 3. Redis 데이터 추가 및 만료 시간(TTL) 설정
+        // 리스트에 데이터를 넣고, 해당 키가 무한히 증식하지 않도록 만료 시간을 설정합니다. (예: 24시간)
+        redisTemplate.opsForList().rightPush(joinKey, joinValue);
+        redisTemplate.expire(joinKey, Duration.ofHours(24));
       }
 
-      attributes.put("username", auth.getName()); // 이것도 저장해둠 (Email)
-
       log.info(
-          "WebSocket Handshake Authorized: username={}, memberId={}",
+          "WebSocket Handshake Authorized: username={}, memberId={}, sessionId={}",
           auth.getName(),
-          attributes.get("memberId"));
+          attributes.get("memberId"),
+          sessionId);
       return true;
     }
 

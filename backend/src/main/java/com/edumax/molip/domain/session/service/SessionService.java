@@ -8,9 +8,13 @@ import com.edumax.molip.domain.session.dto.response.SessionStartResponse;
 import java.util.List;
 
 public interface SessionService {
-  void startCourse(String sessionId);
+  void startSession(String sessionId);
 
-  void endCourse(String sessionId);
+  void endSession(String sessionId);
+
+  void startAnalysis(String sessionId);
+
+  void endAnalysis(String sessionId);
 
   Long createSession(SessionCreateRequest request, Long memberId);
 

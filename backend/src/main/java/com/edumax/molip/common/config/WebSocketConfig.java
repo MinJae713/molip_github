@@ -71,6 +71,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSoc
     registry.addEndpoint("/message").setAllowedOriginPatterns("*").withSockJS();
   }
 
+  @Override
+  public void configureMessageBroker(MessageBrokerRegistry registry) {
+    registry.setApplicationDestinationPrefixes("/app");
+    registry.enableSimpleBroker("/topic");
+  }
+
   private String PROFILE_KEY_FORMAT = "chatting:profile:%s";
 
   private String getProfileKey(String email) {
@@ -132,12 +138,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSoc
             return message;
           }
         });
-  }
-
-  @Override
-  public void configureMessageBroker(MessageBrokerRegistry registry) {
-    registry.setApplicationDestinationPrefixes("/app");
-    registry.enableSimpleBroker("/topic");
   }
 
   @Bean
