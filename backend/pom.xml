@@ -189,12 +189,8 @@
     	<version>0.0.1-SNAPSHOT</version>
 	</dependency>-->
     <!-- Source: https://mvnrepository.com/artifact/tools.jackson.datatype/jackson-datatype-jsr310 -->
-    <dependency>
-      <groupId>tools.jackson.datatype</groupId>
-      <artifactId>jackson-datatype-jsr310</artifactId>
-      <version>3.0.0-rc2</version>
-      <scope>compile</scope>
-    </dependency>
+
+
 	</dependencies>
 
 	<dependencyManagement>
@@ -274,7 +270,7 @@
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
         <version>2.43.0</version>
-
+ 
         <configuration>
           <java>
             <!-- 가장 많이 쓰는 포맷터: google-java-format -->
