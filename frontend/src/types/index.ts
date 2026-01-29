@@ -178,14 +178,15 @@ export interface LearnerSessionReport {
   sessions: SessionReportItem[];
 }
 
-// 퀴즈
 export interface QuizItem {
   id: number;
-  question: string;
-  options?: string[];
   type: 'single' | 'multiple' | 'subjective';
+  question: string;
+  options?: string[]; 
+  correctAnswer: (number | string)[]; // 강사가 설정한 정답
+  userAnswer?: (number | string)[];    // [추가] 수강생이 입력한 정답
   timeRange?: string;
   reason?: string;
   isEditing?: boolean;
-  answer?: string;
+  isCorrect?: boolean;                 // [추가] 채점 결과
 }

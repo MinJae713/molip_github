@@ -5,14 +5,6 @@ import { useLiveStore } from '@/stores/live';
 const quizStore = useQuizStore();
 const liveStore = useLiveStore();
 
-// 편집 모드 토글 함수
-const toggleEdit = (idx: number) => {
-  const quiz = quizStore.selectedQuizzes[idx];
-  if (quiz) {
-    quiz.isEditing = !quiz.isEditing;
-  }
-};
-
 // 퀴즈 발송 함수
 const handlePublish = () => {
   if (quizStore.selectedQuizzes.length === 0) {
@@ -20,9 +12,14 @@ const handlePublish = () => {
     return;
   }
   
-  // 선택된 퀴즈 리스트 전체 발송
-  liveStore.publishQuiz(quizStore.selectedQuizzes);
-  
+  // 데이터 정합성 체크 (질문이 비어있거나 정답이 없는 경우 방지)
+  const isValid = quizStore.selectedQuizzes.every(q => q.question.trim() !== '' && q.correctAnswer.length > 0);
+  if (!isValid) {
+    alert('모든 문항의 질문과 정답을 입력해주세요.');
+    return;
+  }
+
+  // liveStore.publishQuiz(quizStore.selectedQuizzes);
   alert('퀴즈가 전체 수강생에게 발송되었습니다.');
   quizStore.toggleModal(false);
 };
@@ -32,7 +29,7 @@ const handlePublish = () => {
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="quizStore.isQuizModalOpen" class="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white rounded-4xl w-full max-w-4xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-4xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
           
           <div class="p-8 flex justify-between items-start">
             <div class="flex items-center gap-4">
@@ -50,8 +47,7 @@ const handlePublish = () => {
           </div>
 
           <div class="flex-1 overflow-hidden grid grid-cols-2 border-t border-slate-100">
-            
-            <div class="bg-slate-50/50 p-8 overflow-y-auto border-r border-slate-100">
+            <div class="bg-slate-50/50 p-8 overflow-y-auto border-r border-slate-100 custom-scrollbar">
               <div class="flex items-center justify-between mb-6">
                 <span class="font-bold text-slate-700 flex items-center gap-2">
                   <span class="material-symbols-outlined text-indigo-500">psychology</span>
@@ -68,12 +64,35 @@ const handlePublish = () => {
                       <span class="material-symbols-outlined text-lg">add</span> 추가
                     </button>
                   </div>
-                  <p class="text-sm font-bold text-slate-800 leading-relaxed mb-4">Q. {{ quiz.question }}</p>
+                  
+                  <p class="text-sm font-bold text-slate-800 leading-relaxed mb-3">Q. {{ quiz.question }}</p>
+                  
+                  <div v-if="quiz.type === 'single' && quiz.options" class="space-y-1.5 mb-4 px-1">
+                    <div v-for="(opt, idx) in quiz.options" :key="idx" 
+                        class="flex items-center gap-2 text-[11px]"
+                        :class="quiz.correctAnswer[0] === idx ? 'text-indigo-600 font-bold' : 'text-slate-500'">
+                      <span class="w-4 h-4 rounded-full border flex items-center justify-center text-[9px] shrink-0"
+                            :class="quiz.correctAnswer[0] === idx ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200 bg-white'">
+                        {{ idx + 1 }}
+                      </span>
+                      {{ opt }}
+                    </div>
+                  </div>
+                  
+                  <div class="mt-4 p-3 bg-green-50 rounded-xl border border-green-100">
+                    <p class="text-[11px] font-bold text-green-600 flex items-center gap-1">
+                      <span class="material-symbols-outlined text-[14px]">verified</span>
+                      AI 추천 정답: 
+                      <span class="ml-1 text-green-700">
+                        {{ quiz.type === 'single' ? quiz.options?.[quiz.correctAnswer[0] as number] : quiz.correctAnswer[0] }}
+                      </span>
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="p-8 overflow-y-auto flex flex-col">
+            <div class="p-8 overflow-y-auto flex flex-col custom-scrollbar">
               <div class="flex items-center justify-between mb-6">
                 <span class="text-sm font-bold text-slate-700">최종 퀴즈 리스트 <span class="text-indigo-600 ml-1">{{ quizStore.selectedQuizzes.length }}/5</span></span>
                 <button @click="quizStore.selectedQuizzes = []" class="text-[11px] text-slate-400 font-bold hover:text-slate-600 flex items-center gap-1">
@@ -82,7 +101,7 @@ const handlePublish = () => {
               </div>
 
               <div class="space-y-3 flex-1 overflow-y-auto pr-1">
-                <div v-for="(quiz, idx) in quizStore.selectedQuizzes" :key="idx" 
+                <div v-for="(quiz, idx) in quizStore.selectedQuizzes" :key="quiz.id" 
                      class="relative border-2 rounded-2xl p-4 transition-all"
                      :class="quiz.isEditing ? 'border-indigo-400 bg-white shadow-md' : 'border-indigo-100 bg-indigo-50/30'">
                   
@@ -90,7 +109,6 @@ const handlePublish = () => {
                     <span class="text-xs font-black text-indigo-300 mt-1">{{ String(idx + 1).padStart(2, '0') }}</span>
                     
                     <div v-if="quiz.isEditing" class="flex-1 pr-6 space-y-3">
-                      <!-- 질문 입력 -->
                       <textarea 
                         v-model="quiz.question" 
                         class="w-full text-[13px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all resize-none"
@@ -98,106 +116,86 @@ const handlePublish = () => {
                         placeholder="퀴즈 문항을 입력하세요..."
                       ></textarea>
 
-                      <!-- 유형 선택 -->
                       <div class="flex gap-2">
                         <label class="flex items-center gap-1 cursor-pointer">
-                          <input type="radio" v-model="quiz.type" value="single" class="accent-indigo-600">
+                          <input type="radio" v-model="quiz.type" value="single" @change="quiz.correctAnswer = [0]" class="accent-indigo-600">
                           <span class="text-xs text-slate-600">객관식</span>
                         </label>
                         <label class="flex items-center gap-1 cursor-pointer">
-                          <input type="radio" v-model="quiz.type" value="subjective" class="accent-indigo-600">
+                          <input type="radio" v-model="quiz.type" value="subjective" @change="quiz.correctAnswer = ['']" class="accent-indigo-600">
                           <span class="text-xs text-slate-600">주관식</span>
                         </label>
                       </div>
 
-                      <!-- 객관식 보기 편집 -->
-                      <div v-if="quiz.type === 'single' || quiz.type === 'multiple'" class="space-y-2">
-                        <div v-for="(opt, optIdx) in (quiz.options || [])" :key="optIdx" class="flex items-center gap-2">
-                           <!-- 정답 선택 라디오/체크박스 -->
+                      <div v-if="quiz.type === 'single'" class="space-y-2">
+                        <div v-for="(opt, optIdx) in quiz.options" :key="optIdx" class="flex items-center gap-2">
                           <input 
                             type="radio" 
-                            name="correct-answer"
-                            :checked="quiz.answer === String(optIdx)"
-                            @change="quiz.answer = String(optIdx)"
+                            :name="'correct-' + quiz.id"
+                            :checked="quiz.correctAnswer[0] === optIdx"
+                            @change="quiz.correctAnswer = [optIdx]"
                             class="w-4 h-4 cursor-pointer accent-green-500"
-                            title="정답으로 설정"
                           >
-                          
-                          <span class="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center text-[10px] bg-white font-bold text-slate-400 shrink-0">{{ optIdx + 1 }}</span>
                           <input 
                             v-model="quiz.options![optIdx]"
-                            class="flex-1 text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-400"
-                            placeholder="보기 내용을 입력하세요"
+                            class="flex-1 text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:border-indigo-400"
                           />
-                          <button @click="quiz.options?.splice(optIdx, 1)" class="text-slate-400 hover:text-red-500">
+                          <button @click="quiz.options?.splice(optIdx, 1)" class="text-slate-300 hover:text-red-500">
                             <span class="material-symbols-outlined text-base">remove_circle</span>
                           </button>
                         </div>
-                        <button 
-                          @click="() => { if(!quiz.options) quiz.options = []; quiz.options.push(''); }"
-                          class="text-xs text-indigo-600 font-bold flex items-center gap-1 hover:bg-indigo-50 px-2 py-1 rounded-lg w-fit"
-                        >
+                        <button @click="quiz.options?.push('')" class="text-xs text-indigo-600 font-bold flex items-center gap-1">
                           <span class="material-symbols-outlined text-sm">add</span> 보기 추가
                         </button>
                       </div>
 
-                      <!-- 주관식 정답 입력 -->
-                       <div v-if="quiz.type === 'subjective'" class="mt-2">
-                          <label class="text-[11px] font-bold text-slate-500 ml-1">정답</label>
-                          <input 
-                            v-model="quiz.answer"
-                            class="w-full text-xs bg-green-50 border border-green-200 rounded-lg px-3 py-2 mt-1 focus:outline-none focus:border-green-400 text-green-700 font-bold placeholder-green-300"
-                            placeholder="정답 키워드를 입력하세요 (예: 딥러닝)"
-                          />
-                       </div>
-
+                      <div v-if="quiz.type === 'subjective'" class="mt-2">
+                        <input 
+                          v-model="quiz.correctAnswer[0]"
+                          class="w-full text-xs bg-green-50 border border-green-200 rounded-lg px-3 py-2 mt-1 font-bold text-green-700"
+                          placeholder="정답 키워드 입력"
+                        />
+                      </div>
                     </div>
 
-                    <!-- 뷰 모드 -->
                     <div v-else class="flex-1 pr-14">
                       <div class="flex items-center gap-2 mb-1">
                         <span class="px-1.5 py-0.5 bg-slate-200 text-slate-600 text-[10px] font-bold rounded">{{ quiz.type === 'subjective' ? '주관식' : '객관식' }}</span>
                         <p class="text-[13px] font-bold text-slate-700 leading-snug">{{ quiz.question || '내용을 작성해주세요.' }}</p>
                       </div>
                       
-                      <!-- 객관식 보기 뷰 -->
-                      <div v-if="(quiz.type === 'single' || quiz.type === 'multiple') && quiz.options" class="mt-2 space-y-1">
+                      <div v-if="quiz.type === 'single'" class="mt-2 space-y-1">
                         <div v-for="(opt, optIdx) in quiz.options" :key="optIdx" 
                              class="flex items-center gap-2 text-xs"
-                             :class="quiz.answer === String(optIdx) ? 'text-green-600 font-bold' : 'text-slate-600'">
+                             :class="quiz.correctAnswer[0] === optIdx ? 'text-green-600 font-bold' : 'text-slate-600'">
                           <span class="w-4 h-4 rounded-full border flex items-center justify-center text-[9px]"
-                                :class="quiz.answer === String(optIdx) ? 'border-green-500 bg-green-50 text-green-600' : 'border-slate-300 bg-white'">
+                                :class="quiz.correctAnswer[0] === optIdx ? 'border-green-500 bg-green-50 text-green-600' : 'border-slate-300'">
                                 {{ optIdx + 1 }}
                           </span>
                           {{ opt }}
-                          <span v-if="quiz.answer === String(optIdx)" class="material-symbols-outlined text-[14px]">check</span>
                         </div>
                       </div>
 
-                      <!-- 주관식 정답 뷰 -->
-                      <div v-if="quiz.type === 'subjective' && quiz.answer" class="mt-2 px-3 py-2 bg-green-50 border border-green-100 rounded-lg flex items-center gap-2">
+                      <div v-if="quiz.type === 'subjective'" class="mt-2 px-3 py-2 bg-green-50 border border-green-100 rounded-lg flex items-center gap-2">
                         <span class="text-[11px] font-bold text-green-600 bg-green-100 px-1.5 rounded">정답</span>
-                        <span class="text-xs font-bold text-green-700">{{ quiz.answer }}</span>
+                        <span class="text-xs font-bold text-green-700">{{ quiz.correctAnswer[0] }}</span>
                       </div>
                     </div>
                   </div>
 
                   <div class="absolute top-4 right-4 flex items-center gap-1">
-                    <button @click="toggleEdit(idx)" class="w-8 h-8 flex items-center justify-center rounded-full transition-colors"
+                    <button @click="quizStore.toggleEdit(quiz.id as number)" class="w-8 h-8 flex items-center justify-center rounded-full transition-colors"
                             :class="quiz.isEditing ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:text-indigo-500 hover:bg-indigo-50'">
                       <span class="material-symbols-outlined text-lg">{{ quiz.isEditing ? 'check' : 'edit' }}</span>
                     </button>
-                    <button @click="quizStore.removeQuiz(quiz.id)" class="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
+                    <button @click="quizStore.removeQuiz(quiz.id as number)" class="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-500 rounded-full">
                       <span class="material-symbols-outlined text-lg">delete</span>
                     </button>
                   </div>
                 </div>
 
-                <button 
-                  @click="quizStore.addEmptyQuiz"
-                  class="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-[13px] font-bold flex items-center justify-center gap-2 hover:bg-slate-50 hover:border-slate-300 transition-all group"
-                >
-                  <span class="material-symbols-outlined text-indigo-400 group-hover:scale-110 transition-transform">add_circle</span>
+                <button @click="quizStore.addEmptyQuiz" class="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-[13px] font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all">
+                  <span class="material-symbols-outlined text-indigo-400">add_circle</span>
                   직접 문항 추가하기
                 </button>
               </div>
@@ -207,19 +205,16 @@ const handlePublish = () => {
           <div class="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
             <div class="flex gap-6">
               <label class="flex items-center gap-2 cursor-pointer group">
-                <input type="checkbox" checked class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all">
+                <input type="checkbox" checked class="w-4 h-4 rounded border-slate-300 text-indigo-600">
                 <span class="text-xs font-bold text-slate-600 group-hover:text-indigo-600">퀴즈 결과 즉시 공개</span>
               </label>
               <label class="flex items-center gap-2 cursor-pointer group">
-                <input type="checkbox" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all">
+                <input type="checkbox" class="w-4 h-4 rounded border-slate-300 text-indigo-600">
                 <span class="text-xs font-bold text-slate-600 group-hover:text-indigo-600">성적 데이터에 반영</span>
               </label>
             </div>
             
-            <button 
-              @click="handlePublish"
-              class="px-10 py-3.5 bg-indigo-600 text-white rounded-2xl text-sm font-bold shadow-xl shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-2"
-            >
+            <button @click="handlePublish" class="px-10 py-3.5 bg-indigo-600 text-white rounded-2xl text-sm font-bold shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all flex items-center gap-2">
               <span class="material-symbols-outlined text-xl">send</span>
               퇴실 퀴즈 즉시 발송 (수업 종료)
             </button>
@@ -231,25 +226,10 @@ const handlePublish = () => {
 </template>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
-}
-
-/* 스크롤바 커스텀 */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #cbd5e1;
-}
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
 </style>

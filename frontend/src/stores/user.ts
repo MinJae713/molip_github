@@ -14,7 +14,8 @@ export const useUserStore = defineStore("user", () => {
 
   // 데이터 로딩 여부 (선택 사항)
   const isLoaded = ref(false);
-  // JWT 파싱기
+
+  // ✅ [Helper] Base64 Url Decode (JWT 파싱용)
   function parseJwt(token: string) {
     try {
       const parts = token.split(".");
@@ -53,7 +54,7 @@ export const useUserStore = defineStore("user", () => {
     return `${header}.${payload}.${signature}`;
   }
 
-  // 사용자 정보 가져오기 (새로고침 시)
+  // 1️⃣ 사용자 정보 가져오기 (새로고침 시)
   async function fetchUserInfo() {
     if (isLoaded.value) return;
 
@@ -65,22 +66,15 @@ export const useUserStore = defineStore("user", () => {
 
     try {
       // 토큰 파싱해서 ID 추출
-      console.log("Token from localStorage:", token); // [Debug]
       const payload = parseJwt(token);
-      console.log("Parsed Payload:", payload); // [Debug]
-
-      // JWT payload에 memberId가 있으면 그것을 사용, 없으면 sub 사용
-      const userId = payload?.memberId || payload?.sub;
-      console.log("Extracted userId:", userId); // [Debug]
+      const userId = payload?.sub;
 
       if (!userId) {
-        throw new Error("Invalid Token: No userId found");
+        throw new Error("Invalid Token");
       }
 
       // DB에서 최신 유저 정보 조회
-      console.log(`Fetching info for userId: ${userId}`); // [Debug]
       const response = await api.get(`/members/${userId}`);
-      console.log("User Info Response:", response.data); // [Debug]
       const userData = response.data;
 
       user.value = {
@@ -92,61 +86,47 @@ export const useUserStore = defineStore("user", () => {
       isLoaded.value = true;
     } catch (error) {
       console.error("Fetch User Info Failed:", error);
-      // API 호출 실패 시 (토큰 만료, 서버 오류 등) 로그아웃 처리
-      // 단, 네트워크 오류 등 일시적 문제일 경우를 구분할 필요가 있음
-      // 현재는 단순하게 오류 발생 시 로그아웃으로 처리
-
-      // [Debug] 디버깅을 위해 자동 로그아웃 잠시 주석 처리
-      // logout();
+      logout();
     }
   }
 
-  // ✅ [Helper] 쿠키 설정
-  function setCookie(name: string, value: string, days: number) {
-    let expires = "";
-    if (days) {
-      const date = new Date();
-      date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
-      expires = "; expires=" + date.toUTCString();
-    }
-    document.cookie = name + "=" + (value || "") + expires + "; path=/";
-  }
-
-  // 쿠키 가져오기
-  function getCookie(name: string) {
-    const value = "; " + document.cookie;
-    const parts = value.split("; " + name + "=");
-    if (parts.length === 2) return parts.pop()?.split(";").shift();
-  }
-
-  // 로그인
-  async function login(email: string, pass: string) {
+  // 2️⃣ 로그인 (비밀번호 검증 없이 ID 매핑만 수행)
+  async function login(emailId: string, pass: string) {
     try {
-      const response = await api.post("/members/login", {
-        email: email,
-        password: pass,
-      });
+      // ID에 따라 타켓 유저 매핑 (비밀번호 검증 로직 제거됨)
+      let targetMemberId = 0;
+      let role = "student";
 
-      const {
-        accessToken,
-        memberId,
-        displayName,
-        email: userEmail,
-        profileImageUrl,
-      } = response.data;
+      if (emailId === "student") {
+        targetMemberId = 1; // 나학생
+      } else if (emailId === "teacher") {
+        targetMemberId = 2; // 나강사
+        role = "trainer";
+      } else if (emailId === "admin") {
+        targetMemberId = 3; // 나관리자
+        role = "admin";
+      } else {
+        // 매핑되지 않은 ID면 실패 처리 (혹은 기본값 1로 처리할 수도 있음)
+        console.warn("Unknown ID, login failed");
+        return false;
+      }
 
-      // LocalStorage 저장
-      localStorage.setItem("accessToken", accessToken);
+      // 해당 유저 정보 조회 (존재 여부 확인)
+      const response = await api.get(`/members/${targetMemberId}`);
+      const userData = response.data;
 
-      // Cookie 저장
-      setCookie("accessToken", accessToken, 1); // 1일 유지
+      if (!userData) return false;
 
-      // 3. 상태 업데이트
+      // 정보가 맞으면 토큰 생성 및 저장
+      const token = createMockJwt(userData.member_id, role);
+      localStorage.setItem("accessToken", token);
+
+      // 상태 업데이트 (API 데이터 사용)
       user.value = {
-        member_id: memberId,
-        name: displayName,
-        email: userEmail,
-        profile_image_url: profileImageUrl || "", // null일 경우 빈 문자열
+        member_id: userData.member_id,
+        name: userData.name,
+        email: userData.email,
+        profile_image_url: userData.profile_image_url,
       };
 
       isLoaded.value = true;
@@ -157,7 +137,7 @@ export const useUserStore = defineStore("user", () => {
     }
   }
 
-  // 4️⃣ 로그아웃
+  // 3️⃣ 로그아웃
   function logout() {
     user.value = {
       member_id: 0,
@@ -166,14 +146,16 @@ export const useUserStore = defineStore("user", () => {
       profile_image_url: "",
     };
     isLoaded.value = false;
-
-    // 토큰 삭제
     localStorage.removeItem("accessToken");
 
-    // 쿠키 삭제
-    document.cookie =
-      "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i];
+      if (!cookie) continue; // 방어 코드
+      const eqPos = cookie.indexOf("=");
+      const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+      document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+    }
     window.location.href = "/";
   }
 
