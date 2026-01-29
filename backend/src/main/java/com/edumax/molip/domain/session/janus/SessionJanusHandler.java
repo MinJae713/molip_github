@@ -1,16 +1,19 @@
 package com.edumax.molip.domain.session.janus;
 
+import com.edumax.molip.domain.course.repository.CourseApplyRepository;
+import com.edumax.molip.domain.session.entity.Session;
+import com.edumax.molip.domain.session.repository.SessionRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -22,11 +25,6 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.client.WebSocketClient;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-
-import com.edumax.molip.domain.course.repository.CourseApplyRepository;
-import com.edumax.molip.domain.session.entity.Session;
-import com.edumax.molip.domain.session.repository.SessionRepository;
-import lombok.RequiredArgsConstructor;
 
 @Slf4j
 @Component
@@ -53,8 +51,12 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
   public void afterConnectionEstablished(WebSocketSession clientSession) throws Exception {
     Long memberId = (Long) clientSession.getAttributes().get("memberId");
     String username = (String) clientSession.getAttributes().get("username");
-    
-    log.info("Client Connected: {} [memberId={}, username={}]", clientSession.getId(), memberId, username);
+
+    log.info(
+        "Client Connected: {} [memberId={}, username={}]",
+        clientSession.getId(),
+        memberId,
+        username);
 
     pendingMessages.put(clientSession.getId(), new ConcurrentLinkedQueue<>());
 
@@ -62,260 +64,223 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
     WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
     headers.setSecWebSocketProtocol(Collections.singletonList("janus-protocol"));
 
-    janusClient.execute(new TextWebSocketHandler() {
-      @Override
-      public void handleTextMessage(WebSocketSession janusSession, TextMessage message) throws Exception {
-        handleJanusMessage(janusSession, clientSession, message);
-      }
+    janusClient
+        .execute(
+            new TextWebSocketHandler() {
+              @Override
+              public void handleTextMessage(WebSocketSession janusSession, TextMessage message)
+                  throws Exception {
+                handleJanusMessage(clientSession, message);
+              }
 
-      @Override
-      public void afterConnectionClosed(WebSocketSession janusSession, CloseStatus status) throws Exception {
-        if (clientSession.isOpen()) {
-          clientSession.close(status);
-        }
-        cleanup(clientSession.getId(), janusSession.getId());
-      }
-    }, headers, URI.create(janusWsUrl)).whenComplete((janusSession, ex) -> {
-      if (ex != null) {
-        log.error("Failed to connect to Janus", ex);
-        try {
-          clientSession.close(CloseStatus.SERVER_ERROR);
-        } catch (IOException e) { /* ignore */ }
-        pendingMessages.remove(clientSession.getId());
-      } else {
-        clientToJanusMap.put(clientSession.getId(), janusSession);
-        janusToClientMap.put(janusSession.getId(), clientSession);
+              @Override
+              public void afterConnectionClosed(WebSocketSession janusSession, CloseStatus status)
+                  throws Exception {
+                try {
+                  if (clientSession.isOpen()) {
+                    clientSession.close(status);
+                  }
+                } finally {
+                  cleanup(clientSession.getId(), janusSession.getId());
+                  if (janusSession.isOpen()) {
+                    janusSession.close();
+                  }
+                }
+              }
+            },
+            headers,
+            URI.create(janusWsUrl))
+        .whenComplete(
+            (janusSession, ex) -> {
+              if (ex != null) {
+                log.error("Failed to connect to Janus", ex);
+                try {
+                  clientSession.close(CloseStatus.SERVER_ERROR);
+                } catch (IOException e) {
+                  log.error("Failed to close client session", e);
+                }
+                pendingMessages.remove(clientSession.getId());
+                if (janusSession != null) {
+                  try {
+                    janusSession.close();
+                  } catch (IOException closeEx) {
+                    log.warn("Failed to close janusSession", closeEx);
+                  }
+                }
+              } else {
+                clientToJanusMap.put(clientSession.getId(), janusSession);
+                janusToClientMap.put(janusSession.getId(), clientSession);
 
-        Queue<TextMessage> queue = pendingMessages.remove(clientSession.getId());
-        if (queue != null) {
-          while (!queue.isEmpty()) {
-            TextMessage msg = queue.poll();
-            try {
-              janusSession.sendMessage(msg);
-            } catch (IOException e) {
-              log.error("Failed to send buffered message", e);
-            }
-          }
-        }
-      }
-    });
+                Queue<TextMessage> queue = pendingMessages.remove(clientSession.getId());
+                if (queue != null) {
+                  while (!queue.isEmpty()) {
+                    TextMessage msg = queue.poll();
+                    try {
+                      if (janusSession.isOpen()) {
+                        janusSession.sendMessage(msg);
+                      }
+                    } catch (IOException e) {
+                      log.error("Failed to send buffered message", e);
+                    }
+                  }
+                }
+              }
+            });
   }
 
   @Override
-  protected void handleTextMessage(WebSocketSession clientSession, TextMessage message) throws Exception {
-    WebSocketSession janusSession = clientToJanusMap.get(clientSession.getId());
+  protected void handleTextMessage(WebSocketSession clientSession, TextMessage message)
+      throws Exception {
+    // [PMD] 맵에서 꺼낸 세션은 전역 관리되므로 여기서 닫지 않음
+    WebSocketSession janusSession = clientToJanusMap.get(clientSession.getId()); // NOPMD
 
-    // [권한 검사 및 Signal 변조 - Client -> Janus]
-    String payload = message.getPayload();
-    
-    // [LOG] Client -> Janus (Raw)
-    log.info("[Client->Janus] Raw: {}", payload);
-    
-    // (1) join 요청 가로채기
-    if (payload.contains("\"join\"")) {
-        try {
-            Map<String, Object> json = objectMapper.readValue(payload, new TypeReference<>() {});
-            Map<String, Object> body = (Map<String, Object>) json.get("body");
-            
-            if (body != null && "join".equals(body.get("request")) && body.containsKey("room")) {
-                Long janusRoomId = ((Number) body.get("room")).longValue();
-                Long memberId = (Long) clientSession.getAttributes().get("memberId");
-                String memberName = (String) clientSession.getAttributes().get("memberName");
-                
-                if (memberId != null) {
-                    Session session = sessionRepository.findByJanusRoomId(janusRoomId)
-                        .orElse(null);
-                        
-                    if (session != null) {
-                        Long instructorId = session.getCourse().getLeaner().getMember().getId();
-                        String role;
-                        String displayName;
-                        
-                        if (instructorId.equals(memberId)) {
-                            role = "TEACHER";
-                            displayName = "[선생] " + memberName;
-                        } else {
-                            // 수강생인지 확인 (CourseApply 테이블 조회)
-                            boolean isStudent = courseApplyRepository.existsByMemberIdAndCourseId(memberId, session.getCourse().getCourseId());
-                            if (isStudent) {
-                                role = "STUDENT";
-                                displayName = "[학생] " + memberName;
-                            } else {
-                                log.warn("Client {} has NO PERMISSION for Room {}", memberId, janusRoomId);
-                                clientSession.close(CloseStatus.POLICY_VIOLATION);
-                                return;
-                            }
-                        }
-                        
-                        // 세션 속성에 저장
-                        clientSession.getAttributes().put("role", role);
-                        clientSession.getAttributes().put("displayName", displayName);
-                        clientSession.getAttributes().put("courseId", session.getCourse().getCourseId());
-                        clientSession.getAttributes().put("sessionId", session.getSessionId());
-                        
-                        // [변조] Display Name 강제 설정
-                        // PIN은 클라이언트가 보낸 것 그대로 사용 (검증은 Janus에게 위임)
-                        body.put("display", displayName);
-                        
-                        // 다시 JSON으로 변환하여 Janus로 전송
-                        payload = objectMapper.writeValueAsString(json);
-                        
-                        log.info("Client {} joining Room {} as {} ({})", memberId, janusRoomId, role, displayName);
-                    } else {
-                        log.warn("Room {} not found in DB", janusRoomId);
-                        clientSession.close(CloseStatus.POLICY_VIOLATION);
-                        return;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error intercepting join message", e);
-        }
-    }
-    
-    // (2) publish 요청 가로채기 (강제 display name 적용)
-    else if (payload.contains("\"publish\"") || payload.contains("\"configure\"")) {
-        try {
-            Map<String, Object> json = objectMapper.readValue(payload, new TypeReference<>() {});
-            Map<String, Object> body = (Map<String, Object>) json.get("body");
-            
-            if (body != null && ("publish".equals(body.get("request")) || "configure".equals(body.get("request")))) {
-                // Role과 DisplayName 가져오기
-                String role = (String) clientSession.getAttributes().get("role");
-                String displayName = (String) clientSession.getAttributes().get("displayName");
-                Long courseId = (Long) clientSession.getAttributes().get("courseId");
-                Long sessionId = (Long) clientSession.getAttributes().get("sessionId");
-                
-                if (role != null && displayName != null) {
-                    // [변조] display name 강제
-                    if (body.containsKey("display")) {
-                         body.put("display", displayName);
-                    } else if ("publish".equals(body.get("request"))) {
-                        body.put("display", displayName);
-                    }
-                    
-                    // [녹화 강제 로직 복구]
-                    // 1. 강사인 경우 녹화 설정 강제 (Publish 요청 시)
-                    if ("TEACHER".equals(role) && "publish".equals(body.get("request"))) {
-                         // 강사는 무조건 녹화 시작
-                         // 사용자가 요청한 파일명 형식: UUID + courseId + sessionId + timestamp
-                         String uuid = java.util.UUID.randomUUID().toString().replace("-", "");
-                         String timestamp = String.valueOf(System.currentTimeMillis());
-                         
-                         // courseId, sessionId가 null일 수 있으므로 체크
-                         if (courseId == null) courseId = 0L;
-                         if (sessionId == null) sessionId = 0L;
-                         
-                         String filename = String.format("%s_%d_%d_%s", uuid, courseId, sessionId, timestamp);
-                         
-                         body.put("record", true);
-                         body.put("filename", filename);
-                         body.put("rec_dir", "/opt/janus/recordings"); // [중요] 녹화 경로 강제 주입
-                         
-                         log.info("Enforcing recording for TEACHER: {} in /opt/janus/recordings", filename);
-                    } else if ("STUDENT".equals(role) && "publish".equals(body.get("request"))) {
-                        // 학생은 절대 녹화 금지
-                        body.put("record", false);
-                        body.remove("filename");
-                        body.remove("rec_dir");
-                    }
-                    
-                    // 변경된 내용 적용
-                    payload = objectMapper.writeValueAsString(json);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error intercepting publish message", e);
-        }
-    }
+    try {
+      String payload = message.getPayload();
+      log.info("[Client->Janus] Raw: {}", payload);
 
-    // [LOG] Client -> Janus (Sent)
-    log.info("[Client->Janus] Sending: {}", payload);
-    
-    if (janusSession != null && janusSession.isOpen()) {
-      janusSession.sendMessage(new TextMessage(payload));
-    } else {
-      Queue<TextMessage> queue = pendingMessages.get(clientSession.getId());
-      if (queue != null) {
-        queue.add(new TextMessage(payload));
+      if (payload.contains("\"join\"")) {
+        // join 요청인 경우 세션을 직접 넘겨서 내부에서 sendMessage 하도록 수정
+        handleJoinRequest(clientSession, janusSession, payload);
+        return;
       }
+
+      if (payload.contains("\"publish\"") || payload.contains("\"configure\"")) {
+        payload = handlePublishRequest(clientSession, payload);
+      }
+
+      if (janusSession != null && janusSession.isOpen()) {
+        janusSession.sendMessage(new TextMessage(payload));
+      } else if (janusSession == null) {
+        Queue<TextMessage> queue = pendingMessages.get(clientSession.getId());
+        if (queue != null) {
+          queue.add(new TextMessage(payload));
+        }
+      }
+    } catch (Exception e) {
+      log.error("Error in handleTextMessage", e);
+      throw e;
     }
   }
 
-  private void handleJanusMessage(WebSocketSession janusSession, WebSocketSession clientSession, TextMessage message) throws Exception {
-    String payload = message.getPayload();
-    
-    // [LOG] Janus -> Client (Raw)
-    log.info("[Janus->Client] Raw: {}", payload);
-
-    if (!payload.contains("publishers") && !payload.contains("videoroom")) {
-      clientSession.sendMessage(message);
-      return;
-    }
-
+  private void handleJoinRequest(
+      WebSocketSession clientSession, WebSocketSession janusSession, String payload)
+      throws Exception { // NOPMD
     try {
       Map<String, Object> json = objectMapper.readValue(payload, new TypeReference<>() {});
-      String role = (String) clientSession.getAttributes().get("role");
+      Map<String, Object> body = (Map<String, Object>) json.get("body");
 
-      // 학생에게는 다른 학생의 캠을 숨기는 필터링 로직
-      // [정책] 학생은 "선생님 화면([선생]...)"만 볼 수 있음. 다른 "[학생]..."은 숨김.
-      if ("STUDENT".equals(role)) {
-        if (json.containsKey("publishers")) {
-          List<Map<String, Object>> publishers = (List<Map<String, Object>>) json.get("publishers");
-          List<Map<String, Object>> filtered = new ArrayList<>();
-          for (Map<String, Object> pub : publishers) {
-            String display = (String) pub.get("display");
-            // [선생] 으로 시작하는 것만 허용
-            if (display != null && display.startsWith("[선생]")) {
-              filtered.add(pub);
+      if (body != null && "join".equals(body.get("request")) && body.containsKey("room")) {
+        Long janusRoomId = ((Number) body.get("room")).longValue();
+        Long memberId = (Long) clientSession.getAttributes().get("memberId");
+        String memberName = (String) clientSession.getAttributes().get("memberName");
+
+        if (memberId != null) {
+          Session session = sessionRepository.findByJanusRoomId(janusRoomId).orElse(null);
+
+          if (session != null) {
+            Long instructorId = session.getCourse().getLeaner().getMember().getId();
+            String role = instructorId.equals(memberId) ? "TEACHER" : "STUDENT";
+            String displayName =
+                instructorId.equals(memberId) ? "[선생] " + memberName : "[학생] " + memberName;
+
+            if ("STUDENT".equals(role)
+                && !courseApplyRepository.existsByMemberIdAndCourseId(
+                    memberId, session.getCourse().getCourseId())) {
+              clientSession.close(CloseStatus.POLICY_VIOLATION);
+              return;
             }
+
+            clientSession.getAttributes().put("role", role);
+            clientSession.getAttributes().put("displayName", displayName);
+            clientSession.getAttributes().put("courseId", session.getCourse().getCourseId());
+            clientSession.getAttributes().put("sessionId", session.getSessionId());
+
+            body.put("display", displayName);
+            String newPayload = objectMapper.writeValueAsString(json);
+
+            if (janusSession != null && janusSession.isOpen()) {
+              janusSession.sendMessage(new TextMessage(newPayload));
+            }
+          } else {
+            clientSession.close(CloseStatus.POLICY_VIOLATION);
           }
-          json.put("publishers", filtered);
-          payload = objectMapper.writeValueAsString(json);
-        }
-        
-        if (json.containsKey("plugindata")) {
-            Map<String, Object> pluginData = (Map<String, Object>) json.get("plugindata");
-            if (pluginData != null && pluginData.containsKey("data")) {
-                Map<String, Object> data = (Map<String, Object>) pluginData.get("data");
-                if (data.containsKey("publishers")) {
-                    List<Map<String, Object>> publishers = (List<Map<String, Object>>) data.get("publishers");
-                    List<Map<String, Object>> filtered = new ArrayList<>();
-                    for (Map<String, Object> pub : publishers) {
-                        String display = (String) pub.get("display");
-                        if (display != null && display.startsWith("[선생]")) {
-                            filtered.add(pub);
-                        }
-                    }
-                    data.put("publishers", filtered);
-                    payload = objectMapper.writeValueAsString(json);
-                }
-            }
         }
       }
-
-      // [LOG] Janus -> Client (Sent)
-      log.info("[Janus->Client] Sending: {}", payload);
-      clientSession.sendMessage(new TextMessage(payload));
     } catch (Exception e) {
-      log.error("Error filtering msg", e);
-      clientSession.sendMessage(message);
+      log.error("Error join msg", e);
+    }
+  }
+
+  private String handlePublishRequest(WebSocketSession clientSession, String payload) {
+    try {
+      Map<String, Object> json = objectMapper.readValue(payload, new TypeReference<>() {});
+      Map<String, Object> body = (Map<String, Object>) json.get("body");
+
+      if (body != null
+          && ("publish".equals(body.get("request")) || "configure".equals(body.get("request")))) {
+        String role = (String) clientSession.getAttributes().get("role");
+        String displayName = (String) clientSession.getAttributes().get("displayName");
+        Long courseId = (Long) clientSession.getAttributes().get("courseId");
+        Long sessionId = (Long) clientSession.getAttributes().get("sessionId");
+
+        if (role != null && displayName != null) {
+          body.put("display", displayName);
+          if ("TEACHER".equals(role) && "publish".equals(body.get("request"))) {
+            String uuid = java.util.UUID.randomUUID().toString().replace("-", "");
+            String filename =
+                String.format(
+                    "%s_%d_%d_%s",
+                    uuid,
+                    courseId != null ? courseId : 0L,
+                    sessionId != null ? sessionId : 0L,
+                    String.valueOf(System.currentTimeMillis()));
+            body.put("record", true);
+            body.put("filename", filename);
+            body.put("rec_dir", "/opt/janus/recordings");
+          } else if ("STUDENT".equals(role)) {
+            body.put("record", false);
+          }
+          return objectMapper.writeValueAsString(json);
+        }
+      }
+    } catch (Exception e) {
+      log.error("Error publish msg", e);
+    }
+    return payload;
+  }
+
+  private void handleJanusMessage(WebSocketSession clientSession, TextMessage message)
+      throws Exception {
+    String payload = message.getPayload();
+    if (clientSession.isOpen()) {
+      clientSession.sendMessage(new TextMessage(payload));
     }
   }
 
   @Override
   public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-    WebSocketSession janusSession = clientToJanusMap.remove(session.getId());
-    if (janusSession != null) {
-      janusToClientMap.remove(janusSession.getId());
-      if (janusSession.isOpen()) {
-        janusSession.close();
+    // [PMD] 맵에서 제거하고 닫는 절차는 여기서 완결됨
+    WebSocketSession janusSession = clientToJanusMap.remove(session.getId()); // NOPMD
+
+    try {
+      if (janusSession != null) {
+        janusToClientMap.remove(janusSession.getId());
+        if (janusSession.isOpen()) {
+          janusSession.close(status);
+        }
       }
+    } finally {
+      cleanup(session.getId(), janusSession != null ? janusSession.getId() : null);
     }
   }
 
   private void cleanup(String clientId, String janusId) {
-    clientToJanusMap.remove(clientId);
-    janusToClientMap.remove(janusId);
+    if (clientId != null) {
+      clientToJanusMap.remove(clientId);
+      pendingMessages.remove(clientId);
+    }
+    if (janusId != null) {
+      janusToClientMap.remove(janusId);
+    }
   }
 }

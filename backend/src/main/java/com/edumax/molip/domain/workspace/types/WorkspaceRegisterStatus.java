@@ -5,7 +5,8 @@ public enum WorkspaceRegisterStatus {
   APPROVE("가입 완료"),
   REJECTED("반려됨");
   private String label;
-  private WorkspaceRegisterStatus(String label) {
+
+  WorkspaceRegisterStatus(String label) {
     this.label = label;
   }
 

@@ -11,12 +11,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class FindWorkspaceResponse {
-  private Long workspace_id;
+  private Long workspaceId;
   private String name;
-  private String logo_url;
+  private String logoUrl;
   private String description;
   private Integer memberCount;
   private Integer courseCount;
-  private String my_status;
-  private WorkspaceMemberRole my_role;
+  private String myStatus;
+  private WorkspaceMemberRole myRole;
 }

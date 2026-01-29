@@ -16,7 +16,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -52,7 +51,6 @@ public class Session {
   @Column(length = 255)
   private String description;
 
-
   @Column(name = "start_at", nullable = false)
   private LocalTime startAt;
 
@@ -61,6 +59,7 @@ public class Session {
 
   @Column(name = "end_at", nullable = false)
   private LocalTime endAt;
+
   @Column(name = "use_focus", nullable = false)
   private Boolean useFocus = false;
 
@@ -72,6 +71,7 @@ public class Session {
 
   @Column(name = "quiz_count", nullable = false)
   private Integer quizCount = 0;
+
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
@@ -125,16 +125,42 @@ public class Session {
   @OneToOne(mappedBy = "session")
   private LearnerAnalysis learnerAnalysis;
 
-  public void update(String title, String description, LocalDate date, LocalTime startAt,
-      LocalTime endAt, Boolean useFocus, Boolean useEmotion, Boolean useQuiz, Integer quizCount) {
-    if (title != null) this.title = title;
-    if (description != null) this.description = description;
-    if (date != null) this.date = date;
-    if (startAt != null) this.startAt = startAt;
-    if (endAt != null) this.endAt = endAt;
-    if (useFocus != null) this.useFocus = useFocus;
-    if (useEmotion != null) this.useEmotion = useEmotion;
-    if (useQuiz != null) this.useQuiz = useQuiz;
-    if (quizCount != null) this.quizCount = quizCount;
+  public void update(
+      String title,
+      String description,
+      LocalDate date,
+      LocalTime startAt,
+      LocalTime endAt,
+      Boolean useFocus,
+      Boolean useEmotion,
+      Boolean useQuiz,
+      Integer quizCount) {
+    if (title != null) {
+      this.title = title;
+    }
+    if (description != null) {
+      this.description = description;
+    }
+    if (date != null) {
+      this.date = date;
+    }
+    if (startAt != null) {
+      this.startAt = startAt;
+    }
+    if (endAt != null) {
+      this.endAt = endAt;
+    }
+    if (useFocus != null) {
+      this.useFocus = useFocus;
+    }
+    if (useEmotion != null) {
+      this.useEmotion = useEmotion;
+    }
+    if (useQuiz != null) {
+      this.useQuiz = useQuiz;
+    }
+    if (quizCount != null) {
+      this.quizCount = quizCount;
+    }
   }
 }

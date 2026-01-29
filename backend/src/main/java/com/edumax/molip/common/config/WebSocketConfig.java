@@ -4,11 +4,12 @@ import com.edumax.molip.common.jwt.JwtTokenProvider;
 import com.edumax.molip.common.model.MemberUserDetails;
 import com.edumax.molip.common.model.RedisProfile;
 import com.edumax.molip.common.util.JacksonUtil;
-import com.edumax.molip.domain.quiz.handler.GetRoomIdInterceptor;
+import com.edumax.molip.domain.quiz.handler.SttWebSocketInterceptor;
 import com.edumax.molip.domain.quiz.handler.VoiceForwardHandler;
-import com.edumax.molip.domain.session.janus.SessionJanusHandler; // import 추가
-import com.edumax.molip.domain.session.janus.JwtHandshakeInterceptor; // import 추가 (패키지 경로 확인 필요)
-
+import com.edumax.molip.domain.session.handler.EmotionForwardHandler;
+import com.edumax.molip.domain.session.handler.EmotionWebSocketInterceptor;
+import com.edumax.molip.domain.session.janus.JwtHandshakeInterceptor;
+import com.edumax.molip.domain.session.janus.SessionJanusHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -38,120 +39,118 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSocketConfigurer {
+  private final StringRedisTemplate redisTemplate;
+  private final JwtTokenProvider jwtTokenProvider;
 
-    private final StringRedisTemplate redisTemplate;
-    private final JwtTokenProvider jwtTokenProvider;
-    
-    // 핸들러 주입
-    private final VoiceForwardHandler voiceForwardHandler;
-    private final SessionJanusHandler sessionJanusHandler; // 추가됨
-    
-    // 인터셉터 주입
-    private final JwtHandshakeInterceptor jwtHandshakeInterceptor; // 추가됨
+  private final VoiceForwardHandler voiceForwardHandler; // 생성자 주입
+  private final EmotionForwardHandler emotionForwardHandler;
+  private final SessionJanusHandler sessionJanusHandler;
 
-    // =====================================================================
-    // 1. WebSocketHandler 등록 (Raw WebSocket: Voice & Janus)
-    // =====================================================================
-    @Override
-    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        // 기존: Voice Handler
-        registry.addHandler(voiceForwardHandler, "/voice/{roomId}")
-            .addInterceptors(new GetRoomIdInterceptor())
-            .setAllowedOriginPatterns("*");
+  private final JwtHandshakeInterceptor jwtHandshakeInterceptor;
 
-        // 추가됨: Janus Handler (/ws/janus)
-        registry.addHandler(sessionJanusHandler, "/ws/janus")
-            .addInterceptors(jwtHandshakeInterceptor)
-            .setAllowedOrigins("*"); // 또는 setAllowedOriginPatterns("*") 사용 가능
-    }
+  @Override
+  public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+    registry
+        .addHandler(voiceForwardHandler, "/voice/{roomId}") // 경로 패턴 설정
+        .addInterceptors(new SttWebSocketInterceptor()) // 인터셉터 등록
+        .setAllowedOriginPatterns("*");
 
-    // =====================================================================
-    // 2. STOMP 설정
-    // =====================================================================
-    @Override
-    public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/message")
-            .setAllowedOriginPatterns("*")
-            .withSockJS();
-    }
+    registry
+        .addHandler(emotionForwardHandler, "/emotion/*") // 경로 패턴 설정
+        .addInterceptors(new EmotionWebSocketInterceptor()) // 인터셉터 등록
+        .setAllowedOriginPatterns("*");
 
-    @Override
-    public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.setApplicationDestinationPrefixes("/app");
-        registry.enableSimpleBroker("/topic");
-    }
+    registry
+        .addHandler(sessionJanusHandler, "/ws/janus")
+        .addInterceptors(jwtHandshakeInterceptor)
+        .setAllowedOrigins("*");
+  }
 
-    // =====================================================================
-    // 3. STOMP 인증 인터셉터 (ChannelInterceptor)
-    // =====================================================================
-    private String PROFILE_KEY_FORMAT = "chatting:profile:%s";
+  @Override
+  public void registerStompEndpoints(StompEndpointRegistry registry) {
+    registry.addEndpoint("/message").setAllowedOriginPatterns("*").withSockJS();
+  }
 
-    private String getProfileKey(String email) {
-        return PROFILE_KEY_FORMAT.formatted(email);
-    }
+  private String PROFILE_KEY_FORMAT = "chatting:profile:%s";
 
-    @Override
-    public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(new ChannelInterceptor() {
-            @Override
-            public Message<?> preSend(Message<?> message, MessageChannel channel) {
-                StompHeaderAccessor acc = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-                
-                if (StompCommand.CONNECT.equals(acc.getCommand())) {
-                    try {
-                        String auth = acc.getFirstNativeHeader("Authorization");
-                        if (auth != null && auth.startsWith("Bearer ")) {
-                            String token = auth.substring(7);
-                            String email = jwtTokenProvider.getUsername(token);
+  private String getProfileKey(String email) {
+    return PROFILE_KEY_FORMAT.formatted(email);
+  }
 
-                            String redisKey = getProfileKey(email);
-                            String profileResult = redisTemplate.opsForValue().get(redisKey);
+  @Override
+  public void configureClientInboundChannel(ChannelRegistration registration) {
+    registration.interceptors(
+        new ChannelInterceptor() {
+          @Override
+          public Message<?> preSend(Message<?> message, MessageChannel channel) {
+            StompHeaderAccessor acc =
+                MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+            // connect 단계에서 인증 헤더 주입
+            if (StompCommand.CONNECT.equals(acc.getCommand())) {
+              try {
+                String auth = acc.getFirstNativeHeader("Authorization");
+                if (auth != null && auth.startsWith("Bearer ")) {
+                  String token = auth.substring(7);
+                  String email = jwtTokenProvider.getUsername(token);
 
-                            Authentication authentication = null;
-                            if (profileResult != null) {
-                                RedisProfile redisProfile = JacksonUtil.fromJson(profileResult, RedisProfile.class);
-                                MemberUserDetails userDetails = new MemberUserDetails(
-                                    redisProfile.getEmail(),
-                                    redisProfile.getName(),
-                                    redisProfile.getMemberId(),
-                                    redisProfile.getProfileImageUrl()
-                                );
-                                authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                            } else {
-                                authentication = jwtTokenProvider.getAuthentication(token);
-                                MemberUserDetails userDetails = (MemberUserDetails) authentication.getPrincipal();
-                                RedisProfile profile = RedisProfile.builder()
-                                    .email(userDetails.getUsername())
-                                    .memberId(userDetails.getMemberId())
-                                    .name(userDetails.getDisplayName())
-                                    .profileImageUrl(userDetails.getProfileImageUrl())
-                                    .build();
-                                redisTemplate.opsForValue().set(redisKey, JacksonUtil.toJson(profile));
-                            }
-                            acc.setUser(authentication);
-                        }
-                    } catch (Exception e) {
-                        log.error("STOMP Authentication fail: {}", e.getMessage());
-                        return null;
-                    }
+                  String redisKey = getProfileKey(email);
+                  String profileResult = redisTemplate.opsForValue().get(redisKey);
+
+                  Authentication authentication = null;
+                  if (profileResult != null) {
+                    RedisProfile redisProfile =
+                        JacksonUtil.fromJson(profileResult, RedisProfile.class);
+                    MemberUserDetails userDetails =
+                        new MemberUserDetails(
+                            redisProfile.getEmail(),
+                            redisProfile.getName(),
+                            redisProfile.getMemberId(),
+                            redisProfile.getProfileImageUrl());
+                    authentication =
+                        new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                  } else {
+                    authentication = jwtTokenProvider.getAuthentication(token);
+                    MemberUserDetails userDetails =
+                        (MemberUserDetails) authentication.getPrincipal();
+                    RedisProfile profile =
+                        RedisProfile.builder()
+                            .email(userDetails.getUsername())
+                            .memberId(userDetails.getMemberId())
+                            .name(userDetails.getDisplayName())
+                            .profileImageUrl(userDetails.getProfileImageUrl())
+                            .build();
+                    redisTemplate.opsForValue().set(redisKey, JacksonUtil.toJson(profile));
+                  }
+                  acc.setUser(authentication);
                 }
-                return message;
+              } catch (Exception e) {
+                log.error("STOMP Authentication fail: {}", e.getMessage());
+                return null; // 연결 거부
+              }
             }
+            return message;
+          }
         });
-    }
+  }
 
-    // =====================================================================
-    // 4. WebSocket 컨테이너 설정 (버퍼 사이즈 등)
-    // =====================================================================
-    @Bean
-    public ServletServerContainerFactoryBean createWebSocketContainer() {
-        ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
-        
-        container.setMaxTextMessageBufferSize(512 * 1024); // 512KB
-        
-        // 기존 1MB 유지 (JanusConfig의 512KB 요구사항도 충분히 수용함)
-        container.setMaxBinaryMessageBufferSize(1024 * 1024); // 1MB
+  @Override
+  public void configureMessageBroker(MessageBrokerRegistry registry) {
+    registry.setApplicationDestinationPrefixes("/app");
+    registry.enableSimpleBroker("/topic");
+  }
 
-        return container;
-    }
+  @Bean
+  public ServletServerContainerFactoryBean createWebSocketContainer() {
+    ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
+
+    // 최대 텍스트 메시지 버퍼 크기 (필요 시)
+    container.setMaxTextMessageBufferSize(512 * 1024); // 512KB
+
+    // 최대 바이너리 메시지 버퍼 크기 (현재 발생한 문제 해결 핵심)
+    // 보낸 파일이 약 115KB이므로, 넉넉하게 1MB(1024 * 1024) 정도로 설정합니다.
+    container.setMaxBinaryMessageBufferSize(1024 * 1024);
+
+    return container;
+  }
 }

@@ -20,6 +20,7 @@ import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberRes
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
 import com.edumax.molip.domain.workspace.service.WorkspaceService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -32,8 +33,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/workspaces")
@@ -72,7 +71,8 @@ public class WorkspaceController {
   public ResponseEntity<List<FindWorkspaceCoursesByIdResponse>> findWorkspaceCoursesById(
       @PathVariable(name = "workspace_id") Long workspaceId,
       @AuthenticationPrincipal MemberUserDetails member) {
-    return ResponseEntity.ok(workspaceService.findWorkspaceCoursesById(workspaceId, member.getMemberId()));
+    return ResponseEntity.ok(
+        workspaceService.findWorkspaceCoursesById(workspaceId, member.getMemberId()));
   }
 
   @GetMapping("/me")

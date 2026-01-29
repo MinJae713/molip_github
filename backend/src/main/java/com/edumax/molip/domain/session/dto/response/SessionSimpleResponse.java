@@ -27,9 +27,20 @@ public class SessionSimpleResponse {
   private Boolean isActive;
 
   @Builder
-  public SessionSimpleResponse(Long sessionId, String title, String description, LocalDate date,
-      LocalTime startAt, LocalTime endAt, Boolean useFocus, Boolean useEmotion, Boolean useQuiz, Integer quizCount,
-      Long courseId, Long janusRoomId, Boolean isActive) {
+  public SessionSimpleResponse(
+      Long sessionId,
+      String title,
+      String description,
+      LocalDate date,
+      LocalTime startAt,
+      LocalTime endAt,
+      Boolean useFocus,
+      Boolean useEmotion,
+      Boolean useQuiz,
+      Integer quizCount,
+      Long courseId,
+      Long janusRoomId,
+      Boolean isActive) {
     this.sessionId = sessionId;
     this.title = title;
     this.description = description;

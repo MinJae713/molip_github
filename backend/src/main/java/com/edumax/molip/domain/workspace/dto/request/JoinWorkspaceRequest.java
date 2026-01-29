@@ -4,11 +4,10 @@ import com.edumax.molip.domain.workspace.types.WorkspaceMemberRole;
 import com.edumax.molip.domain.workspace.types.WorkspaceRegisterStatus;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -23,10 +22,10 @@ public class JoinWorkspaceRequest {
 
   @NotNull(message = "멤버 아이디는 필수값입니다.")
   @Positive(message = "멤버 아이디는 양수여야 합니다.")
-  private Long member_id;
+  private Long memberId;
 
   @NotNull(message = "PENDING, APPROVE, REJECTED 셋 중에서 지정해 주세요")
   private WorkspaceRegisterStatus status; // PENDING, APPROVE, REJECTED
 
-  private LocalDateTime applied_at;
+  private LocalDateTime appliedAt;
 }

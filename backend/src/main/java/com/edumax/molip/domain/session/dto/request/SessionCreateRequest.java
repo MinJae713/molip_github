@@ -25,17 +25,13 @@ public class SessionCreateRequest {
   private LocalTime endAt;
 
   // Options
-  @Builder.Default
-  private Boolean useFocus = false;
-  
-  @Builder.Default
-  private Boolean useEmotion = false;
-  
-  @Builder.Default
-  private Boolean useQuiz = false;
-  
-  @Builder.Default
-  private Integer quizCount = 0;
+  @Builder.Default private Boolean useFocus = false;
+
+  @Builder.Default private Boolean useEmotion = false;
+
+  @Builder.Default private Boolean useQuiz = false;
+
+  @Builder.Default private Integer quizCount = 0;
 
   // Optional: 퀴즈도 함께 생성할 경우 사용
   private List<QuizDto> quizzes;

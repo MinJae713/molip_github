@@ -1,6 +1,5 @@
 package com.edumax.molip.domain.session.controller;
 
-import com.edumax.molip.domain.session.dto.request.SessionCreateRequest;
 import com.edumax.molip.common.model.MemberUserDetails;
 import com.edumax.molip.domain.session.dto.request.SessionCreateRequest;
 import com.edumax.molip.domain.session.dto.request.SessionUpdateRequest;
@@ -8,7 +7,10 @@ import com.edumax.molip.domain.session.dto.response.SessionDetailResponse;
 import com.edumax.molip.domain.session.dto.response.SessionSimpleResponse;
 import com.edumax.molip.domain.session.dto.response.SessionStartResponse;
 import com.edumax.molip.domain.session.service.SessionService;
+import com.edumax.molip.domain.session.service.SessionServiceImpl;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,43 +23,64 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/sessions")
 @RequiredArgsConstructor
+@RequestMapping("/session")
 public class SessionController {
-
   private final SessionService sessionService;
+  private final SessionServiceImpl sessionServiceImpl;
+
+  @PostMapping("/start/{sessionId}")
+  public ResponseEntity<Map<String, String>> startCourse(@PathVariable String sessionId) {
+    sessionServiceImpl.startCourse(sessionId);
+    return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "강의 시작"));
+  }
+
+  @PostMapping("/end/{sessionId}")
+  public ResponseEntity<?> endCourse(@PathVariable String sessionId) {
+    sessionServiceImpl.endCourse(sessionId);
+    return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "강의 종료"));
+  }
 
   @PostMapping
   public ResponseEntity<Long> createSession(
       @RequestBody SessionCreateRequest request,
       @AuthenticationPrincipal MemberUserDetails userDetails) {
-    
+
     Long sessionId = sessionService.createSession(request, userDetails.getMemberId());
     return ResponseEntity.ok(sessionId);
   }
-  
+
   @GetMapping
   public ResponseEntity<java.util.List<SessionSimpleResponse>> getSessionList(
       @org.springframework.web.bind.annotation.RequestParam Long courseId,
       @AuthenticationPrincipal MemberUserDetails userDetails) {
-    
+
     return ResponseEntity.ok(sessionService.getSessionList(courseId, userDetails.getMemberId()));
   }
 
   @GetMapping("/{sessionId}/simple")
   public ResponseEntity<SessionSimpleResponse> getSessionSimple(
-      @PathVariable Long sessionId,
-      @AuthenticationPrincipal MemberUserDetails userDetails) {
-    SessionSimpleResponse response = sessionService.getSessionSimple(sessionId, userDetails.getMemberId());
+      @PathVariable Long sessionId, @AuthenticationPrincipal MemberUserDetails userDetails) {
+    SessionSimpleResponse response =
+        sessionService.getSessionSimple(sessionId, userDetails.getMemberId());
     return ResponseEntity.ok(response);
   }
 
   @GetMapping("/{sessionId}/detail")
   public ResponseEntity<SessionDetailResponse> getSessionDetail(
-      @PathVariable Long sessionId,
-      @AuthenticationPrincipal MemberUserDetails userDetails) {
-    SessionDetailResponse response = sessionService.getSessionDetail(sessionId, userDetails.getMemberId());
+      @PathVariable Long sessionId, @AuthenticationPrincipal MemberUserDetails userDetails) {
+    SessionDetailResponse response =
+        sessionService.getSessionDetail(sessionId, userDetails.getMemberId());
     return ResponseEntity.ok(response);
+  }
+
+  @GetMapping("/{sessionId}/connection")
+  public ResponseEntity<com.edumax.molip.domain.session.dto.response.SessionConnectionResponse>
+      getSessionConnection(
+          @PathVariable Long sessionId, @AuthenticationPrincipal MemberUserDetails userDetails) {
+
+    return ResponseEntity.ok(
+        sessionService.getSessionConnection(sessionId, userDetails.getMemberId()));
   }
 
   @PutMapping("/{sessionId}")
@@ -65,7 +88,7 @@ public class SessionController {
       @PathVariable Long sessionId,
       @RequestBody SessionUpdateRequest request,
       @AuthenticationPrincipal MemberUserDetails userDetails) {
-    
+
     try {
       sessionService.updateSession(sessionId, request, userDetails.getMemberId());
       return ResponseEntity.ok("수정 완료");
@@ -76,8 +99,7 @@ public class SessionController {
 
   @DeleteMapping("/{sessionId}")
   public ResponseEntity<String> deleteSession(
-      @PathVariable Long sessionId,
-      @AuthenticationPrincipal MemberUserDetails userDetails) {
+      @PathVariable Long sessionId, @AuthenticationPrincipal MemberUserDetails userDetails) {
     try {
       sessionService.deleteSession(sessionId, userDetails.getMemberId());
       return ResponseEntity.ok("삭제 완료");
@@ -88,11 +110,22 @@ public class SessionController {
 
   @PostMapping("/{sessionId}/start")
   public ResponseEntity<SessionStartResponse> startSession(
-      @PathVariable Long sessionId,
-      @AuthenticationPrincipal MemberUserDetails userDetails) {
-      
-    SessionStartResponse response = sessionService.startSession(sessionId, userDetails.getMemberId());
+      @PathVariable Long sessionId, @AuthenticationPrincipal MemberUserDetails userDetails) {
+
+    SessionStartResponse response =
+        sessionService.startSession(sessionId, userDetails.getMemberId());
     return ResponseEntity.ok(response);
   }
-}
 
+  @PostMapping("/{sessionId}/stop")
+  public ResponseEntity<String> stopSession(
+      @PathVariable Long sessionId, @AuthenticationPrincipal MemberUserDetails userDetails) {
+
+    try {
+      sessionService.stopSession(sessionId, userDetails.getMemberId());
+      return ResponseEntity.ok("세션이 종료되었습니다.");
+    } catch (Exception e) {
+      return ResponseEntity.status(400).body(e.getMessage());
+    }
+  }
+}

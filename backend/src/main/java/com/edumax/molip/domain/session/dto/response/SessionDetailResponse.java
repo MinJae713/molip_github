@@ -29,9 +29,18 @@ public class SessionDetailResponse {
   private List<QuizInfo> quizzes;
 
   @Builder
-  public SessionDetailResponse(Long sessionId, String title, String description, LocalDate date,
-      LocalTime startAt, LocalTime endAt, Boolean useFocus, Boolean useEmotion, Boolean useQuiz,
-      Integer quizCount, List<QuizInfo> quizzes) {
+  public SessionDetailResponse(
+      Long sessionId,
+      String title,
+      String description,
+      LocalDate date,
+      LocalTime startAt,
+      LocalTime endAt,
+      Boolean useFocus,
+      Boolean useEmotion,
+      Boolean useQuiz,
+      Integer quizCount,
+      List<QuizInfo> quizzes) {
     this.sessionId = sessionId;
     this.title = title;
     this.description = description;
@@ -46,9 +55,8 @@ public class SessionDetailResponse {
   }
 
   public static SessionDetailResponse of(Session session, List<ExitQuiz> exitQuizzes) {
-    List<QuizInfo> quizInfos = exitQuizzes.stream()
-        .map(QuizInfo::from)
-        .collect(Collectors.toList());
+    List<QuizInfo> quizInfos =
+        exitQuizzes.stream().map(QuizInfo::from).collect(Collectors.toList());
 
     return SessionDetailResponse.builder()
         .sessionId(session.getSessionId())
@@ -83,9 +91,8 @@ public class SessionDetailResponse {
       return QuizInfo.builder()
           .question(quiz.getQuestion())
           .answerNumber(quiz.getAnswerNumber())
-          .choices(quiz.getExitQuizAnswers().stream()
-              .map(AnswerInfo::from)
-              .collect(Collectors.toList()))
+          .choices(
+              quiz.getExitQuizAnswers().stream().map(AnswerInfo::from).collect(Collectors.toList()))
           .build();
     }
   }
@@ -103,10 +110,7 @@ public class SessionDetailResponse {
     }
 
     public static AnswerInfo from(ExitQuizAnswer answer) {
-      return AnswerInfo.builder()
-          .number(answer.getNumber())
-          .content(answer.getAnswer())
-          .build();
+      return AnswerInfo.builder().number(answer.getNumber()).content(answer.getAnswer()).build();
     }
   }
 }

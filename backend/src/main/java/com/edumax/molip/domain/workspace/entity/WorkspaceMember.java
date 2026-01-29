@@ -102,7 +102,7 @@ public class WorkspaceMember {
 
   @OneToMany(mappedBy = "workspaceMember")
   @Builder.Default
-  private List<FeelingGraph> feelingGraphs = new ArrayList<>();
+  private List<EmotionGraph> emotionGraph = new ArrayList<>();
 
   @OneToMany(mappedBy = "workspaceMember")
   @Builder.Default
