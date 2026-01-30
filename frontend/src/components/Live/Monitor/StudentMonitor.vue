@@ -5,21 +5,23 @@ import { useLiveStore } from '@/stores/live';
 const liveStore = useLiveStore();
 const monitorVideoRef = ref<HTMLVideoElement | null>(null);
 
-// [중요] 모니터링 중인 학생 객체 찾기
-// 스토어의 participants 목록에서 현재 monitoringStudentId와 일치하는 학생 정보를 실시간으로 가져옵니다.
+// 모니터링 중인 학생 객체 찾기
 const targetStudent = computed(() => 
   liveStore.participants.find(p => Number(p.id) === liveStore.monitoringStudentId)
 );
 
-// 모니터링 스트림 연결 (srcObject 주입)
+// 🔥 개선: 모니터링 스트림 연결 (immediate: true 추가)
 watch(() => liveStore.monitoringStream, (stream) => {
   if (monitorVideoRef.value) {
-    // Vue의 반응형 시스템과 비디오 태그를 연결하는 핵심 코드
     monitorVideoRef.value.srcObject = stream;
+    // 🔥 추가: 스트림이 null이면 명시적으로 제거
+    if (!stream && monitorVideoRef.value.srcObject) {
+      monitorVideoRef.value.srcObject = null;
+    }
   }
 }, { immediate: true });
 
-// 컴포넌트가 사라지기 전에 모니터링 정리 (리소스 해제 안전장치)
+// 컴포넌트가 사라지기 전에 모니터링 정리
 onBeforeUnmount(() => {
   liveStore.stopMonitoring();
 });
@@ -45,7 +47,7 @@ onBeforeUnmount(() => {
       <video 
         ref="monitorVideoRef"
         autoplay 
-        playsinline 
+        playsinline
         class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
       ></video>
       
@@ -56,8 +58,9 @@ onBeforeUnmount(() => {
         </p>
       </div>
 
+      <!-- 🔥 개선: 스트림 없을 때 표시 조건 명확히 -->
       <div v-if="!liveStore.monitoringStream" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80">
-        <span class="material-symbols-outlined text-3xl text-slate-700 mb-2">videocam_off</span>
+        <span class="material-symbols-outlined text-3xl text-slate-700 mb-2 animate-pulse">videocam_off</span>
         <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Connecting Stream...</p>
       </div>
     </div>

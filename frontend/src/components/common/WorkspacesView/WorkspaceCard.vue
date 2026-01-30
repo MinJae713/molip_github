@@ -4,7 +4,7 @@
             <div class="flex items-center gap-4">
                 <div
                     :class="['size-14 rounded-lg border flex items-center justify-center overflow-hidden transition-colors', theme.bg, theme.border]">
-                    <img v-if="workspace.logo_url" :src="workspace.logo_url" :alt="workspace.name"
+                    <img v-if="workspace.logoUrl" :src="workspace.logoUrl" :alt="workspace.name"
                         class="w-full h-full object-cover" />
                 </div>
                 <div>
@@ -16,7 +16,7 @@
             <span
                 :class="['px-3 py-1 whitespace-nowrap text-xs font-bold rounded-full flex items-center gap-1 transition-colors', buttonConfig.badgeClass]">
                 <span
-                    :class="['size-2 rounded-full', buttonConfig.dotClass, { 'animate-pulse': workspace.my_status === 2 }]"></span>
+                    :class="['size-2 rounded-full', buttonConfig.dotClass, { 'animate-pulse': workspace.myStatus === 2 }]"></span>
                 {{ buttonConfig.text === '입장하기' ? '활동 중' : buttonConfig.text }}
             </span>
         </div>
@@ -30,7 +30,7 @@
                 <span>멤버 {{ (workspace.memberCount || 0).toLocaleString() }}명</span>
             </div>
 
-            <button @click="handleAction" :disabled="workspace.my_status === 1" :class="[
+            <button @click="handleAction" :disabled="workspace.myStatus === 1" :class="[
                 buttonConfig.colorClass,
                 'text-white text-sm font-bold py-2.5 px-5 rounded-lg transition-all duration-200 shadow-md flex items-center gap-2 group-hover:shadow-lg disabled:opacity-70'
             ]">
@@ -83,20 +83,20 @@ const buttonConfig = computed(() => {
         },
     };
 
-    return configs[(props.workspace.my_status || 0) as keyof typeof configs] ?? configs[0];
+    return configs[(props.workspace.myStatus || 0) as keyof typeof configs] ?? configs[0];
 });
 
 // 3. 상태 텍스트는 버튼 텍스트와 분리될 수 있으므로 별도 관리
 const statusText = computed(() => {
-    if (props.workspace.my_status === 2) return '활동 중';
-    if (props.workspace.my_status === 1) return '대기 중';
+    if (props.workspace.myStatus === 2) return '활동 중';
+    if (props.workspace.myStatus === 1) return '대기 중';
     return '미가입';
 });
 
 // 4. 클릭 핸들러 (대기 상태일 때 로직 방지)
 const handleAction = () => {
-    if (props.workspace.my_status === 1) return; // 대기 중일 때는 무시
-    emit(buttonConfig.value.action, props.workspace.workspace_id, props.workspace.my_role);
+    if (props.workspace.myStatus === 1) return; // 대기 중일 때는 무시
+    emit(buttonConfig.value.action, props.workspace.workspaceId, props.workspace.myRole || undefined);
 };
 
 // 테마 색상 맵

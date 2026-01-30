@@ -53,9 +53,11 @@ export const useLearnerSessionStore = defineStore("learnerSession", () => {
     sessionsList.value = []; // 이전 데이터 초기화
 
     try {
-      const response = await api.get(
-        `/workspace/${workspaceId}/learner/courses/${courseId}`,
-      );
+      const response = await api.get("/session", {
+        params: {
+          courseId: courseId,
+        },
+      });
       sessionsList.value = response.data;
     } catch (err: any) {
       console.error("강의 세션 불러오기 실패!: ", err);

@@ -32,7 +32,7 @@
                     </div>
 
                     <div class="space-y-4">
-                        <CurriculumList v-for="(session, index) in sessionStore.sessionsList" :key="session.session_id"
+                        <CurriculumList v-for="(session, index) in sessionStore.sessionsList" :key="session.sessionId"
                             :session="session" :index="index" />
 
                         <div v-if="sessionStore.sessionsList.length === 0" class="py-20 text-center text-slate-400">

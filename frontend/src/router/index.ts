@@ -13,6 +13,7 @@ import TestView from "@/views/Common/TestView.vue";
 import WorkspacesView from "@/views/Common/WorkspacesView.vue";
 import MypageView from "@/views/Common/MypageView.vue";
 import LoginView from "@/views/Common/LoginView.vue";
+import SignUpView from "@/views/Common/SingUpView.vue";
 
 // 강사 라우트
 import TrainerWorkspaceView from "@/views/Trainer/TrainerWorkspaceView.vue";
@@ -52,6 +53,12 @@ const router = createRouter({
       path: "/login",
       name: "login",
       component: LoginView,
+      meta: { guestOnly: true },
+    },
+    {
+      path: "/signup",
+      name: "signup",
+      component: SignUpView,
       meta: { guestOnly: true },
     },
     {

@@ -34,7 +34,7 @@
         </div>
         <!-- 강의 목록 -->
         <div v-if="displayedCourses.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            <TrainerMyCourseCard v-for="course in displayedCourses" :key="course.course_id" :course="course"
+            <TrainerMyCourseCard v-for="course in displayedCourses" :key="course.courseId" :course="course"
                 @enter-course="handleEnterCourse" @enroll-course="handleEnrollCourse" />
         </div>
 
@@ -54,7 +54,7 @@
 
         <!-- 과정 생성 모달 -->
         <CreateCourseModal v-if="workspaceId" :is-open="isCreateModalOpen" :workspace-id="workspaceId"
-            :user-id="userStore.user.member_id" @close="isCreateModalOpen = false" @created="handleCourseCreated" />
+            :user-id="userStore.user.memberId" @close="isCreateModalOpen = false" @created="handleCourseCreated" />
     </div>
 </template>
 <script setup lang="ts">
@@ -85,19 +85,19 @@ const workspaceId = computed(() => {
 // 활성화 된 코스 필터링
 const trainerOngoingCourses = computed(() =>
     managedCourses.value.filter(course =>
-        !course.course_status || course.course_status === 'active'
+        !course.courseStatus || course.courseStatus === 'active'
     )
 );
 // 모집중 코스 필터링
 const recruitingCourses = computed(() =>
     managedCourses.value.filter(course =>
-        course.course_status === 'recruiting'
+        course.courseStatus === 'recruiting'
     )
 );
 // 종료된 코스 필터링
 const completedCourses = computed(() =>
     managedCourses.value.filter(course =>
-        course.course_status === 'ended' || course.progress_rate === 100
+        course.courseStatus === 'ended' || course.progressRate === 100
     )
 );
 

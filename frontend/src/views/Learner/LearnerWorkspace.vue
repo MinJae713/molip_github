@@ -3,11 +3,11 @@
         <!-- Stats Section -->
         <section class="grid grid-cols-1 md:grid-cols-3 gap-6" v-if="workspaceStats">
             <StatCard title="나의 학습 진행률" :value="`${workspaceStats.progress.value}%`" icon="donut_large" color="indigo"
-                :trend="workspaceStats.progress.trend" :trendType="workspaceStats.progress.trend_type"
-                :trendIcon="workspaceStats.progress.trend_type === 'up' ? 'trending_up' : 'trending_down'" />
+                :trend="workspaceStats.progress.trend" :trendType="workspaceStats.progress.trendType"
+                :trendIcon="workspaceStats.progress.trendType === 'up' ? 'trending_up' : 'trending_down'" />
 
             <StatCard title="예정된 세션" :value="workspaceStats.sessions.value" icon="calendar_month" color="blue"
-                :subText="workspaceStats.sessions.next_session ? `다음: ${workspaceStats.sessions.next_session}` : '예정된 세션 없음'"
+                :subText="workspaceStats.sessions.nextSession ? `다음: ${workspaceStats.sessions.nextSession}` : '예정된 세션 없음'"
                 :trend="workspaceStats.sessions.value > 0 ? undefined : undefined" />
 
             <StatCard title="수료한 과정" :value="workspaceStats.completed.value" icon="emoji_events" color="orange"
@@ -61,9 +61,9 @@
 
             <!-- Course Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" v-if="filteredCourses.length > 0">
-                <DashboardCourseCard v-for="course in filteredCourses" :key="course.course_id" :course="course"
+                <DashboardCourseCard v-for="course in filteredCourses" :key="course.courseId" :course="course"
                     @open-curriculum="openCurriculumModal" @enroll-course="handleEnrollCourse"
-                    @enter-course="handleEnterCourse" />
+                    @enter-course="handleEnterCourse(course.courseId)" />
             </div>
             <div v-else class="text-center py-20 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                 <p class="text-slate-500">등록된 강의가 없습니다.</p>
@@ -108,7 +108,7 @@ const selectedCourse = ref<Course>({} as Course);
 const mockSessions = ref<Session[]>([]);
 
 const openCurriculumModal = async (courseId: string | number) => {
-    const course = workspaceCourses.value.find(c => String(c.course_id) === String(courseId));
+    const course = workspaceCourses.value.find(c => String(c.courseId) === String(courseId));
     if (course) {
         selectedCourse.value = course;
 
@@ -125,7 +125,7 @@ const closeModal = () => {
 };
 
 const handleEnrollCourse = async (courseId: string | number) => {
-    const course = workspaceCourses.value.find(c => String(c.course_id) === String(courseId));
+    const course = workspaceCourses.value.find(c => String(c.courseId) === String(courseId));
     if (!course) return;
 
     if (!confirm(`"${course.title}" 강의를 수강 신청하시겠습니까?`)) return;
@@ -148,8 +148,9 @@ const handleEnrollCourse = async (courseId: string | number) => {
 
 const handleEnterCourse = (courseId: string | number) => {
     const currentWorkspaceId = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id;
+    console.log(currentWorkspaceId);
+    console.log(courseId);
     if (!currentWorkspaceId) return;
-
     router.push({
         name: 'workspaceLearnerCourseDetail',
         params: {
@@ -175,7 +176,6 @@ const sortOptionLabel = computed(() => {
 
 const filteredCourses = computed(() => {
     let result = [...workspaceCourses.value];
-
     // Filter by search query
     if (searchQuery.value) {
         const query = searchQuery.value.toLowerCase();
@@ -184,15 +184,13 @@ const filteredCourses = computed(() => {
             course.description.toLowerCase().includes(query)
         );
     }
-
     // Filter by date range (last_accessed_at 기준)
     if (filterStartDate.value || filterEndDate.value) {
         result = result.filter(course => {
-            if (!course.current_lessons || course.current_lessons === 0) {
+            if (!course.currentLessons || course.currentLessons === 0) {
                 // 수강하지 않은 강의는 날짜 필터에서 제외하지 않음
                 return true;
             }
-
             // last_accessed_at이 없는 경우는 필터링에서 제외
             const accessedAt = (course as any).last_accessed_at;
             if (!accessedAt) return false;
@@ -209,21 +207,19 @@ const filteredCourses = computed(() => {
                 endDate.setHours(23, 59, 59, 999); // 종료일 포함
                 if (courseDate > endDate) return false;
             }
-
             return true;
         });
     }
-
     // Sort (Simple implementation)
     switch (sortOption.value) {
         case 'newest':
-            result.sort((a, b) => Number(b.course_id) - Number(a.course_id));
+            result.sort((a, b) => Number(b.courseId) - Number(a.courseId));
             break;
         case 'oldest':
-            result.sort((a, b) => Number(a.course_id) - Number(b.course_id));
+            result.sort((a, b) => Number(a.courseId) - Number(b.courseId));
             break;
         case 'deadline':
-            result.sort((a, b) => (a.d_day || 999) - (b.d_day || 999));
+            result.sort((a, b) => (a.dDay || 999) - (b.dDay || 999));
             break;
     }
 

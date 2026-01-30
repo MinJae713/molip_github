@@ -9,6 +9,7 @@ export default {
         extend: {
             colors: {
                 "primary": "#3B82F6",
+                "primary-dark": "#1D4ED8",
                 "indigo-brand": "#4F46E5",
                 "indigo-dark": "#3730A3",
                 "electric-blue": "#00E5FF",

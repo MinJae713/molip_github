@@ -1,11 +1,14 @@
 <template>
-    <div class="bg-slate-50 text-slate-900 min-h-screen flex flex-col overflow-hidden">
+    <div class="bg-slate-50 text-slate-900 h-screen flex flex-col overflow-hidden relative">
+        <!-- Device Setup Modal -->
+        <DeviceSetupModal v-if="!isSetupComplete" @join="handleJoinSession" />
+
         <LiveSessionHeader sessionTitle="인공지능 윤리와 실제 실습" sessionSubtitle="디지털 비즈니스 전략 강의 (4주차)"
             :elapsedTime="elapsedTime" />
         <main class="flex flex-1 overflow-hidden p-6 gap-6 relative">
             <LiveVideoArea :focusStatus="focusStatus" :showWarning="showWarning" @close-warning="showWarning = false"
                 :mainStream="videoStore.mainStream" :pipStream="videoStore.pipStream"
-                :userRole="workspaceStore.currentWorkspace?.my_role">
+                :localStream="videoStore.localStream" :userRole="workspaceStore.currentWorkspace?.myRole">
                 <template #controls>
                     <LiveControlDock :isMicOn="isMicOn" :isCameraOn="isCameraOn" :isHandRaised="isHandRaised"
                         @toggle-mic="toggleMic" @toggle-camera="toggleCamera" @raise-hand="raiseHand" />
@@ -40,6 +43,7 @@ import LiveSidebar from '@/components/Learner/LearnerLiveSession/LiveSidebar.vue
 import LiveQuizCard from '@/components/Learner/LearnerLiveSession/LiveQuizCard.vue';
 import EngagementStats from '@/components/Learner/LearnerLiveSession/EngagementStats.vue';
 import LiveChatContainer from '@/components/Learner/LearnerLiveSession/LiveChatContainer.vue';
+import DeviceSetupModal from '@/components/Learner/LearnerLiveSession/DeviceSetupModal.vue';
 
 const route = useRoute();
 const videoStore = useVideoRoomStore();
@@ -65,14 +69,30 @@ const currentEmotion = ref({
 });
 // Timer
 let timerInterval: number | null = null;
+const isSetupComplete = ref(false);
 
-onMounted(async () => {
-    // 1. 타이머 시작
+const handleJoinSession = () => {
+    isSetupComplete.value = true;
+    startSessionTimer();
+    // 방 입장 로직 (학생 시나리오)
+    const sessionId = route.params.sessionId;
+    // videoStore.joinRoom(...); // 추후 구현
+    // 일단 카메라 자동 송출 (videoRoom store에서 localStream 있으면 활용됨)
+    videoStore.publishCamera();
+};
+
+const startSessionTimer = () => {
     timerInterval = window.setInterval(() => {
         elapsedTime.value++;
     }, 1000);
-    // 2. 방 입장 로직 (학생 시나리오)
-    const sessionId = route.params.sessionId;
+}
+
+onMounted(async () => {
+    // 1. 타이머 시작 -> 입장 후 시작으로 변경
+    // startSessionTimer();
+
+    // 2. 방 정보 사전 로딩 (Device Setup 중에도 방 존재 여부는 확인 가능)
+    // await videoStore.fetchRoomInfo(route.params.sessionId);
 });
 
 onUnmounted(() => {
@@ -82,14 +102,15 @@ onUnmounted(() => {
 // 화면 컨트롤 토글
 const toggleMic = () => {
     isMicOn.value = !isMicOn.value;
-    // TODO: videoStore.toggleAudio(isMicOn.value)
+    videoStore.setAudioEnabled(isMicOn.value);
 };
 const toggleCamera = () => {
     isCameraOn.value = !isCameraOn.value;
-    if (isCameraOn.value) {
+    videoStore.setVideoEnabled(isCameraOn.value);
+
+    if (isCameraOn.value && !videoStore.camHandle) {
+        // 만약 어떤 이유로 퍼블리싱이 안되어 있다면 시도
         videoStore.publishCamera();
-    } else {
-        // TODO: unpublish logic
     }
 };
 

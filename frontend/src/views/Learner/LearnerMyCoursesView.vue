@@ -43,7 +43,7 @@
 
         <!-- 강의 목록 -->
         <div v-if="displayedCourses.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            <LearnerMyCourseCard v-for="course in displayedCourses" :key="course.course_id" :course="course"
+            <LearnerMyCourseCard v-for="course in displayedCourses" :key="course.courseId" :course="course"
                 @enter-course="handleEnterCourse" @enroll-course="handleEnrollCourse" />
         </div>
 
@@ -95,13 +95,13 @@ const homeRoute = computed(() => {
 // progress_rate로 학습 진행 상태를 구분 (0-99: 진행중/대기중, 100: 완료)
 const ongoingCourses = computed(() =>
     myEnrolledCourses.value.filter(course =>
-        course.progress_rate < 100
+        course.progressRate < 100
     )
 );
 
 const completedCourses = computed(() =>
     myEnrolledCourses.value.filter(course =>
-        course.progress_rate === 100
+        course.progressRate === 100
     )
 );
 const likedCoursesCount = computed(() => likedCourses.value.length);
@@ -121,7 +121,7 @@ onMounted(async () => {
     if (wsId) {
         await courseStore.fetchMyEnrolledCourses(
             wsId,
-            userStore.user.member_id,
+            userStore.user.memberId,
             'LEARNER'
         );
     }
@@ -148,13 +148,13 @@ const handleEnterCourse = (courseId: string | number) => {
 };
 const handleEnrollCourse = async (courseId: string | number) => {
     if (confirm('이 과정을 수항신청하시겠습니까?')) {
-        const success = await courseStore.enrollCourse(courseId, user.value.member_id);
+        const success = await courseStore.enrollCourse(courseId, user.value.memberId);
         if (success) {
             alert('수강신청이 성공적으로 완료되었습니다. 관리자 승인을 기다려주세요.');
             // 목록 새로고침
             const wsId = Array.isArray(workspaceId.value) ? workspaceId.value[0] : workspaceId.value;
             if (wsId) {
-                await courseStore.fetchMyEnrolledCourses(wsId, user.value.member_id, 'LEARNER');
+                await courseStore.fetchMyEnrolledCourses(wsId, user.value.memberId, 'LEARNER');
             }
         } else {
             alert('수강신청에 실패했습니다. 다시 시도해주세요.');

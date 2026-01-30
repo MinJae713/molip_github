@@ -70,7 +70,7 @@ const handleSearch = async () => {
 
 // [신청 단계로 이동]
 const handleApply = (id: string | number) => {
-    const target = searchResults.value.find(ws => String(ws.id) === String(id));
+    const target = searchResults.value.find(ws => String(ws.workspaceId) === String(id));
     if (!target) return;
 
     selectedWorkspace.value = target;
@@ -87,9 +87,11 @@ const confirmApplication = async () => {
     isLoading.value = true;
     try {
         const success = await workspaceStore.joinWorkspace(
-            selectedWorkspace.value.id,
+            selectedWorkspace.value.workspaceId,
             selectedRole.value,
-            user.value.id
+            user.value.memberId,
+            "PENDING",
+            new Date().toISOString()
         );
 
         if (success) {
@@ -178,8 +180,8 @@ watch(() => props.isOpen, (newVal) => {
 
                         <div v-else class="space-y-4">
                             <!-- WorkspaceCard에 status=0(Guest)을 강제하여 신청 버튼이 나오도록 유도 -->
-                            <WorkspaceCard v-for="item in searchResults" :key="item.id"
-                                :workspace="{ ...item, status: 0 }" @apply="handleApply" />
+                            <WorkspaceCard v-for="item in searchResults" :key="item.workspaceId"
+                                :workspace="{ ...item, myStatus: 0 }" @apply="handleApply" />
                         </div>
                     </div>
                 </div>

@@ -55,7 +55,7 @@
             </div>
             <!-- 코스(강의 영역) -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" v-if="workspaceAllCourses.length > 0">
-                <TrainerDashboardCourseCard v-for="course in workspaceAllCourses" :key="course.course_id"
+                <TrainerDashboardCourseCard v-for="course in workspaceAllCourses" :key="course.courseId"
                     :course="course"
                     @open-curriculum="(courseId) => currentWorkspaceId && openCurriculumModal(currentWorkspaceId, courseId)" />
             </div>
@@ -110,7 +110,7 @@ const mockSessions = ref<Session[]>([]);
 
 // 커리큘럼 확인 모달 열기
 const openCurriculumModal = async (workspaceId: string | number, courseId: string | number) => {
-    const course = workspaceAllCourses.value.find(c => String(c.course_id) === String(courseId));
+    const course = workspaceAllCourses.value.find(c => String(c.courseId) === String(courseId));
     if (course) {
         selectedCourse.value = course;
         try {

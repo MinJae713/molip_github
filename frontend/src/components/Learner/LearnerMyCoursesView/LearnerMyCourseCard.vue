@@ -9,7 +9,7 @@
             <div class="flex justify-between items-start mb-4">
                 <span :class="[
                     'px-2.5 py-1 text-[11px] font-bold rounded-full border uppercase tracking-wide',
-                    displayCourse('is_mandatory')
+                    displayCourse('isMandatory')
                         ? 'bg-indigo-50 text-indigo-600 border-indigo-100'
                         : 'bg-slate-100 text-slate-600 border-slate-200'
                 ]">
@@ -33,56 +33,56 @@
                 <div class="mb-5">
                     <div class="flex justify-between items-end mb-2">
                         <span class="text-xs font-bold text-slate-700">진도율</span>
-                        <span class="text-lg font-bold text-indigo-600">{{ displayCourse('progress_rate') || 0
+                        <span class="text-lg font-bold text-indigo-600">{{ displayCourse('progressRate') || 0
                         }}%</span>
                     </div>
                     <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                         <div class="bg-indigo-600 h-full rounded-full"
-                            :style="{ width: `${displayCourse('progress_rate') || 0}%` }">
+                            :style="{ width: `${displayCourse('progressRate') || 0}%` }">
                         </div>
                     </div>
                     <div class="flex justify-between mt-2 text-xs text-slate-500">
-                        <span>{{ displayCourse('current_lessons') || 0 }}/{{ displayCourse('total_lessons') || 0 }} 세션
+                        <span>{{ displayCourse('currentLessons') || 0 }}/{{ displayCourse('totalLessons') || 0 }} 세션
                             완료</span>
                         <span v-if="displayCourse('duration')">{{ displayCourse('duration') }}</span>
-                        <span v-else-if="displayCourse('d_day')">D-{{ displayCourse('d_day') }}</span>
+                        <span v-else-if="displayCourse('dDay')">D-{{ displayCourse('dDay') }}</span>
                     </div>
                 </div>
                 <!-- 다음 일정 -->
-                <div v-if="displayCourse('next_schedule')"
+                <div v-if="displayCourse('nextSchedule')"
                     class="bg-slate-50 rounded-lg p-3 border border-slate-100 mb-5 flex items-start gap-3">
                     <div :class="[
                         'mt-0.5',
-                        displayCourse('next_schedule').type === 'live' ? 'text-red-500 animate-pulse' :
-                            displayCourse('next_schedule').type === 'vod' ? 'text-indigo-500' : 'text-emerald-500'
+                        displayCourse('nextSchedule').type === 'live' ? 'text-red-500 animate-pulse' :
+                            displayCourse('nextSchedule').type === 'vod' ? 'text-indigo-500' : 'text-emerald-500'
                     ]">
                         <span class="material-symbols-outlined text-[18px]">
-                            {{ displayCourse('next_schedule').icon || 'event' }}
+                            {{ displayCourse('nextSchedule').icon || 'event' }}
                         </span>
                     </div>
                     <div>
-                        <div class="text-xs font-bold text-slate-900">{{ displayCourse('next_schedule').title }}</div>
-                        <div class="text-xs text-slate-500 mt-0.5">{{ displayCourse('next_schedule').time }}</div>
+                        <div class="text-xs font-bold text-slate-900">{{ displayCourse('nextSchedule').title }}</div>
+                        <div class="text-xs text-slate-500 mt-0.5">{{ displayCourse('nextSchedule').time }}</div>
                     </div>
                 </div>
                 <!-- 상태별 버튼 -->
-                <button v-if="displayCourse('enrollment_status') === 'pending_approval'"
+                <button v-if="displayCourse('enrollmentStatus') === 'pending_approval'"
                     class="w-full py-2.5 text-sm font-bold rounded-lg bg-gray-200 text-gray-900 border border-gray-300 cursor-not-allowed flex items-center justify-center gap-2"
                     disabled>
                     승인 대기중
                     <span class="material-symbols-outlined text-[18px]">hourglass_empty</span>
                 </button>
 
-                <button v-else-if="displayCourse('enrollment_status') === 'recruiting'"
+                <button v-else-if="displayCourse('enrollmentStatus') === 'recruiting'"
                     class="w-full py-2.5 text-sm font-bold rounded-lg bg-emerald-600 text-white border border-emerald-500 hover:bg-emerald-700 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                    @click.prevent="$emit('enroll-course', displayCourse('course_id'))">
+                    @click.prevent="$emit('enroll-course', displayCourse('courseId'))">
                     수강신청하기
                     <span class="material-symbols-outlined text-[18px]">add_circle</span>
                 </button>
 
-                <button v-else-if="displayCourse('enrollment_status') === 'active'"
+                <button v-else-if="displayCourse('enrollmentStatus') === 'active'"
                     class="w-full py-2.5 text-sm font-bold rounded-lg bg-indigo-600 text-white border border-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                    @click.prevent="$emit('enter-course', displayCourse('course_id'))">
+                    @click.prevent="$emit('enter-course', displayCourse('courseId'))">
                     강의실 입장
                     <span class="material-symbols-outlined text-[18px]">login</span>
                 </button>
@@ -108,9 +108,9 @@ const courseStore = useLearnerCourseStore();
 const nowCouse = ref<any>(null);
 
 onMounted(async () => {
-    if (props.course.course_id) {
+    if (props.course.courseId) {
         // 코스 번호로 상세 정보 가져오기
-        const detailedData = await courseStore.fetchCourseInfo(props.course.course_id);
+        const detailedData = await courseStore.fetchCourseInfo(props.course.courseId);
         if (detailedData) {
             nowCouse.value = detailedData;
         }
