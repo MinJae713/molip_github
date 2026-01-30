@@ -43,17 +43,118 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
   const myPrivateId = ref<number | null>(null);
   const feeds = ref<Record<number, any>>({});
 
+  // 디바이스 관리 (State)
+  const audioDevices = ref<MediaDeviceInfo[]>([]);
+  const videoDevices = ref<MediaDeviceInfo[]>([]);
+  const selectedAudioDeviceId = ref<string>("");
+  const selectedVideoDeviceId = ref<string>("");
+
   // 스트림 (UI 바인딩 용)
   const mainStream = ref<MediaStream | null>(null);
   const pipStream = ref<MediaStream | null>(null);
   const localStream = ref<MediaStream | null>(null);
 
   // 역할 및 권한 (Workspace Store에서 가져옴)
-  const userRole = computed(() => spaceStore.currentWorkspace?.my_role);
+  const userRole = computed(() => spaceStore.currentWorkspace?.myRole);
   const publishingCam = ref(false);
   const publishingScreen = ref(false);
 
   // --- Actions ---
+
+  /**
+   * 0. 디바이스 목록 가져오기
+   */
+  async function getDevices() {
+    try {
+      // 권한 요청을 위해 한 번 스트림을 열었다가 닫음 (브라우저 정책 대응)
+      // 이미 권한이 있다면 생략 가능하지만, 확실한 목록 갱신을 위해 수행
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true,
+      });
+      stream.getTracks().forEach((track) => track.stop());
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      audioDevices.value = devices.filter((d) => d.kind === "audioinput");
+      videoDevices.value = devices.filter((d) => d.kind === "videoinput");
+
+      // 기본값 설정
+      if (!selectedAudioDeviceId.value && audioDevices.value.length > 0) {
+        const firstAudio = audioDevices.value[0];
+        if (firstAudio) selectedAudioDeviceId.value = firstAudio.deviceId;
+      }
+      if (!selectedVideoDeviceId.value && videoDevices.value.length > 0) {
+        const firstVideo = videoDevices.value[0];
+        if (firstVideo) selectedVideoDeviceId.value = firstVideo.deviceId;
+      }
+      return true;
+    } catch (err) {
+      console.error("디바이스 목록 조회 실패:", err);
+      return false;
+    }
+  }
+
+  /**
+   * 0-1. 로컬 미리보기 (Preview) 시작
+   */
+  async function startLocalPreview() {
+    try {
+      if (localStream.value) {
+        localStream.value.getTracks().forEach((t) => t.stop());
+      }
+
+      const constraints = {
+        audio: selectedAudioDeviceId.value
+          ? { deviceId: { exact: selectedAudioDeviceId.value } }
+          : true,
+        video: selectedVideoDeviceId.value
+          ? { deviceId: { exact: selectedVideoDeviceId.value } }
+          : true,
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      localStream.value = stream;
+
+      // 트랙 기본값은 Enabled (미리보기 화면이 나와야 함)
+      // 초기에는 사용자가 볼 수 있어야 하므로 강제로 끄지 않음.
+      // 필요하다면 별도의 isVideoMuted 상태를 통해 제어해야 함.
+
+      return stream;
+    } catch (err) {
+      console.error("로컬 미리보기 시작 실패:", err);
+      throw err;
+    }
+  }
+
+  /**
+   * 0-2. 디바이스 변경
+   */
+  async function setAudioDevice(deviceId: string) {
+    selectedAudioDeviceId.value = deviceId;
+    // 스트림이 이미 있다면 교체
+    if (localStream.value) await startLocalPreview();
+  }
+
+  async function setVideoDevice(deviceId: string) {
+    selectedVideoDeviceId.value = deviceId;
+    if (localStream.value) await startLocalPreview();
+  }
+
+  function setAudioEnabled(enabled: boolean) {
+    if (localStream.value) {
+      localStream.value
+        .getAudioTracks()
+        .forEach((track) => (track.enabled = enabled));
+    }
+  }
+
+  function setVideoEnabled(enabled: boolean) {
+    if (localStream.value) {
+      localStream.value
+        .getVideoTracks()
+        .forEach((track) => (track.enabled = enabled));
+    }
+  }
 
   /**
    * 1. 방 정보 가져오기 (단순 확인)
@@ -66,7 +167,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
     try {
       const res = await videoApi.get(`/rooms/courses/${courseId}`);
       roomInfo.value = {
-        janus_room_id: res.data.janusRoomId,
+        janusRoomId: res.data.janusRoomId,
         pin: res.data.pin,
         roomAlive: true,
       };
@@ -92,7 +193,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
       // Use dedicated videoApi client
       const res = await videoApi.post(`/rooms/courses/${courseId}`);
       roomInfo.value = {
-        janus_room_id: res.data.janusRoomId,
+        janusRoomId: res.data.janusRoomId,
         pin: res.data.pin,
         roomAlive: true,
       };
@@ -176,7 +277,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
     if (!roomInfo.value) return;
     const register = {
       request: "join",
-      room: roomInfo.value.janus_room_id,
+      room: roomInfo.value.janusRoomId,
       ptype: "publisher",
       display: `${userRole.value}_${type}`,
       pin: roomInfo.value.pin,
@@ -237,13 +338,28 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
     if (!camHandle.value || publishingCam.value) return;
     publishingCam.value = true;
 
+    const media: any = {
+      audioRecv: false,
+      videoRecv: false,
+      audioSend: userRole.value === "TRAINER",
+      videoSend: true,
+    };
+
+    // 만약 로컬 프리뷰 스트림이 있다면 그대로 사용 (권한 재요청 방지)
+    if (localStream.value) {
+      // Janus createOffer의 'stream' 옵션 사용
+      // 주의: stream 옵션을 쓰면 media의 capture 관련 설정은 무시될 수 있음
+    } else {
+      // 스트림이 없으면 디바이스 ID 적용
+      if (selectedAudioDeviceId.value)
+        media.audio = { deviceId: { exact: selectedAudioDeviceId.value } };
+      if (selectedVideoDeviceId.value)
+        media.video = { deviceId: { exact: selectedVideoDeviceId.value } };
+    }
+
     camHandle.value.createOffer({
-      media: {
-        audioRecv: false,
-        videoRecv: false,
-        audioSend: userRole.value === "TRAINER",
-        videoSend: true,
-      },
+      stream: localStream.value, // stream이 null이면 내부에서 getUserMedia 호출 (media 옵션 기반)
+      media: localStream.value ? undefined : media,
       success: (jsep: any) => {
         const publish = {
           request: "publish",
@@ -310,6 +426,35 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
   }
 
   /**
+   * UI 테스트용 Mock Stream 생성
+   */
+  function simulateRemoteStream(type: "main" | "pip") {
+    const canvas = document.createElement("canvas");
+    canvas.width = 640;
+    canvas.height = 360;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const colors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#00ffff"];
+    let colorIndex = 0;
+
+    setInterval(() => {
+      const color = colors[colorIndex];
+      if (color) ctx.fillStyle = color;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "white";
+      ctx.font = "48px serif";
+      ctx.fillText(type === "main" ? "Teacher Screen" : "Teacher Cam", 50, 100);
+      ctx.fillText(new Date().toLocaleTimeString(), 50, 200);
+      colorIndex = (colorIndex + 1) % colors.length;
+    }, 1000);
+
+    const stream = canvas.captureStream(30);
+    if (type === "main") mainStream.value = stream;
+    else pipStream.value = stream;
+  }
+
+  /**
    * 원격 피드 구독
    */
   function subscribeTo(feedId: number, display: string) {
@@ -320,7 +465,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
         feeds.value[feedId] = handle;
         const body = {
           request: "join",
-          room: roomInfo.value?.janus_room_id,
+          room: roomInfo.value?.janusRoomId,
           ptype: "subscriber",
           streams: [{ feed: feedId }],
           private_id: myPrivateId.value,
@@ -339,7 +484,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
             success: (jsepAnswer: any) => {
               const body = {
                 request: "start",
-                room: roomInfo.value?.janus_room_id,
+                room: roomInfo.value?.janusRoomId,
               };
               feeds.value[feedId].send({ message: body, jsep: jsepAnswer });
             },
@@ -375,5 +520,17 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
     publishScreen,
     camHandle,
     screenHandle,
+    // Device Actions
+    audioDevices,
+    videoDevices,
+    selectedAudioDeviceId,
+    selectedVideoDeviceId,
+    getDevices,
+    startLocalPreview,
+    setAudioDevice,
+    setVideoDevice,
+    setAudioEnabled,
+    setVideoEnabled,
+    simulateRemoteStream,
   };
 });

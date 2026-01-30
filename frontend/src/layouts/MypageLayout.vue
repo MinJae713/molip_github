@@ -13,7 +13,7 @@ const workspaceStore = useWorkspaceStore();
 const courseStore = useLearnerCourseStore();
 
 onMounted(() => {
-    userStore.fetchUserInfo();
+
     courseStore.fetchMyEnrolledCourses();
 });
 

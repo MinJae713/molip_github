@@ -9,16 +9,37 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
   const currentManagedCourse = ref<Course | null>(null); // 현재 선택/관리 중인 코스 상세
   const isLoading = ref(false);
 
+  // Helper: API -> Frontend (CamelCase)
+  const mapTrainerCourse = (data: any): Course => ({
+    courseId: data.course_id || data.courseId || data.id,
+    workspaceId: data.workspace_id || data.workspaceId,
+    title: data.title,
+    description: data.description || "",
+    tag: data.tag,
+    subCategory: data.sub_category || data.subCategory,
+    category: data.category,
+    enrollmentStatus:
+      data.enrollment_status ?? data.status ?? data.enrollmentStatus,
+    courseStatus: data.course_status ?? data.status ?? data.courseStatus,
+    progressRate: data.progress_rate ?? data.progress ?? data.progressRate ?? 0,
+    currentLessons: data.current_lessons ?? data.currentLessons ?? 0,
+    totalLessons: data.total_lessons ?? data.totalLessons ?? 0,
+    isMandatory: data.is_mandatory ?? data.isMandatory,
+    dDay: data.d_day ?? data.dDay,
+    isLiked: data.is_liked ?? data.isLiked,
+    duration: data.duration,
+    requestDate: data.request_date ?? data.requestDate,
+  });
+
   // 워크스페이스의 모든 코스 목록 가져오기
   async function fetchWorkspaceAllCourses(workspaceId: string | number) {
     isLoading.value = true;
-
     try {
       const response = await api.get(`/workspaces/${workspaceId}/courses`);
 
-      workspaceAllCourses.value = response.data.map((c: any) => ({
-        ...c,
-      }));
+      workspaceAllCourses.value = Array.isArray(response.data)
+        ? response.data.map(mapTrainerCourse)
+        : [];
     } catch (error) {
       console.error("워크스페이스 모든 코스 목록 로드 실패:", error);
 
@@ -33,14 +54,14 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
     isLoading.value = true;
     console.log(`[API Request] workspaceId: ${workspaceId}, role: ${role}`);
     try {
-      const response = await api.get(
-        `/workspaces/${workspaceId}/me/courses?role=TRAINER`,
-      );
+      const response = await api.get(`/courses/me`);
       // json-server 필터링 결과가 정상적으로 배열로 오는지 확인
       console.log("[API Success] 응답 데이터:", response.data);
 
       // 데이터가 존재할 때만 할당
-      managedCourses.value = Array.isArray(response.data) ? response.data : [];
+      managedCourses.value = Array.isArray(response.data)
+        ? response.data.map(mapTrainerCourse)
+        : [];
     } catch (error: any) {
       // 상세 에러 로깅
       if (error.response) {
@@ -63,13 +84,13 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
     try {
       // 이미 목록에 있다면 재활용
       const found = managedCourses.value.find(
-        (c) => String(c.course_id) === String(courseId),
+        (c) => String(c.courseId) === String(courseId),
       );
       if (found) {
         currentManagedCourse.value = found;
       } else {
         const response = await api.get(`/courses/${courseId}`);
-        currentManagedCourse.value = response.data;
+        currentManagedCourse.value = mapTrainerCourse(response.data);
       }
     } catch (error) {
       console.error("코스 상세 정보 로드 실패:", error);

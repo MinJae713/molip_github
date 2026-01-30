@@ -1,32 +1,32 @@
 export interface Workspace {
-  workspace_id: 1;
-  name: "Admin Workspace 1";
-  logo_url: "null"; // S3 로고 이미지 URL (이미 반영됨)
-  description: "시스템 관리자 운영 공간";
-  memberCount: 4;
-  courseCount: 5;
-  my_status: null; // 검색 가능 여부 워크스페이스
-  my_role: string;
+  workspaceId: number;
+  name: string;
+  logoUrl: string | null; // S3 로고 이미지 URL
+  description: string;
+  memberCount: number;
+  courseCount: number;
+  myStatus: number | null; // 0: 미가입, 1: 대기, 2: 활동중
+  myRole: string | null;
 }
 
 export interface Course {
-  course_id: string | number; // Course.course_id
-  workspace_id?: number; //
+  courseId: string | number; // Course.course_id
+  workspaceId?: number; //
   title: string;
   description: string;
-  sub_category?: string;
+  subCategory?: string;
   category: string;
-  progress_rate: number;
-  current_lessons: number;
-  total_lessons: number;
+  progressRate: number;
+  currentLessons: number;
+  totalLessons: number;
 
   // Frontend specific or projected
-  is_mandatory?: boolean;
-  d_day?: number;
-  is_liked?: boolean;
+  isMandatory?: boolean;
+  dDay?: number;
+  isLiked?: boolean;
   duration?: string;
-  enrollment_status?: "recruiting" | "pending_approval" | "active";
-  course_status?:
+  enrollmentStatus?: "recruiting" | "pending_approval" | "active";
+  courseStatus?:
     | "PREPARING"
     | "INVITE"
     | "PROCEED"
@@ -34,33 +34,33 @@ export interface Course {
     | "active"
     | "recruiting"
     | "ended"; // 프론트 임시 상태값 호환용 추가
-  request_date?: string;
+  requestDate?: string;
   tag?: string;
   status?: any;
 
   // New fields for Course Wizard
   period?: string;
-  ai_engagement_check?: boolean;
-  ai_sentiment_analysis?: boolean;
-  completion_attendance_rate?: number;
-  use_engagement_criteria?: boolean;
-  completion_engagement_score?: number;
-  use_quiz_criteria?: boolean;
-  completion_quiz_score?: number;
+  aiEngagementCheck?: boolean;
+  aiSentimentAnalysis?: boolean;
+  completionAttendanceRate?: number;
+  useEngagementCriteria?: boolean;
+  completionEngagementScore?: number;
+  useQuizCriteria?: boolean;
+  completionQuizScore?: number;
 }
 
 export interface User {
-  member_id: number;
+  memberId: number;
   name: string;
   email: string;
-  profile_image_url: string;
+  profileImageUrl: string;
   role?: string;
   auth?: string;
 }
 
 // 특정 워크스페이스 내에서의 멤버 정보 (Relationship)
 export interface WorkspaceMember extends User {
-  workspace_id: number | string;
+  workspaceId: number | string;
   role: "Admin" | "Instructor" | "Learner"; // 워크스페이스별 역할
   status: "ACTIVE" | "INACTIVE"; // 워크스페이스별 상태
   joinedAt: string;
@@ -77,15 +77,15 @@ export interface WorkspaceMember extends User {
 
 export interface WorkspaceStats {
   id: number;
-  workspace_id: number;
+  workspaceId: number;
   progress: {
     value: number;
     trend?: string;
-    trend_type?: "up" | "down" | "info";
+    trendType?: "up" | "down" | "info";
   };
   sessions: {
     value: number;
-    next_session?: string | null;
+    nextSession?: string | null;
   };
   completed: {
     value: number;
@@ -95,23 +95,23 @@ export interface WorkspaceStats {
 
 export interface Session {
   // ERD 기본 항목
-  session_id: number; // changed from id
-  course_id: number;
+  sessionId: number; // changed from id
+  courseId: number;
   title: string;
   description: string;
-  start_at?: string;
+  startAt?: string;
   date?: string;
-  end_at?: string;
-  attendance_time?: Float16Array;
-  created_at?: string;
-  updated_at?: string;
-  janus_room_id?: number;
+  endAt?: string;
+  attendanceTime?: Float16Array;
+  createdAt?: string;
+  updatedAt?: string;
+  janusRoomId?: number;
   pin?: string;
 
   // 커스텀 영역
 
   duration?: string;
-  is_completed?: boolean;
+  isCompleted?: boolean;
   state: "live" | "ended" | "upcoming";
 }
 
@@ -125,15 +125,15 @@ export interface Material {
 }
 
 export interface VideoRoom {
-  janus_room_id: number;
+  janusRoomId: number;
   roomAlive: boolean;
   pin: string;
 }
 
 export interface LearnerWorkspaceTopCardStats {
   id: number;
-  user_id: number; // 유저 아이디
-  workspace_id: number; // 워크스페이스 아이디
+  userId: number; // 유저 아이디
+  workspaceId: number; // 워크스페이스 아이디
   role: string;
   values: StatItem[];
 }
@@ -152,13 +152,13 @@ export interface WeeklyStat {
 }
 export interface SessionConcentrationStats {
   id: number;
-  user_id: number;
-  course_id: number | string;
-  workspace_id: number;
+  userId: number;
+  courseId: number | string;
+  workspaceId: number;
   labels: string[];
-  my_scores: number[];
-  avg_scores: number[];
-  current_focus: number;
+  myScores: number[];
+  avgScores: number[];
+  currentFocus: number;
 }
 
 export interface SessionReportItem {
@@ -168,13 +168,13 @@ export interface SessionReportItem {
   duration: string;
   focus: number;
   participation: string;
-  activity_score: number;
+  activityScore: number;
 }
 export interface LearnerSessionReport {
   id: number;
-  user_id: number;
-  workspace_id: number;
-  course_id: string;
+  userId: number;
+  workspaceId: number;
+  courseId: string;
   sessions: SessionReportItem[];
 }
 

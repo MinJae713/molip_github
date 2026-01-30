@@ -34,8 +34,8 @@
                 <div class="pl-3 text-xs font-bold text-slate-400 uppercase tracking-wide">Course</div>
                 <select v-model="selectedCourseId" class="...">
                     <option value="all">전체 코스 통계</option>
-                    <option v-for="course in courseStore.myEnrolledCourses" :key="course.course_id"
-                        :value="course.course_id">
+                    <option v-for="course in courseStore.myEnrolledCourses" :key="course.courseId"
+                        :value="course.courseId">
                         {{ course.title }}
                     </option>
                 </select>
@@ -101,7 +101,7 @@ const currentCourseName = computed(() => {
     if (selectedCourseId.value === 'all') return '전체 강의';
 
     const course = courseStore.myEnrolledCourses.find(
-        c => c.course_id == selectedCourseId.value
+        c => c.courseId == selectedCourseId.value
     );
     return course ? course.title : '알 수 없는 강의';
 });
@@ -118,7 +118,7 @@ const loadStatistics = async (workspaceId: string, courseId: string | number, us
 
 onMounted(async () => {
     const workspaceId = route.params.id as string;
-    const userId = userStore.user?.member_id;
+    const userId = userStore.user?.memberId;
 
     if (workspaceId && userId) {
         // 초기 로딩
@@ -146,7 +146,7 @@ const homeRoute = computed(() => {
     const isTrainer = route.name?.toString().includes('Trainer');
     return {
         name: isTrainer ? 'workspaceTrainer' : 'workspaceLearner',
-        params: { id: workspaceStore.currentWorkspace?.workspace_id || route.params.id }
+        params: { id: workspaceStore.currentWorkspace?.workspaceId || route.params.id }
     };
 });
 </script>

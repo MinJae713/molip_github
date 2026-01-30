@@ -8,17 +8,17 @@
                     <span class="material-symbols-outlined text-[20px]">{{ isMicOn ? 'mic' : 'mic_off' }}</span>
                 </div>
                 <span class="text-[10px] font-medium text-slate-500">{{ isMicOn ? '마이크 끄기' : '마이크 켜기'
-                }}</span>
+                    }}</span>
             </button>
 
             <button @click="$emit('toggle-camera')" class="flex flex-col items-center gap-1 group">
                 <div
                     :class="['size-10 rounded-xl flex items-center justify-center shadow-sm transition-all', isCameraOn ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200']">
                     <span class="material-symbols-outlined text-[20px]">{{ isCameraOn ? 'videocam' : 'videocam_off'
-                    }}</span>
+                        }}</span>
                 </div>
-                <span class="text-[10px] font-medium text-slate-500">{{ isCameraOn ? '카메라 끄기' : '카메라 켜기'
-                }}</span>
+                <span class="text-[10px] font-medium text-slate-500">{{ isCameraOn ? '카메라 켜기' : '카메라 끄기'
+                    }}</span>
             </button>
 
             <div class="w-px h-8 bg-slate-300 mx-1"></div>

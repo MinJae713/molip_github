@@ -16,18 +16,54 @@ export const useStatsStore = defineStore("stats", () => {
   );
   // 선택된 코스 ID (전역 상태로 관리 for LearnerStatisticsView)
   const selectedCourseId = ref<string | number>("all");
+  // Data Adapters
+  const mapTopCardStats = (data: any): LearnerWorkspaceTopCardStats => ({
+    id: data.id,
+    userId: data.user_id || data.userId,
+    workspaceId: data.workspace_id || data.workspaceId,
+    role: data.role,
+    values: data.values,
+  });
+
+  const mapSessionStats = (data: any): SessionConcentrationStats => ({
+    id: data.id,
+    userId: data.user_id || data.userId,
+    courseId: data.course_id || data.courseId,
+    workspaceId: data.workspace_id || data.workspaceId,
+    labels: data.labels,
+    myScores: data.my_scores || data.myScores,
+    avgScores: data.avg_scores || data.avgScores,
+    currentFocus: data.current_focus || data.currentFocus,
+  });
+
+  const mapSessionReport = (data: any): LearnerSessionReport => ({
+    id: data.id,
+    userId: data.user_id || data.userId,
+    workspaceId: data.workspace_id || data.workspaceId,
+    courseId: data.course_id || data.courseId,
+    sessions: (data.sessions || []).map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      date: s.date,
+      duration: s.duration,
+      focus: s.focus,
+      participation: s.participation,
+      activityScore: s.activity_score || s.activityScore,
+    })),
+  });
+
   async function fetchLearnerWorkspaceTopCardStats(
     workspaceId: string,
     courseId: string | number,
-    user_id: string | number,
+    userId: string | number, // Changed user_id to userId match types
   ) {
     try {
-      // courseId가 'all'이 아니면 해당 courseId로, 'all'이면 'all'로 호출 (API 경로 통일성을 위해)
+      // API call param uses snake_case if backend requires, usually pure path params are fine
       const response = await api.get(
-        `workspaces/${workspaceId}/courses/${courseId}/stats/${user_id}`,
+        `workspaces/${workspaceId}/courses/${courseId}/stats/${userId}`,
       );
       if (response.data && response.data.length > 0) {
-        learnerWorkspaceTopCardStats.value = response.data[0];
+        learnerWorkspaceTopCardStats.value = mapTopCardStats(response.data[0]);
       } else {
         learnerWorkspaceTopCardStats.value = null;
       }
@@ -36,6 +72,7 @@ export const useStatsStore = defineStore("stats", () => {
     }
   }
   // 수강생 주간 학습 시간(코스별, 전체)api
+  // This one returns WeeklyStat[] which is simpler
   const learnerWeeklyStats = ref<WeeklyStat[]>([]);
   async function fetchLearnerWeeklyStats(
     workspaceId: string,
@@ -46,9 +83,10 @@ export const useStatsStore = defineStore("stats", () => {
       const response = await api.get(
         `workspaces/${workspaceId}/courses/${courseId}/weekly-stats/${userId}`,
       );
-      // json-server 쿼리 응답은 배열이므로 [0] 접근
       if (response.data && response.data.length > 0) {
-        learnerWeeklyStats.value = response.data[0].weekly_data;
+        learnerWeeklyStats.value = response.data[0].weekly_data; // Assuming weekly_data structure is already compatible or needs mapping?
+        // WeeklyStat uses: label, time, percentage, isHighlight. Typically these are generic.
+        // If backend sends snake_case labels, map here too.
       } else {
         learnerWeeklyStats.value = [];
       }
@@ -64,12 +102,11 @@ export const useStatsStore = defineStore("stats", () => {
     userId: string | number,
   ) {
     try {
-      // API 경로 /workspaces/:workspace_id/courses/:course_id/session-stats/:user_id
       const response = await api.get(
         `workspaces/${workspaceId}/courses/${courseId}/session-stats/${userId}`,
       );
       if (response.data && response.data.length > 0) {
-        learnerSessionStats.value = response.data[0];
+        learnerSessionStats.value = mapSessionStats(response.data[0]);
       } else {
         learnerSessionStats.value = null; // 데이터 없을 때 초기화
       }
@@ -85,7 +122,6 @@ export const useStatsStore = defineStore("stats", () => {
     courseId: string | number,
     userId: string | number,
   ) {
-    // [수정 포인트] 'all' 선택 시 데이터 비우고 리턴 (호출 X)
     if (courseId === "all") {
       learnerSessionReports.value = null;
       return;
@@ -95,7 +131,7 @@ export const useStatsStore = defineStore("stats", () => {
         `workspaces/${workspaceId}/courses/${courseId}/session-reports/${userId}`,
       );
       if (response.data && response.data.length > 0) {
-        learnerSessionReports.value = response.data[0];
+        learnerSessionReports.value = mapSessionReport(response.data[0]);
       } else {
         learnerSessionReports.value = null;
       }

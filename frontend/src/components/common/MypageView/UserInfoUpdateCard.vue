@@ -5,7 +5,7 @@
                 <div class="relative group cursor-pointer" @click="triggerFileInput">
                     <div
                         class="size-28 rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-magenta p-1 shadow-md transition-transform active:scale-95">
-                        <img :src="previewImage || props.user.profile_image_url" alt="Profile"
+                        <img :src="previewImage || props.user.profileImageUrl" alt="Profile"
                             class="rounded-full w-full h-full object-cover border-4 border-white bg-white" />
                     </div>
                     <div
@@ -18,7 +18,6 @@
                     class="text-sm text-indigo-600 font-bold hover:text-indigo-800 transition-colors">
                     프로필 사진 변경
                 </button>
-
                 <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="handleFileChange" />
             </div>
 
@@ -63,11 +62,9 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const previewImage = ref<string | null>(null);
 
 const triggerFileInput = () => fileInput.value?.click();
-
 const handleFileChange = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
-
     if (file) {
         const reader = new FileReader();
         reader.onload = (e) => {

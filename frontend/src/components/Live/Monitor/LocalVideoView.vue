@@ -4,14 +4,21 @@ import { ref, watch, onMounted } from 'vue';
 interface Props {
   stream: MediaStream | null;
   isMuted?: boolean;
+  showLabel?: boolean;  // 🔥 추가: 라벨 표시 여부
+  compact?: boolean;    // 🔥 추가: PiP용 간소화 모드
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  isMuted: false,
+  showLabel: true,
+  compact: false
+});
+
 const videoRef = ref<HTMLVideoElement | null>(null);
 
 // 스트림이 바뀌면 비디오 태그에 연결
 watch(() => props.stream, (newStream) => {
-  if (videoRef.value && newStream) {
+  if (videoRef.value) {
     videoRef.value.srcObject = newStream;
   }
 }, { immediate: true });
@@ -24,7 +31,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="relative w-full h-full bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
+  <div 
+    :class="[
+      'relative w-full h-full bg-slate-950 overflow-hidden',
+      compact ? '' : 'rounded-2xl border border-slate-800 shadow-2xl'
+    ]"
+  >
     <video
       ref="videoRef"
       autoplay
@@ -33,7 +45,7 @@ onMounted(() => {
       class="w-full h-full object-cover scale-x-[-1]"
     ></video>
     
-    <div class="absolute bottom-4 left-4 flex items-center gap-2">
+    <div v-if="showLabel && !compact" class="absolute bottom-4 left-4 flex items-center gap-2">
       <div class="bg-black/50 backdrop-blur-md px-3 py-1 rounded-lg text-white text-xs font-medium">
         나 (강사)
       </div>

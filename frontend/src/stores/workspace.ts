@@ -14,8 +14,45 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   // --- GETTERS (Computed) ---
   // 현재 워크스페이스에서의 내 역할
   const currentRole = computed(() => {
-    return currentWorkspace.value?.my_role ?? null;
+    return currentWorkspace.value?.myRole ?? null;
   });
+
+  // --- Helper: Data Normalizer (Adapter) ---
+  function mapApiToWorkspace(data: any): Workspace {
+    // 1. Status 변환 (String -> Number)
+    let status = 0;
+    const rawStatus = data.my_status ?? data.myStatus;
+    if (
+      rawStatus === 2 ||
+      rawStatus === "가입 완료" ||
+      rawStatus === "ACTIVE"
+    ) {
+      status = 2; // 활동 중
+    } else if (
+      rawStatus === 1 ||
+      rawStatus === "가입 대기" ||
+      rawStatus === "PENDING"
+    ) {
+      status = 1; // 대기 중
+    } else {
+      status = 0; // 미가입
+    }
+
+    // 2. Role 변환 (Snake -> Camel)
+    const role = data.my_role ?? data.myRole ?? null;
+
+    // 3. ID 변환 & 객체 구성
+    return {
+      workspaceId: data.workspace_id || data.workspaceId,
+      name: data.name,
+      logoUrl: data.logo_url || data.logoUrl || null,
+      description: data.description,
+      memberCount: data.memberCount, // API 필드명 확인 필요 (보통 카멜)
+      courseCount: data.courseCount,
+      myStatus: status,
+      myRole: role,
+    };
+  }
 
   // --- ACTIONS ---
 
@@ -25,7 +62,9 @@ export const useWorkspaceStore = defineStore("workspace", () => {
 
     try {
       const response = await api.get("/workspaces/me");
-      myWorkspaces.value = response.data;
+      console.log("asdFADFADFAFDS", response.data);
+      // 배열 매핑 적용
+      myWorkspaces.value = response.data.map(mapApiToWorkspace);
       isLoaded.value = true;
     } catch (error) {
       console.error("내 워크스테이션 로드 실패:", error);
@@ -36,11 +75,17 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   async function searchWorkspaces(query: string): Promise<Workspace[]> {
     if (!query.trim()) return [];
     try {
-      // json-server standard: q=query or name_like=query
-      const response = await api.get("/workspaces", {
-        params: { q: query },
-      });
-      return response.data;
+      const response = await api.get(`/workspaces/${query}/search`);
+      console.log(`[Search] Query: ${query}, Response:`, response.data); // Debug log
+
+      const data = response.data;
+      if (Array.isArray(data)) {
+        return data.map(mapApiToWorkspace);
+      } else if (data && typeof data === "object") {
+        // 단일 객체로 오는 경우 배열로 감싸서 처리
+        return [mapApiToWorkspace(data)];
+      }
+      return [];
     } catch (error) {
       console.error("워크스페이스 검색 실패:", error);
       return [];
@@ -51,17 +96,19 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   async function joinWorkspace(
     workspaceId: string | number,
     role: string,
-    userId: string | number,
+    memberId: string | number,
+    status: string,
+    appliedAt: string,
   ) {
     try {
       const payload = {
         workspaceId,
         role,
-        member_id: userId,
-        status: 1, // 1: 대기 중
-        applied_at: new Date().toISOString(),
+        memberId,
+        status,
+        appliedAt,
       };
-      await api.post("/applications", payload);
+      await api.post("/workspaces/join", payload);
       await fetchMyWorkspaces(true);
       return true;
     } catch (error) {
@@ -71,26 +118,22 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   }
 
   // 특정 워크스페이스로 진입 시 정보 갱신 (ID 기반)
-  // + 역할(Role) 설정 로직 추가
   async function setCurrentWorkspaceById(id: string | number) {
-    // 이미 갱신해둔 가입목록에서 현재 워크스테이션 찾기
     const found = myWorkspaces.value.find(
-      (ws) => String(ws.workspace_id) === String(id),
+      (ws) => String(ws.workspaceId) === String(id),
     );
 
     if (found) {
       currentWorkspace.value = found;
     } else {
-      // 없으면,서버에서 기본 정보 가져오기
       try {
         const response = await api.get(`/workspaces/${id}`);
-        currentWorkspace.value = response.data;
+        // 단일 객체 매핑 적용
+        currentWorkspace.value = mapApiToWorkspace(response.data);
       } catch (error) {
         currentWorkspace.value = null;
       }
     }
-    // [중요] 정보를 찾았든 못 찾았든, 해당 ID에 대한 통계를 호출!
-    // 진입 시점에 데이터 조각들을 모으는 방식입니다.
     if (id) {
       await fetchWorkspaceStats(id);
     }
@@ -99,7 +142,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   // 프론트단 유효성검사 (fe-develop 기능)
   const isAccessible = (id: string | number) => {
     return myWorkspaces.value.some(
-      (ws) => String(ws.workspace_id) === String(id) && ws.my_status === 2,
+      (ws) => String(ws.workspaceId) === String(id) && ws.myStatus === 2,
     );
   };
   // 워크스페이스 진입 시 상단 통계 요약정보 호출
@@ -124,13 +167,16 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   ) {
     try {
       const response = await api.patch(`/workspaces/${id}`, payload);
+      // 업데이트된 데이터도 매핑해서 상태 반영
+      const updatedData = mapApiToWorkspace(response.data);
+
       if (
         currentWorkspace.value &&
-        String(currentWorkspace.value.workspace_id) === String(id)
+        String(currentWorkspace.value.workspaceId) === String(id)
       ) {
         currentWorkspace.value = {
           ...currentWorkspace.value,
-          ...response.data,
+          ...updatedData,
         };
       }
       await fetchMyWorkspaces(true);
@@ -146,11 +192,11 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     try {
       await api.delete(`/workspaces/${id}`);
       myWorkspaces.value = myWorkspaces.value.filter(
-        (ws) => String(ws.workspace_id) !== String(id),
+        (ws) => String(ws.workspaceId) !== String(id),
       );
       if (
         currentWorkspace.value &&
-        String(currentWorkspace.value.workspace_id) === String(id)
+        String(currentWorkspace.value.workspaceId) === String(id)
       ) {
         currentWorkspace.value = null;
       }
@@ -164,7 +210,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   return {
     myWorkspaces,
     currentWorkspace,
-    currentRole, // computed 추가
+    currentRole,
     workspaceStats,
     isLoaded,
     fetchMyWorkspaces,

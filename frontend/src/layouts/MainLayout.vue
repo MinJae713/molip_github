@@ -27,9 +27,7 @@ const userStore = useUserStore();
 const workspaceStore = useWorkspaceStore();
 const router = useRouter();
 
-onMounted(() => {
-    userStore.fetchUserInfo();
-});
+
 
 const handleNotification = () => {
     console.log('알림 클릭됨');

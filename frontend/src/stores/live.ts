@@ -1,10 +1,10 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import Janus from "janus-gateway";
 import adapter from "webrtc-adapter";
 import api from "@/api";
 
-// [스토어 주입] 강사 전용 코스/세션 정보 활용
+import { useUserStore } from "./user";
 import { useTrainerCourseStore } from "./trainerCourse";
 import { useTrainerSessionStore } from "./trainerSession";
 import type { Participant } from "@/types/live";
@@ -12,260 +12,504 @@ import type { Participant } from "@/types/live";
 export const useLiveStore = defineStore("live", () => {
   const courseStore = useTrainerCourseStore();
   const sessionStore = useTrainerSessionStore();
+  const userStore = useUserStore();
 
-  // --- [1] 상태 (State) ---
+  // --- [1] 접속 정보 (백엔드 응답 데이터 저장) ---
+  const janusRoomId = ref<number>(0);
+  const pin = ref<number>(0);  // 🔥 string → number로 수정
+  const sessionId = ref<number>(0);
+  const isPublished = ref(false);
 
-  // Janus 핵심 객체
+
+  // --- [2] Janus 객체 상태 ---
   const janus = ref<any>(null);
-  const sfutest = ref<any>(null);
+  const sfutest = ref<any>(null);  // 메인 핸들 (카메라용)
+  const screenHandle = ref<any>(null);  // 🔥 화면공유 전용 핸들
+  const monitoringHandle = ref<any>(null); 
   const opaqueId = ref(`videoroom-${Janus.randomString(12)}`);
   const myid = ref<number | null>(null);
+  const screenPublisherId = ref<number | null>(null);  // 🔥 화면공유 publisher ID
 
-  // 강의 및 세션 메타 정보
-  const liveTitle = ref("");
-  const currentSessionTitle = ref("");
-  const isBreakTime = ref(false);
-  const isLiveStarted = ref(false);
-  const recordingId = ref<string | null>(null);
-
-  // 미디어 상태 (카메라, 마이크, 화면공유)
-  const isMicOn = ref(false);
+  // --- [3] 미디어 및 UI 상태 ---
+  const myStream = ref<MediaStream | null>(null);
+  const screenStream = ref<MediaStream | null>(null);
   const isCamOn = ref(false);
-  const myStream = ref<MediaStream | null>(null);     // 내 로컬 영상
+  const isMicOn = ref(false);
   const isScreenSharing = ref(false);
-  const screenStream = ref<MediaStream | null>(null); // 내 공유 화면
-  const mainStreamActive = ref(false);                // 메인 캔버스 활성화 여부
+  
+  const isLiveStarted = ref(false);
+  const isConnecting = ref(false);
+  const error = ref<string | null>(null);
+  const isBreakTime = ref(false);  // 🔥 추가: 쉬는 시간 상태
 
-  // 참여자 및 AI 분석 상태
-  const aiAnalysisActive = ref(true);
+  const monitoringStream = ref<MediaStream | null>(null);
+  const monitoringStudentId = ref<number | null>(null);
+  const activePublishers = ref<any[]>([]);
   const participants = ref<Participant[]>([]);
-  const selectedStudent = ref<Participant | null>(null);
 
-  // --- [2] 액션: 라이브 초기화 및 Janus 연결 (샘플 코드 규격) ---
+  let syncInterval: number | null = null;
 
-  /** 라이브 입장 시 실행: 데이터 로드 후 Janus 엔진 가동 */
-  async function initLiveRoom(courseId: string | number, sessionId: string | number) {
+  const liveTitle = computed(() => courseStore.currentManagedCourse?.title || "강의 제목 없음");
+  const currentSessionTitle = computed(() => sessionStore.currentManagedSession?.title || "세션 정보 없음");
+
+  // --- [4] 초기화 및 연결 로직 ---
+
+  async function initLiveRoom(cId: string | number, sId: string | number) {
+    await userStore.fetchUserInfo();
+
+    if (!userStore.token) {
+      error.value = "인증 정보가 없습니다.";
+      return;
+    }
+
+    if (isConnecting.value) return;
     try {
-      // 1. 강사 스토어 데이터 로드
-      await courseStore.setManagedCourse(courseId);
-      await sessionStore.fetchSessionDetail(sessionId);
+      
+      isConnecting.value = true;
+      error.value = null;
 
-      liveTitle.value = courseStore.currentManagedCourse?.title || "강의 제목 없음";
-      currentSessionTitle.value = sessionStore.currentManagedSession?.title || "세션 정보 없음";
+      // 1. 백엔드 세션 시작 API 호출
+      // POST /session/{session_id}/start
+      const sessionResponse = await api.post(`/session/${sId}/start`);
+      
+      janusRoomId.value = sessionResponse.data.janusRoomId;
+      pin.value = sessionResponse.data.pin;
+      sessionId.value = sessionResponse.data.sessionId;
 
-      // 2. 참여자 목록 로드
-      await fetchParticipants(courseId);
+      // 2. 기초 데이터 로드
+      await Promise.all([
+        courseStore.setManagedCourse(cId),
+        sessionStore.fetchSessionDetail(Number(sId)),
+        //fetchParticipants(cId)
+      ]);
 
-      // 3. Janus 초기화 (샘플 코드 initJanus 규격)
-      initJanusEngine();
-    } catch (error) {
-      console.error("라이브 초기화 실패:", error);
+      // 3. Janus 초기화
+      Janus.init({
+        debug: "all",
+        dependencies: Janus.useDefaultDependencies({ adapter }),
+        callback: () => {
+          if (!Janus.isWebrtcSupported()) {
+            error.value = "WebRTC 미지원 브라우저입니다.";
+            return;
+          }
+          createJanusInstance();
+        }
+      });
+    } catch (e: any) {
+      error.value = e.response?.data?.message || "연결 실패 (404/500)";
+      isConnecting.value = false;
     }
   }
 
-  function initJanusEngine() {
-    Janus.init({
-      debug: "all",
-      dependencies: Janus.useDefaultDependencies({ adapter }),
-      callback: () => {
-        if (!Janus.isWebrtcSupported()) {
-          alert("이 브라우저는 화상 통화를 지원하지 않습니다.");
-          return;
-        }
-        createJanusInstance();
-      }
-    });
-  }
-
-  /** 서버 연결 인스턴스 생성 */
   function createJanusInstance() {
-    const token = localStorage.getItem("accessToken");
-    const server = `${import.meta.env.VITE_JANUS_SERVER_URL}?auth=${token}`;
+    const token = userStore.token;
+    const server = `wss://i14a309.p.ssafy.io/janus_ws?auth=${token}&session=${sessionId.value}`;
 
     janus.value = new Janus({
-      server: server,
+      server,
       success: () => {
-        janus.value.attach({
+        janus.value?.attach({
           plugin: "janus.plugin.videoroom",
           opaqueId: opaqueId.value,
-          success: (pluginHandle: any) => {
-            sfutest.value = pluginHandle;
-            joinRoom(); // 입장 요청
+
+          success: (handle: any) => {
+            sfutest.value = handle;
+            joinRoom(); // ✅ 여기서 메인 publisher join
           },
-          onmessage: (msg: any, jsep: any) => onJanusMessage(msg, jsep),
-          onlocalstream: (stream: MediaStream) => {
-            // 강사 카메라 영상이 로컬에서 준비됨
-            myStream.value = stream;
-          },
-          oncleanup: () => {
-            myStream.value = null;
-            mainStreamActive.value = false;
-          }
+
+          onmessage: handleJanusMessage
+
         });
       },
-      error: (err: any) => console.error("Janus 연결 실패", err)
+      error: (err: any) => {
+        console.error("Janus 서버 연결 실패:", err);
+        error.value = "서버 연결 실패";
+        isConnecting.value = false;
+      }
     });
   }
 
-  /** 비디오룸 입장 요청 */
-  function joinRoom() {
-      // 1. sfutest.value가 있는지 체크 (TS 에러 방지)
-      if (!sfutest.value) {
-        console.error("Janus 플러그인이 연결되지 않았습니다.");
-        return;
-      }
-
-      // 2. 강사 이름 결정 로직 
-      // (이미 로그인 스토어 등에서 가져오거나, 없다면 기본값 사용)
-      const instructorDisplayName = courseStore.currentManagedCourse?.title 
-        ? `[선생] ${courseStore.currentManagedCourse.title} 강사` 
-        : "[선생] 강사";
-
-      const register = {
-        request: "join",
-        room: 1234, // 실제 sessionStore에서 관리하는 번호가 있다면 교체
-        ptype: "publisher",
-        display: instructorDisplayName, // 강사 본인의 이름으로 설정
-        pin: "1234"
-      };
-
-      // 3. Optional Chaining(?.)으로 한 번 더 안전하게 실행
-      sfutest.value?.send({ message: register });
-    }
-
-  // --- [3] 메시지 및 미디어 제어 ---
-
-  function onJanusMessage(msg: any, jsep: any) {
+  function handleJanusMessage(msg: any, jsep: any) {
     const event = msg["videoroom"];
+    
     if (event === "joined") {
       myid.value = msg["id"];
       isLiveStarted.value = true;
+      isConnecting.value = false;
+      
+      if (msg["publishers"]) {
+        activePublishers.value = msg["publishers"];
+      }
+    } else if (event === "event") {
+      if (msg["publishers"]) {
+        activePublishers.value = [...activePublishers.value, ...msg["publishers"]];
+      } else if (msg["leaving"] || msg["unpublished"]) {
+        const leftId = Number(msg["leaving"] || msg["unpublished"]);
+        if (monitoringStudentId.value === leftId) stopMonitoring();
+        activePublishers.value = activePublishers.value.filter(p => p.id !== leftId);
+      }
+    } else if (event === "participants") {
+      activePublishers.value = msg["participants"].filter((p: any) => p.publisher);
     }
-
+    
     if (jsep) {
-      sfutest.value.handleRemoteJsep({ jsep: jsep });
+      sfutest.value?.handleRemoteJsep({ jsep });
     }
   }
 
-  /** 카메라/마이크 전송 시작 */
+  function joinRoom() {
+    sfutest.value?.send({
+      message: {
+        request: "join",
+        room: janusRoomId.value,
+        ptype: "publisher",
+        display: `[선생] ${courseStore.currentManagedCourse?.title || "강사"}`,
+        pin: pin.value
+      }
+    });
+  }
+
+  function publishStream() {
+    if (isPublished.value || !myStream.value) return;
+
+    sfutest.value?.createOffer({
+      stream: myStream.value,
+      media: {
+        audioRecv: false,
+        videoRecv: false,
+        audioSend: isMicOn.value,
+        videoSend: isCamOn.value
+      },
+      success: (jsep: any) => {
+        sfutest.value?.send({
+          message: {
+            request: "publish",
+            audio: isMicOn.value,
+            video: isCamOn.value
+          },
+          jsep
+        });
+        isPublished.value = true;
+      }
+    });
+  }
+
+  // --- [5] 미디어 제어 (카메라/마이크 개별 제어) ---
+
+  async function toggleMic() {
+    if (!isMicOn.value) {
+      // 🔥 마이크 켜기
+      await addMediaTrack(true, false);
+      isMicOn.value = true;
+
+      if (!isPublished.value) {
+        publishStream(); // 최초 1회
+      } else {
+        sfutest.value?.send({
+          message: { request: "configure", audio: true }
+        });
+      }
+    } else {
+      // 🔥 마이크 끄기
+      sfutest.value?.send({
+        message: { request: "configure", audio: false }
+      });
+
+      if (myStream.value) {
+        const track = myStream.value.getAudioTracks()[0];
+        if (track) track.enabled = false;
+      }
+
+      isMicOn.value = false;
+    }
+  }
+
+
   async function toggleCamera() {
-    try {
-      if (isCamOn.value) {
-        sfutest.value.send({ message: { request: "unpublish" } });
-        myStream.value?.getTracks().forEach(t => t.stop());
-        myStream.value = null;
-        isCamOn.value = false;
-        isMicOn.value = false;
-      } else {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        isCamOn.value = true;
-        isMicOn.value = true;
+    if (!isCamOn.value) {
+      // 🔥 카메라 켜기
+      await addMediaTrack(false, true);
+      isCamOn.value = true;
 
-        sfutest.value.createOffer({
-          stream: stream,
-          media: { audioRecv: false, videoRecv: false, audioSend: true, videoSend: true },
-          success: (jsep: any) => {
-            const publish = { request: "configure", audio: true, video: true };
-            sfutest.value.send({ message: publish, jsep: jsep });
-          }
+      if (!isPublished.value) {
+        publishStream(); // 최초 1회 publish
+      } else {
+        sfutest.value?.send({
+          message: { request: "configure", video: true }
         });
       }
+    } else {
+      // 🔥 카메라 끄기
+      sfutest.value?.send({
+        message: { request: "configure", video: false }
+      });
+
+      if (myStream.value) {
+        const track = myStream.value.getVideoTracks()[0];
+        if (track) track.enabled = false;
+      }
+
+      isCamOn.value = false;
+    }
+  }
+
+  // 🔥 새 함수: 미디어 트랙 추가 (카메라 또는 마이크)
+  // ✅ 미디어 트랙 "로컬"에만 추가하는 함수
+  async function addMediaTrack(needAudio: boolean, needVideo: boolean) {
+    try {
+      const constraints: MediaStreamConstraints = {};
+      if (needAudio) constraints.audio = true;
+      if (needVideo) constraints.video = true;
+
+      const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+      if (!myStream.value) {
+        myStream.value = newStream;
+      } else {
+        newStream.getTracks().forEach(track => {
+          myStream.value!.addTrack(track);
+        });
+      }
+
+      if (needAudio) {
+        const audioTrack = myStream.value.getAudioTracks()[0];
+        if (audioTrack) {
+          audioTrack.enabled = true;
+          isMicOn.value = true;
+        }
+      }
+
+      if (needVideo) {
+        const videoTrack = myStream.value.getVideoTracks()[0];
+        if (videoTrack) {
+          videoTrack.enabled = true;
+          isCamOn.value = true;
+        }
+      }
+
     } catch (e) {
-      console.error("카메라 권한 오류", e);
+      console.error("미디어 권한 오류:", e);
+      alert("카메라/마이크 권한을 허용해주세요.");
     }
   }
 
-  /** 마이크만 제어 (로컬 트랙 enable/disable) */
-  function toggleMic() {
-    if (myStream.value) {
-      const audioTrack = myStream.value.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        isMicOn.value = audioTrack.enabled;
-      }
-    }
-  }
-
-  /** 화면 공유 제어 */
   async function toggleScreenShare() {
-    try {
-      if (isScreenSharing.value) {
-        sfutest.value.send({ message: { request: "unpublish" } });
-        screenStream.value?.getTracks().forEach(t => t.stop());
-        screenStream.value = null;
-        isScreenSharing.value = false;
-        mainStreamActive.value = false;
-      } else {
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-        screenStream.value = stream;
-        isScreenSharing.value = true;
-        mainStreamActive.value = true;
+    if (isScreenSharing.value) {
+      screenHandle.value?.send({ message: { request: "unpublish" } });
+      screenHandle.value?.detach();
+      screenHandle.value = null;
 
-        sfutest.value.createOffer({
-          stream: stream,
-          success: (jsep: any) => {
-            const publish = { request: "publish", audio: true, video: true };
-            sfutest.value.send({ message: publish, jsep: jsep });
+      screenStream.value?.getTracks().forEach(t => t.stop());
+      screenStream.value = null;
+
+      isScreenSharing.value = false;
+      screenPublisherId.value = null;
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      screenStream.value = stream;
+
+      janus.value?.attach({
+        plugin: "janus.plugin.videoroom",
+        opaqueId: `${opaqueId.value}-screen`,
+
+        success: (handle: any) => {
+          screenHandle.value = handle;
+
+          handle.send({
+            message: {
+              request: "join",
+              room: janusRoomId.value,
+              ptype: "publisher",
+              display: `[선생-화면] ${courseStore.currentManagedCourse?.title || "강사"}`,
+              pin: pin.value
+            }
+          });
+        },
+
+        onmessage: (msg: any, jsep: any) => {
+          if (msg.videoroom === "joined") {
+            screenPublisherId.value = msg.id;
+
+            screenHandle.value?.createOffer({
+              stream: screenStream.value,   // 🔥 핵심
+              media: {
+                audioSend: false,
+                videoSend: true,
+                audioRecv: false,
+                videoRecv: false
+              },
+              success: (jsep: any) => {
+                screenHandle.value?.send({
+                  message: { request: "publish", video: true, audio: false },
+                  jsep
+                });
+                isScreenSharing.value = true;
+              }
+            });
+          }
+
+          if (jsep) {
+            screenHandle.value?.handleRemoteJsep({ jsep });
+          }
+        }
+      });
+
+      stream.getVideoTracks()[0]?.addEventListener("ended", toggleScreenShare);
+    } catch (e) {
+      console.error("화면공유 실패:", e);
+    }
+  }
+
+  // --- [6] 모니터링 (학생 구독) ---
+
+  function startMonitoring(studentId: number) {
+    if (monitoringStudentId.value === studentId) return;
+    if (monitoringHandle.value) stopMonitoring();
+    
+    monitoringStudentId.value = studentId;
+
+    janus.value?.attach({
+      plugin: "janus.plugin.videoroom",
+      opaqueId: opaqueId.value,
+      success: (handle: any) => {
+        monitoringHandle.value = handle;
+        handle.send({
+          message: { 
+            request: "join", 
+            room: janusRoomId.value, 
+            ptype: "subscriber", 
+            feed: studentId, 
+            pin: pin.value 
           }
         });
-
-        stream.getVideoTracks()[0].onended = () => {
-          if (isScreenSharing.value) toggleScreenShare();
-        };
+      },
+      onmessage: (msg: any, jsep: any) => {
+        if (jsep) {
+          monitoringHandle.value?.createAnswer({
+            jsep,
+            media: { audioSend: false, videoSend: false },
+            success: (answerJsep: any) => {
+              monitoringHandle.value?.send({ 
+                message: { request: "start", room: janusRoomId.value }, 
+                jsep: answerJsep 
+              });
+            }
+          });
+        }
+      },
+      onremotestream: (stream: MediaStream) => {
+        monitoringStream.value = stream;
       }
-    } catch (err) {
-      console.error("화면 공유 실패", err);
-    }
+    });
   }
 
-  // --- [4] 참여자 관리 및 기타 액션 ---
+  function stopMonitoring() {
+    monitoringHandle.value?.detach();
+    monitoringHandle.value = null;
+    monitoringStream.value = null;
+    monitoringStudentId.value = null;
+  }
+
+  // --- [7] 유틸리티 및 정리 ---
+
+  function startPublisherSync() {
+    stopPublisherSync();
+    syncInterval = window.setInterval(() => {
+      if (sfutest.value && isLiveStarted.value) {
+        sfutest.value.send({ 
+          message: { 
+            request: "listparticipants", 
+            room: janusRoomId.value 
+          } 
+        });
+      }
+    }, 10000);
+  }
+
+  function stopPublisherSync() {
+    if (syncInterval) { 
+      clearInterval(syncInterval); 
+      syncInterval = null; 
+    }
+  }
 
   async function fetchParticipants(courseId: string | number) {
     try {
-      const response = await api.get(`/courses/${courseId}/participants`);
-      participants.value = response.data;
-    } catch (error) {
-      console.error("참여자 로드 실패 (Mock 데이터 유지):", error);
-      // 데이터가 없을 때 UI 깨짐 방지를 위한 더미
-      if (participants.value.length === 0) {
-        participants.value = [{ id: "1", name: "김철수", avatar: "", isCameraOn: true, isMicOn: true, concentrationScore: 92, status: "focus" }];
-      }
+      const { data } = await api.get(`/courses/${courseId}/participants`);
+      participants.value = data;
+    } catch (e) { 
+      console.error("참가자 목록 로드 실패:", e); 
     }
   }
 
-  function updateParticipantScore(id: string, score: number) {
-    const p = participants.value.find((p) => p.id === id);
-    if (p) p.concentrationScore = score;
-  }
-
-  function selectStudent(participant: Participant) {
-    selectedStudent.value = participant;
-    // TODO: 학생 ID로 Janus Subscribe 핸들 연결 로직 추가
-  }
-
-  /** 라이브 종료 */
-  async function endLiveSession() {
-    if (janus.value) janus.value.destroy();
+  function endLiveSession() {
+    stopPublisherSync();
+    stopMonitoring();
     
+    // 화면공유 핸들 정리
+    if (screenHandle.value) {
+      screenHandle.value.send({ message: { request: "unpublish" } });
+      screenHandle.value.detach();
+      screenHandle.value = null;
+    }
+    
+    // 모든 스트림 정리
     [myStream, screenStream].forEach(s => {
       s.value?.getTracks().forEach(t => t.stop());
       s.value = null;
     });
-
-    isMicOn.value = false;
-    isCamOn.value = false;
-    isScreenSharing.value = false;
+    
+    // Janus 연결 종료
+    janus.value?.destroy();
+    
+    // 상태 초기화
     isLiveStarted.value = false;
-    selectedStudent.value = null;
+    isCamOn.value = false;
+    isMicOn.value = false;
+    isScreenSharing.value = false;
+    activePublishers.value = [];
+    myid.value = null;
+    screenPublisherId.value = null;
   }
 
   return {
-    // 상태
-    liveTitle, currentSessionTitle, isBreakTime, isLiveStarted, recordingId,
-    isMicOn, isCamOn, myStream, isScreenSharing, screenStream, mainStreamActive,
-    aiAnalysisActive, participants, selectedStudent,
-    // 액션
-    initLiveRoom, endLiveSession, toggleCamera, toggleMic, toggleScreenShare,
-    updateParticipantScore, fetchParticipants, selectStudent,
+    // 접속 정보
+    janusRoomId, 
+    pin, 
+    sessionId,
+    
+    // 컴포넌트 표시용
+    liveTitle, 
+    currentSessionTitle, 
+    isLiveStarted, 
+    isConnecting, 
+    error,
+    isBreakTime,  // 🔥 추가
+    
+    // 미디어 상태
+    myStream, 
+    screenStream, 
+    isCamOn, 
+    isMicOn, 
+    isScreenSharing,
+    screenPublisherId,  // 🔥 추가
+    
+    // 모니터링
+    activePublishers, 
+    monitoringStream, 
+    monitoringStudentId, 
+    participants,
+    
+    // 함수
+    initLiveRoom, 
+    endLiveSession, 
+    toggleCamera, 
+    toggleMic, 
+    toggleScreenShare, 
+    startMonitoring, 
+    stopMonitoring
   };
 });
