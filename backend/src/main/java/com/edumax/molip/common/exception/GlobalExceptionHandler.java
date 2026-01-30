@@ -1,5 +1,8 @@
 package com.edumax.molip.common.exception;
 
+import com.edumax.molip.domain.course.exception.IncorrenctWorkspaceCourseException;
+import com.edumax.molip.domain.course.exception.NoCourseException;
+import com.edumax.molip.domain.course.exception.NoZzimException;
 import com.edumax.molip.domain.member.exception.DuplicateEmailException;
 import com.edumax.molip.domain.member.exception.NoAdminException;
 import com.edumax.molip.domain.member.exception.NoMemberException;
@@ -50,6 +53,16 @@ public class GlobalExceptionHandler {
     NoInviteCodeException.class
   })
   public ResponseEntity<ErrorResponse> handleWorkspaceBadRequestException(RuntimeException e) {
+    ErrorResponse body = ErrorResponse.create(e, HttpStatus.BAD_REQUEST, e.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+  }
+
+  @ExceptionHandler({
+    NoCourseException.class,
+    NoZzimException.class,
+    IncorrenctWorkspaceCourseException.class
+  })
+  public ResponseEntity<ErrorResponse> handleCourseBadRequestException(RuntimeException e) {
     ErrorResponse body = ErrorResponse.create(e, HttpStatus.BAD_REQUEST, e.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
   }

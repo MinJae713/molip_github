@@ -3,9 +3,10 @@ package com.edumax.molip.domain.course.controller;
 import com.edumax.molip.common.model.MemberUserDetails;
 import com.edumax.molip.domain.course.dto.request.CourseCreateRequest;
 import com.edumax.molip.domain.course.dto.request.CourseUpdateRequest;
+import com.edumax.molip.domain.course.dto.request.ToggleZzimCourseRequest;
 import com.edumax.molip.domain.course.dto.response.CourseDetailResponse;
 import com.edumax.molip.domain.course.dto.response.GetCertificatedCoursesResponse;
-import com.edumax.molip.domain.course.dto.response.GetZzimCoursesResponse;
+import com.edumax.molip.domain.course.dto.response.GetZzimCourseResponse;
 import com.edumax.molip.domain.course.dto.response.ZzimCourseResponse;
 import com.edumax.molip.domain.course.service.CourseService;
 import java.util.List;
@@ -104,19 +105,20 @@ public class CourseController {
   }
 
   @GetMapping("/{workspaceId}/zzim")
-  public ResponseEntity<GetZzimCoursesResponse> getZzimCourses(
+  public ResponseEntity<List<GetZzimCourseResponse>> getZzimCourses(
       @PathVariable Long workspaceId, @AuthenticationPrincipal MemberUserDetails memberDetails) {
     return ResponseEntity.ok(
         courseService.getZzimCourses(workspaceId, memberDetails.getMemberId()));
   }
 
-  @PostMapping("/{workspaceId}/zzim/{courseId}")
-  public ResponseEntity<ZzimCourseResponse> zzimCourse(
+  @PostMapping("/{workspaceId}/zzim")
+  public ResponseEntity<ZzimCourseResponse> toggleZzimCourse(
       @PathVariable Long workspaceId,
-      @PathVariable Long courseId,
+      @RequestBody ToggleZzimCourseRequest toggleZzimCourseRequest,
       @AuthenticationPrincipal MemberUserDetails memberDetails) {
     return ResponseEntity.ok(
-        courseService.zzimCourse(workspaceId, memberDetails.getMemberId(), courseId));
+        courseService.toggleZzimCourse(
+            workspaceId, toggleZzimCourseRequest, memberDetails.getMemberId()));
   }
 
   @GetMapping("/{workspaceId}/certificated")

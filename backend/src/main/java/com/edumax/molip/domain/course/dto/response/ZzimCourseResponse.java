@@ -12,5 +12,5 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class ZzimCourseResponse {
-  private String dumy;
+  private Boolean apiResult;
 }

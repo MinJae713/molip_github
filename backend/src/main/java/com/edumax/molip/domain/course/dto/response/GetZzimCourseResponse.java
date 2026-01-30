@@ -11,6 +11,12 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class GetZzimCoursesResponse {
-  private String dumy;
+public class GetZzimCourseResponse {
+  private Long zzimId;
+  private String title;
+  private String description;
+  private String subCategory;
+  private Long courseTime;
+  private Integer learnerCount;
+  private Boolean isApplied;
 }
