@@ -1,0 +1,31 @@
+# --- 서버 및 통신 ---
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+grpcio>=1.60.0
+grpcio-tools>=1.60.0
+python-dotenv
+python-multipart
+pydub
+jinja2
+pytest
+
+# --- AI 및 데이터 처리 (버전 고정 해제) ---
+numpy>=1.26.0
+pandas>=2.2.0
+# 얼굴 분석 (MediaPipe 제거, DeepFace 추가)
+deepface
+
+# --- STT 및 LLM ---
+openai-whisper
+faster-whisper
+openai>=1.12.0
+langchain>=0.1.7
+langchain-community
+langchain-openai
+# Chroma DB 관련 (최신 모듈 구조)
+langchain-chroma
+chromadb>=0.4.24
+
+# NLP Helpers (Optional but recommended for RAG)
+sentence-transformers
+loguru
