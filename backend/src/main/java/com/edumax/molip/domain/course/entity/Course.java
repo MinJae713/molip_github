@@ -72,6 +72,8 @@ public class Course {
   @JoinColumn(name = "workspace_member_id", nullable = false)
   private WorkspaceMember leaner; // 테이블엔 workspace_member_id로 반영됨
 
+  // 사실 trainer로 하는게 맞아요... leaner는 오타임
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 50)
   private CourseCategory category;
@@ -109,4 +111,22 @@ public class Course {
   @ManyToOne
   @JoinColumn(name = "workspace_id", nullable = false)
   private Workspace workspace;
+
+  public Integer getSessionCount() {
+    // 세션 총 개수
+    return sessions.size();
+  }
+
+  public Integer getCourseLearnerCount() {
+    // 수강생 총 수
+    return courseLearners.size();
+  }
+
+  public Double getCourseLearnerAttandanceRate() {
+    // 수강생 평균 참석률
+    return courseLearners.stream()
+        .mapToDouble(CourseLearner::getSessionAttandanceRate)
+        .average()
+        .orElse(-9999);
+  }
 }

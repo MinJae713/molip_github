@@ -6,8 +6,10 @@ import com.edumax.molip.domain.course.exception.NoZzimException;
 import com.edumax.molip.domain.member.exception.DuplicateEmailException;
 import com.edumax.molip.domain.member.exception.NoAdminException;
 import com.edumax.molip.domain.member.exception.NoMemberException;
+import com.edumax.molip.domain.session.exception.NoCourseLearnerException;
 import com.edumax.molip.domain.workspace.exception.InviteCodeExistException;
 import com.edumax.molip.domain.workspace.exception.NoInviteCodeException;
+import com.edumax.molip.domain.workspace.exception.NoTrainerException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceAppliedAtException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceMemberException;
@@ -50,7 +52,8 @@ public class GlobalExceptionHandler {
     NoWorkspaceMemberRoleException.class,
     NoWorkspaceAppliedAtException.class,
     InviteCodeExistException.class,
-    NoInviteCodeException.class
+    NoInviteCodeException.class,
+    NoTrainerException.class
   })
   public ResponseEntity<ErrorResponse> handleWorkspaceBadRequestException(RuntimeException e) {
     ErrorResponse body = ErrorResponse.create(e, HttpStatus.BAD_REQUEST, e.getMessage());
@@ -63,6 +66,12 @@ public class GlobalExceptionHandler {
     IncorrenctWorkspaceCourseException.class
   })
   public ResponseEntity<ErrorResponse> handleCourseBadRequestException(RuntimeException e) {
+    ErrorResponse body = ErrorResponse.create(e, HttpStatus.BAD_REQUEST, e.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+  }
+
+  @ExceptionHandler({NoCourseLearnerException.class})
+  public ResponseEntity<ErrorResponse> handleSessionBadRequestException(RuntimeException e) {
     ErrorResponse body = ErrorResponse.create(e, HttpStatus.BAD_REQUEST, e.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
   }

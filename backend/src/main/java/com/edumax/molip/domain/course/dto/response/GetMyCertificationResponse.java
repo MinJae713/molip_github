@@ -11,6 +11,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class GetCertificatedCoursesResponse {
+public class GetMyCertificationResponse {
   private String dumy;
 }

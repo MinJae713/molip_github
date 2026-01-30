@@ -5,7 +5,9 @@ import com.edumax.molip.domain.course.dto.request.CourseCreateRequest;
 import com.edumax.molip.domain.course.dto.request.CourseUpdateRequest;
 import com.edumax.molip.domain.course.dto.request.ToggleZzimCourseRequest;
 import com.edumax.molip.domain.course.dto.response.CourseDetailResponse;
-import com.edumax.molip.domain.course.dto.response.GetCertificatedCoursesResponse;
+import com.edumax.molip.domain.course.dto.response.GetCertificatedCourseResponse;
+import com.edumax.molip.domain.course.dto.response.GetMyCertificationResponse;
+import com.edumax.molip.domain.course.dto.response.GetTrainerCourseResponse;
 import com.edumax.molip.domain.course.dto.response.GetZzimCourseResponse;
 import com.edumax.molip.domain.course.dto.response.ZzimCourseResponse;
 import com.edumax.molip.domain.course.service.CourseService;
@@ -122,9 +124,22 @@ public class CourseController {
   }
 
   @GetMapping("/{workspaceId}/certificated")
-  public ResponseEntity<GetCertificatedCoursesResponse> getCertificatedCourses(
+  public ResponseEntity<List<GetCertificatedCourseResponse>> getCertificatedCourses(
       @PathVariable Long workspaceId, @AuthenticationPrincipal MemberUserDetails memberDetails) {
     return ResponseEntity.ok(
         courseService.getCertificatedCourses(workspaceId, memberDetails.getMemberId()));
+  }
+
+  @GetMapping("/{workspaceId}/trainer")
+  public ResponseEntity<List<GetTrainerCourseResponse>> getTrainerCourses(
+      @PathVariable Long workspaceId, @AuthenticationPrincipal MemberUserDetails memberDetails) {
+    return ResponseEntity.ok(
+        courseService.getTrainerCourses(workspaceId, memberDetails.getMemberId()));
+  }
+
+  @GetMapping("/me/certificated")
+  public ResponseEntity<List<GetMyCertificationResponse>> getMyCertifications(
+      @AuthenticationPrincipal MemberUserDetails memberDetails) {
+    return ResponseEntity.ok(courseService.getMyCertifications(memberDetails.getMemberId()));
   }
 }

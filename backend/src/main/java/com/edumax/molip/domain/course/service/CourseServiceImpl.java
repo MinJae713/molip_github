@@ -4,7 +4,9 @@ import com.edumax.molip.domain.course.dto.request.CourseCreateRequest;
 import com.edumax.molip.domain.course.dto.request.CourseUpdateRequest;
 import com.edumax.molip.domain.course.dto.request.ToggleZzimCourseRequest;
 import com.edumax.molip.domain.course.dto.response.CourseDetailResponse;
-import com.edumax.molip.domain.course.dto.response.GetCertificatedCoursesResponse;
+import com.edumax.molip.domain.course.dto.response.GetCertificatedCourseResponse;
+import com.edumax.molip.domain.course.dto.response.GetMyCertificationResponse;
+import com.edumax.molip.domain.course.dto.response.GetTrainerCourseResponse;
 import com.edumax.molip.domain.course.dto.response.GetZzimCourseResponse;
 import com.edumax.molip.domain.course.dto.response.ZzimCourseResponse;
 import com.edumax.molip.domain.course.entity.Course;
@@ -25,6 +27,7 @@ import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.session.repository.CourseLearnerRepository;
 import com.edumax.molip.domain.workspace.entity.Workspace;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
+import com.edumax.molip.domain.workspace.exception.NoTrainerException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceMemberException;
 import com.edumax.molip.domain.workspace.repository.WorkspaceMemberRepository;
@@ -330,6 +333,7 @@ public class CourseServiceImpl implements CourseService {
   }
 
   @Override
+  @Transactional
   public ZzimCourseResponse toggleZzimCourse(
       Long workspaceId, ToggleZzimCourseRequest toggleZzimCourseRequest, Long memberId) {
     Workspace workspace =
@@ -358,7 +362,40 @@ public class CourseServiceImpl implements CourseService {
   }
 
   @Override
-  public GetCertificatedCoursesResponse getCertificatedCourses(Long workspaceId, Long memberId) {
-    return GetCertificatedCoursesResponse.builder().dumy("수료").build();
+  public List<GetCertificatedCourseResponse> getCertificatedCourses(
+      Long workspaceId, Long memberId) {
+    Workspace workspace =
+        workspaceRepository.findById(workspaceId).orElseThrow(NoWorkspaceException::new);
+    Member member =
+        memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
+    WorkspaceMember workspaceMember =
+        workspaceMemberRepository
+            .findByMemberAndWorkspace(member, workspace)
+            .orElseThrow(NoWorkspaceMemberException::new);
+    return workspaceMember.getCourseCertificateds().stream()
+        .map(GetCertificatedCourseResponse::from)
+        .toList();
+  }
+
+  @Override
+  public List<GetTrainerCourseResponse> getTrainerCourses(Long workspaceId, Long memberId) {
+    Workspace workspace =
+        workspaceRepository.findById(workspaceId).orElseThrow(NoWorkspaceException::new);
+    Member member =
+        memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
+    WorkspaceMember workspaceMember =
+        workspaceMemberRepository
+            .findByMemberAndWorkspace(member, workspace)
+            .orElseThrow(NoWorkspaceMemberException::new);
+    if (workspaceMember.getRole() != WorkspaceMemberRole.TRAINER) {
+      throw new NoTrainerException();
+    }
+    List<Course> courses = workspaceMember.getCourses(); // 강사의 강의들
+    return courses.stream().map(GetTrainerCourseResponse::from).toList();
+  }
+
+  @Override
+  public List<GetMyCertificationResponse> getMyCertifications(Long memberId) {
+    return List.of();
   }
 }

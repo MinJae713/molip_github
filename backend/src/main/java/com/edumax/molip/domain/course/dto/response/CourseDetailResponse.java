@@ -29,7 +29,7 @@ public class CourseDetailResponse {
   private Boolean isEngageCheck;
   private Boolean isSentimentAnalysis;
 
-  private Integer attendance;
+  private Integer attendance; // percent로 받음
   private Integer engagement;
   private Integer exitQuiz;
 
