@@ -183,7 +183,7 @@ const router = createRouter({
     {
       path: "/trainer/live/:courseId/:sessionId",
       name: "trainerLiveSession",
-      component: () => import("@/views/Trainer/TrainerLiveSessionView.vue"),
+      component: () => import("@/views/Trainer/TrainerLiveSessionView_debug.vue"),
     },
     {
       path: "/review/:sessionId",

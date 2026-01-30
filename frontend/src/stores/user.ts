@@ -12,6 +12,8 @@ export const useUserStore = defineStore("user", () => {
     profileImageUrl: "",
   });
 
+  const token = ref<string | null>(null);
+
   // 데이터 로딩 여부 (선택 사항)
   const isLoaded = ref(false);
 
@@ -58,28 +60,23 @@ export const useUserStore = defineStore("user", () => {
   async function fetchUserInfo() {
     if (isLoaded.value) return;
 
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
+    const savedToken = localStorage.getItem("accessToken");
+    if (!savedToken) {
       isLoaded.value = true;
       return;
     }
 
-    try {
-      // 토큰 파싱해서 ID 추출
-      console.log("dd1-Token from localStorage:", token); // [Debug]
-      const payload = parseJwt(token);
-      console.log("dd2-Parsed Payload:", payload); // [Debug]
-      // JWT payload에 memberId가 있으면 그것을 사용, 없으면 sub 사용
-      const userId = payload?.memberId || payload?.sub;
-      console.log("dd3-Extracted userId:", userId); // [Debug]
+    token.value = savedToken;
 
-      if (!userId) {
-        throw new Error("Invalid Token");
-      }
-      // DB에서 최신 유저 정보 조회
-      console.log(`dd4-Fetching info for userId: ${userId}`); // [Debug]
+    try {
+      console.log("dd1-Token from localStorage:", token.value);
+      const payload = parseJwt(token.value);
+      console.log("dd2-Parsed Payload:", payload);
+
+      const userId = payload?.memberId || payload?.sub;
+      if (!userId) throw new Error("Invalid Token");
+
       const response = await api.get(`/members/me`);
-      console.log("dd5-User Info Response:", response.data); // [Debug]
       const userData = response.data;
 
       user.value = {
@@ -91,12 +88,13 @@ export const useUserStore = defineStore("user", () => {
         role: userData.role,
         auth: userData.auth,
       };
+
       isLoaded.value = true;
-    } catch (error) {
-      console.error("dd6-Fetch User Info Failed:", error);
+    } catch (e) {
       logout();
     }
   }
+
 
   // [Helper] 쿠키 설정
   function setCookie(name: string, value: string, days: number) {
@@ -131,6 +129,7 @@ export const useUserStore = defineStore("user", () => {
         profileImageUrl,
       } = response.data;
       // LocalStorage 저장
+      token.value = accessToken;
       localStorage.setItem("accessToken", accessToken);
       // 상태 업데이트
       user.value = {
@@ -167,6 +166,7 @@ export const useUserStore = defineStore("user", () => {
 
   // 로그아웃
   function logout() {
+    token.value = null;
     user.value = {
       memberId: 0,
       name: "",
@@ -182,5 +182,5 @@ export const useUserStore = defineStore("user", () => {
     window.location.href = "/";
   }
   const isAuthenticated = computed(() => !!user.value.memberId);
-  return { user, fetchUserInfo, login, signup, logout, isAuthenticated };
+  return { user, token, fetchUserInfo, login, signup, logout, isAuthenticated };
 });

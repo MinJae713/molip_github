@@ -4,6 +4,7 @@ import Janus from "janus-gateway";
 import adapter from "webrtc-adapter";
 import api from "@/api";
 
+import { useUserStore } from "./user";
 import { useTrainerCourseStore } from "./trainerCourse";
 import { useTrainerSessionStore } from "./trainerSession";
 import type { Participant } from "@/types/live";
@@ -11,11 +12,14 @@ import type { Participant } from "@/types/live";
 export const useLiveStore = defineStore("live", () => {
   const courseStore = useTrainerCourseStore();
   const sessionStore = useTrainerSessionStore();
+  const userStore = useUserStore();
 
   // --- [1] 접속 정보 (백엔드 응답 데이터 저장) ---
   const janusRoomId = ref<number>(0);
   const pin = ref<number>(0);  // 🔥 string → number로 수정
   const sessionId = ref<number>(0);
+  const isPublished = ref(false);
+
 
   // --- [2] Janus 객체 상태 ---
   const janus = ref<any>(null);
@@ -51,8 +55,16 @@ export const useLiveStore = defineStore("live", () => {
   // --- [4] 초기화 및 연결 로직 ---
 
   async function initLiveRoom(cId: string | number, sId: string | number) {
+    await userStore.fetchUserInfo();
+
+    if (!userStore.token) {
+      error.value = "인증 정보가 없습니다.";
+      return;
+    }
+
     if (isConnecting.value) return;
     try {
+      
       isConnecting.value = true;
       error.value = null;
 
@@ -68,7 +80,7 @@ export const useLiveStore = defineStore("live", () => {
       await Promise.all([
         courseStore.setManagedCourse(cId),
         sessionStore.fetchSessionDetail(Number(sId)),
-        fetchParticipants(cId)
+        //fetchParticipants(cId)
       ]);
 
       // 3. Janus 초기화
@@ -90,26 +102,23 @@ export const useLiveStore = defineStore("live", () => {
   }
 
   function createJanusInstance() {
-    const token = localStorage.getItem("accessToken");
-    const server = `${import.meta.env.VITE_JANUS_SERVER_URL}?auth=${token}`;
+    const token = userStore.token;
+    const server = `wss://i14a309.p.ssafy.io/janus_ws?auth=${token}&session=${sessionId.value}`;
 
     janus.value = new Janus({
-      server: server,
+      server,
       success: () => {
-        janus.value.attach({
+        janus.value?.attach({
           plugin: "janus.plugin.videoroom",
           opaqueId: opaqueId.value,
+
           success: (handle: any) => {
             sfutest.value = handle;
-            joinRoom();
-            startPublisherSync();
+            joinRoom(); // ✅ 여기서 메인 publisher join
           },
-          onmessage: (msg: any, jsep: any) => {
-            handleJanusMessage(msg, jsep);
-          },
-          onlocalstream: (stream: MediaStream) => {
-            myStream.value = stream;
-          }
+
+          onmessage: handleJanusMessage
+
         });
       },
       error: (err: any) => {
@@ -127,9 +136,6 @@ export const useLiveStore = defineStore("live", () => {
       myid.value = msg["id"];
       isLiveStarted.value = true;
       isConnecting.value = false;
-      
-      // 🔥 카메라/마이크 꺼진 상태로 연결만 수립
-      publishEmptyFeed();
       
       if (msg["publishers"]) {
         activePublishers.value = msg["publishers"];
@@ -163,27 +169,27 @@ export const useLiveStore = defineStore("live", () => {
     });
   }
 
-  // 🔥 새 함수: 빈 상태로 연결만 수립
-  function publishEmptyFeed() {
+  function publishStream() {
+    if (isPublished.value || !myStream.value) return;
+
     sfutest.value?.createOffer({
-      media: { 
-        audioRecv: false, 
-        videoRecv: false, 
-        audioSend: false,  // 일단 꺼진 상태
-        videoSend: false 
+      stream: myStream.value,
+      media: {
+        audioRecv: false,
+        videoRecv: false,
+        audioSend: isMicOn.value,
+        videoSend: isCamOn.value
       },
       success: (jsep: any) => {
-        sfutest.value?.send({ 
-          message: { 
-            request: "publish",  // 처음이니까 publish
-            audio: false, 
-            video: false 
-          }, 
-          jsep 
+        sfutest.value?.send({
+          message: {
+            request: "publish",
+            audio: isMicOn.value,
+            video: isCamOn.value
+          },
+          jsep
         });
-      },
-      error: (error: any) => {
-        console.error("Empty feed publish 실패:", error);
+        isPublished.value = true;
       }
     });
   }
@@ -191,67 +197,72 @@ export const useLiveStore = defineStore("live", () => {
   // --- [5] 미디어 제어 (카메라/마이크 개별 제어) ---
 
   async function toggleMic() {
-    if (isMicOn.value) {
-      // 마이크 끄기
-      if (myStream.value) {
-        const audioTrack = myStream.value.getAudioTracks()[0];
-        if (audioTrack) {
-          audioTrack.enabled = false;
-          isMicOn.value = false;
-          sfutest.value?.send({ message: { request: "configure", audio: false } });
-        }
+    if (!isMicOn.value) {
+      // 🔥 마이크 켜기
+      await addMediaTrack(true, false);
+      isMicOn.value = true;
+
+      if (!isPublished.value) {
+        publishStream(); // 최초 1회
+      } else {
+        sfutest.value?.send({
+          message: { request: "configure", audio: true }
+        });
       }
     } else {
-      // 마이크 켜기
-      if (!myStream.value || myStream.value.getAudioTracks().length === 0) {
-        // 스트림이 없거나 오디오 트랙이 없으면 새로 시작
-        await addMediaTrack(true, false);
-      } else {
-        // 이미 오디오 트랙 있으면 활성화만
-        const audioTrack = myStream.value.getAudioTracks()[0];
-        audioTrack.enabled = true;
-        isMicOn.value = true;
-        sfutest.value?.send({ message: { request: "configure", audio: true } });
+      // 🔥 마이크 끄기
+      sfutest.value?.send({
+        message: { request: "configure", audio: false }
+      });
+
+      if (myStream.value) {
+        const track = myStream.value.getAudioTracks()[0];
+        if (track) track.enabled = false;
       }
+
+      isMicOn.value = false;
     }
   }
 
+
   async function toggleCamera() {
-    if (isCamOn.value) {
-      // 카메라 끄기
-      if (myStream.value) {
-        const videoTrack = myStream.value.getVideoTracks()[0];
-        if (videoTrack) {
-          videoTrack.enabled = false;
-          isCamOn.value = false;
-          sfutest.value?.send({ message: { request: "configure", video: false } });
-        }
+    if (!isCamOn.value) {
+      // 🔥 카메라 켜기
+      await addMediaTrack(false, true);
+      isCamOn.value = true;
+
+      if (!isPublished.value) {
+        publishStream(); // 최초 1회 publish
+      } else {
+        sfutest.value?.send({
+          message: { request: "configure", video: true }
+        });
       }
     } else {
-      // 카메라 켜기
-      if (!myStream.value || myStream.value.getVideoTracks().length === 0) {
-        // 스트림이 없거나 비디오 트랙이 없으면 새로 시작
-        await addMediaTrack(false, true);
-      } else {
-        // 이미 비디오 트랙 있으면 활성화만
-        const videoTrack = myStream.value.getVideoTracks()[0];
-        videoTrack.enabled = true;
-        isCamOn.value = true;
-        sfutest.value?.send({ message: { request: "configure", video: true } });
+      // 🔥 카메라 끄기
+      sfutest.value?.send({
+        message: { request: "configure", video: false }
+      });
+
+      if (myStream.value) {
+        const track = myStream.value.getVideoTracks()[0];
+        if (track) track.enabled = false;
       }
+
+      isCamOn.value = false;
     }
   }
 
   // 🔥 새 함수: 미디어 트랙 추가 (카메라 또는 마이크)
+  // ✅ 미디어 트랙 "로컬"에만 추가하는 함수
   async function addMediaTrack(needAudio: boolean, needVideo: boolean) {
     try {
-      const constraints: any = {};
+      const constraints: MediaStreamConstraints = {};
       if (needAudio) constraints.audio = true;
       if (needVideo) constraints.video = true;
-      
+
       const newStream = await navigator.mediaDevices.getUserMedia(constraints);
-      
-      // 기존 스트림에 새 트랙 추가
+
       if (!myStream.value) {
         myStream.value = newStream;
       } else {
@@ -260,42 +271,22 @@ export const useLiveStore = defineStore("live", () => {
         });
       }
 
-      // 트랙 상태 업데이트
       if (needAudio) {
-        const aTrack = myStream.value.getAudioTracks()[0];
-        if (aTrack) {
-          aTrack.enabled = true;
+        const audioTrack = myStream.value.getAudioTracks()[0];
+        if (audioTrack) {
+          audioTrack.enabled = true;
           isMicOn.value = true;
         }
       }
+
       if (needVideo) {
-        const vTrack = myStream.value.getVideoTracks()[0];
-        if (vTrack) {
-          vTrack.enabled = true;
+        const videoTrack = myStream.value.getVideoTracks()[0];
+        if (videoTrack) {
+          videoTrack.enabled = true;
           isCamOn.value = true;
         }
       }
 
-      // 🔥 이미 publish 했으니까 configure 사용!
-      sfutest.value?.createOffer({
-        stream: myStream.value,
-        media: { 
-          audioRecv: false, 
-          videoRecv: false, 
-          audioSend: true, 
-          videoSend: true 
-        },
-        success: (jsep: any) => {
-          sfutest.value?.send({ 
-            message: { 
-              request: "configure", 
-              audio: isMicOn.value, 
-              video: isCamOn.value 
-            }, 
-            jsep 
-          });
-        }
-      });
     } catch (e) {
       console.error("미디어 권한 오류:", e);
       alert("카메라/마이크 권한을 허용해주세요.");
@@ -304,87 +295,71 @@ export const useLiveStore = defineStore("live", () => {
 
   async function toggleScreenShare() {
     if (isScreenSharing.value) {
-      // 화면공유 중지 (카메라는 유지!)
-      if (screenHandle.value) {
-        screenHandle.value.send({ message: { request: "unpublish" } });
-        screenHandle.value.detach();
-        screenHandle.value = null;
-      }
+      screenHandle.value?.send({ message: { request: "unpublish" } });
+      screenHandle.value?.detach();
+      screenHandle.value = null;
+
       screenStream.value?.getTracks().forEach(t => t.stop());
       screenStream.value = null;
+
       isScreenSharing.value = false;
       screenPublisherId.value = null;
-    } else {
-      // 화면공유 시작 (카메라와 별개로!)
-      try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({ 
-          video: true, 
-          audio: true 
-        });
-        
-        screenStream.value = stream;
-        
-        // 🔥 새로운 핸들 생성 (화면공유 전용)
-        janus.value?.attach({
-          plugin: "janus.plugin.videoroom",
-          opaqueId: `${opaqueId.value}-screen`,
-          success: (handle: any) => {
-            screenHandle.value = handle;
-            
-            // 화면공유 방에 입장
-            handle.send({
-              message: {
-                request: "join",
-                room: janusRoomId.value,
-                ptype: "publisher",
-                display: `[선생-화면] ${courseStore.currentManagedCourse?.title || "강사"}`,
-                pin: pin.value
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      screenStream.value = stream;
+
+      janus.value?.attach({
+        plugin: "janus.plugin.videoroom",
+        opaqueId: `${opaqueId.value}-screen`,
+
+        success: (handle: any) => {
+          screenHandle.value = handle;
+
+          handle.send({
+            message: {
+              request: "join",
+              room: janusRoomId.value,
+              ptype: "publisher",
+              display: `[선생-화면] ${courseStore.currentManagedCourse?.title || "강사"}`,
+              pin: pin.value
+            }
+          });
+        },
+
+        onmessage: (msg: any, jsep: any) => {
+          if (msg.videoroom === "joined") {
+            screenPublisherId.value = msg.id;
+
+            screenHandle.value?.createOffer({
+              stream: screenStream.value,   // 🔥 핵심
+              media: {
+                audioSend: false,
+                videoSend: true,
+                audioRecv: false,
+                videoRecv: false
+              },
+              success: (jsep: any) => {
+                screenHandle.value?.send({
+                  message: { request: "publish", video: true, audio: false },
+                  jsep
+                });
+                isScreenSharing.value = true;
               }
             });
-          },
-          onmessage: (msg: any, jsep: any) => {
-            const event = msg["videoroom"];
-            if (event === "joined") {
-              screenPublisherId.value = msg["id"];
-              
-              // 화면공유 스트림 송출
-              screenHandle.value?.createOffer({
-                stream: stream,
-                media: { 
-                  audioRecv: false, 
-                  videoRecv: false, 
-                  audioSend: true, 
-                  videoSend: true 
-                },
-                success: (jsep: any) => {
-                  screenHandle.value?.send({ 
-                    message: { 
-                      request: "publish",  // 새 핸들이니까 publish
-                      audio: true, 
-                      video: true 
-                    }, 
-                    jsep 
-                  });
-                  isScreenSharing.value = true;
-                }
-              });
-            }
-            if (jsep) {
-              screenHandle.value?.handleRemoteJsep({ jsep });
-            }
           }
-        });
-        
-        // 화면공유 종료 버튼 눌렀을 때 자동 복귀
-        stream.getVideoTracks()[0]?.addEventListener('ended', () => {
-          if (isScreenSharing.value) {
-            toggleScreenShare();
+
+          if (jsep) {
+            screenHandle.value?.handleRemoteJsep({ jsep });
           }
-        });
-      } catch (e) {
-        console.error("화면공유 실패:", e);
-        alert("화면공유 권한을 허용해주세요.");
-      }
+        }
+      });
+
+      stream.getVideoTracks()[0]?.addEventListener("ended", toggleScreenShare);
+    } catch (e) {
+      console.error("화면공유 실패:", e);
     }
   }
 
