@@ -3,6 +3,9 @@ package com.edumax.molip.domain.course.service;
 import com.edumax.molip.domain.course.dto.request.CourseCreateRequest;
 import com.edumax.molip.domain.course.dto.request.CourseUpdateRequest;
 import com.edumax.molip.domain.course.dto.response.CourseDetailResponse;
+import com.edumax.molip.domain.course.dto.response.GetCertificatedCoursesResponse;
+import com.edumax.molip.domain.course.dto.response.GetZzimCoursesResponse;
+import com.edumax.molip.domain.course.dto.response.ZzimCourseResponse;
 import com.edumax.molip.domain.course.entity.Course;
 import com.edumax.molip.domain.course.entity.CourseApply;
 import com.edumax.molip.domain.course.repository.CourseApplyRepository;
@@ -258,5 +261,20 @@ public class CourseServiceImpl implements CourseService {
     if (!course.getLeaner().getMember().getId().equals(memberId)) {
       throw new IllegalArgumentException("코스 소유자만 수정/삭제할 수 있습니다.");
     }
+  }
+
+  @Override
+  public GetZzimCoursesResponse getZzimCourses(Long workspaceId, Long memberId) {
+    return GetZzimCoursesResponse.builder().dumy("찜코스 조회").build();
+  }
+
+  @Override
+  public ZzimCourseResponse zzimCourse(Long workspaceId, Long memberId, Long courseId) {
+    return ZzimCourseResponse.builder().dumy("찜").build();
+  }
+
+  @Override
+  public GetCertificatedCoursesResponse getCertificatedCourses(Long workspaceId, Long memberId) {
+    return GetCertificatedCoursesResponse.builder().dumy("수료").build();
   }
 }

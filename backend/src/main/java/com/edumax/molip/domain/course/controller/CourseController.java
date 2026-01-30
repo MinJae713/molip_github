@@ -4,6 +4,9 @@ import com.edumax.molip.common.model.MemberUserDetails;
 import com.edumax.molip.domain.course.dto.request.CourseCreateRequest;
 import com.edumax.molip.domain.course.dto.request.CourseUpdateRequest;
 import com.edumax.molip.domain.course.dto.response.CourseDetailResponse;
+import com.edumax.molip.domain.course.dto.response.GetCertificatedCoursesResponse;
+import com.edumax.molip.domain.course.dto.response.GetZzimCoursesResponse;
+import com.edumax.molip.domain.course.dto.response.ZzimCourseResponse;
 import com.edumax.molip.domain.course.service.CourseService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -96,9 +99,30 @@ public class CourseController {
 
   @GetMapping("/me")
   public ResponseEntity<List<CourseDetailResponse>> getMyCourses(
-      @RequestParam Long workspaceId,
-      @AuthenticationPrincipal MemberUserDetails userDetails) {
+      @RequestParam Long workspaceId, @AuthenticationPrincipal MemberUserDetails userDetails) {
+    return ResponseEntity.ok(courseService.getMyCourses(userDetails.getMemberId(), workspaceId));
+  }
+
+  @GetMapping("/{workspaceId}/zzim")
+  public ResponseEntity<GetZzimCoursesResponse> getZzimCourses(
+      @PathVariable Long workspaceId, @AuthenticationPrincipal MemberUserDetails memberDetails) {
     return ResponseEntity.ok(
-        courseService.getMyCourses(userDetails.getMemberId(), workspaceId));
+        courseService.getZzimCourses(workspaceId, memberDetails.getMemberId()));
+  }
+
+  @PostMapping("/{workspaceId}/zzim/{courseId}")
+  public ResponseEntity<ZzimCourseResponse> zzimCourse(
+      @PathVariable Long workspaceId,
+      @PathVariable Long courseId,
+      @AuthenticationPrincipal MemberUserDetails memberDetails) {
+    return ResponseEntity.ok(
+        courseService.zzimCourse(workspaceId, memberDetails.getMemberId(), courseId));
+  }
+
+  @GetMapping("/{workspaceId}/certificated")
+  public ResponseEntity<GetCertificatedCoursesResponse> getCertificatedCourses(
+      @PathVariable Long workspaceId, @AuthenticationPrincipal MemberUserDetails memberDetails) {
+    return ResponseEntity.ok(
+        courseService.getCertificatedCourses(workspaceId, memberDetails.getMemberId()));
   }
 }
