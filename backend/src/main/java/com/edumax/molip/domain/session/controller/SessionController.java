@@ -1,18 +1,22 @@
 package com.edumax.molip.domain.session.controller;
 
 import com.edumax.molip.common.model.MemberUserDetails;
+import com.edumax.molip.domain.session.dto.ConcentrateSaveEvent;
 import com.edumax.molip.domain.session.dto.SendConcentrateMessage;
 import com.edumax.molip.domain.session.dto.request.SessionCreateRequest;
 import com.edumax.molip.domain.session.dto.request.SessionUpdateRequest;
 import com.edumax.molip.domain.session.dto.response.SessionDetailResponse;
 import com.edumax.molip.domain.session.dto.response.SessionSimpleResponse;
 import com.edumax.molip.domain.session.dto.response.SessionStartResponse;
+import com.edumax.molip.domain.session.dto.response.StudentConcentrateMessage;
 import com.edumax.molip.domain.session.service.SessionService;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,6 +31,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/api/session")
 public class SessionController {
+  private final ApplicationEventPublisher eventPublisher;
+  private final SimpMessagingTemplate messagingTemplate;
   private final SessionService sessionService;
 
   @MessageMapping("/concentrate/{sessionId}/{memberId}")
@@ -34,12 +40,41 @@ public class SessionController {
       @PathVariable String sessionId,
       @PathVariable Long memberId,
       SendConcentrateMessage sendMessage) {
-    // TODO
-    //    int diff = sessionService.getConcentrateDiff(sendMessage.empty(), sendMessage.focusOn(),
-    // sendMessage.movement());
-    //    boolean isFever = sessionService.isFeverState(sendMessage.empty(), sendMessage.focusOn(),
-    // sendMessage.movement());
-    //    sessionService.processConcentration(sessionId, memberId, diff);
+
+    if (sendMessage.empty()) {
+      boolean initialized =
+          sessionService.initializeOrNot(sessionId, memberId, sendMessage.timeline());
+      if (initialized) {
+        StudentConcentrateMessage message =
+            new StudentConcentrateMessage(sendMessage.timeline(), 30f, false);
+        messagingTemplate.convertAndSend("/topic/analysis/" + sessionId + "/" + memberId, message);
+        eventPublisher.publishEvent(
+            new ConcentrateSaveEvent(memberId, sessionId, sendMessage.timeline(), 30f, false));
+        return;
+      }
+    }
+
+    float diff =
+        sessionService.getConcentrateDiff(
+            sendMessage.empty(), sendMessage.focusOn(), sendMessage.movement());
+    float concentrateValue =
+        sessionService.changeConcentrate(sessionId, memberId, sendMessage.timeline(), diff);
+
+    boolean feverTime = false;
+    boolean isFever =
+        sessionService.isFeverState(
+            sendMessage.empty(), sendMessage.focusOn(), sendMessage.movement());
+    if (isFever) {
+      feverTime = sessionService.handleFeverState(sessionId, memberId, sendMessage.timeline());
+    }
+
+    StudentConcentrateMessage message =
+        new StudentConcentrateMessage(sendMessage.timeline(), concentrateValue, feverTime);
+
+    messagingTemplate.convertAndSend("/topic/analysis/" + sessionId + "/" + memberId, message);
+    eventPublisher.publishEvent(
+        new ConcentrateSaveEvent(
+            memberId, sessionId, sendMessage.timeline(), concentrateValue, feverTime));
   }
 
   @PostMapping("/start/{sessionId}")

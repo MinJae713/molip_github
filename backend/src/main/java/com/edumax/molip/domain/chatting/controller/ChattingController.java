@@ -41,6 +41,7 @@ public class ChattingController {
               .questionId(sendMessage.questionId())
               .content(sendMessage.content)
               .name(userDetails.getDisplayName())
+              .profileImageUrl(userDetails.getProfileImageUrl())
               .timestamp(LocalDateTime.now().toString())
               .build();
       messagingTemplate.convertAndSend("/topic/chat-room/" + roomId, message);
