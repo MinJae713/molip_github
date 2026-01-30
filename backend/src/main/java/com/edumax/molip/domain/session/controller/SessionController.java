@@ -15,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -37,9 +39,9 @@ public class SessionController {
 
   @MessageMapping("/concentrate/{sessionId}/{memberId}")
   public void processConcentration(
-      @PathVariable String sessionId,
-      @PathVariable Long memberId,
-      SendConcentrateMessage sendMessage) {
+      @DestinationVariable("sessionId") String sessionId, // PathVariable 대신 DestinationVariable 사용
+      @DestinationVariable("memberId") Long memberId,
+      @Payload SendConcentrateMessage sendMessage) {
 
     if (sendMessage.empty()) {
       boolean initialized =
