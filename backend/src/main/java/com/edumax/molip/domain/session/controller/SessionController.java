@@ -3,6 +3,7 @@ package com.edumax.molip.domain.session.controller;
 import com.edumax.molip.common.model.MemberUserDetails;
 import com.edumax.molip.domain.session.dto.ConcentrateSaveEvent;
 import com.edumax.molip.domain.session.dto.SendConcentrateMessage;
+import com.edumax.molip.domain.session.dto.request.EndAnalysisRequest;
 import com.edumax.molip.domain.session.dto.request.SessionCreateRequest;
 import com.edumax.molip.domain.session.dto.request.SessionUpdateRequest;
 import com.edumax.molip.domain.session.dto.response.SessionDetailResponse;
@@ -48,10 +49,11 @@ public class SessionController {
           sessionService.initializeOrNot(sessionId, memberId, sendMessage.timeline());
       if (initialized) {
         StudentConcentrateMessage message =
-            new StudentConcentrateMessage(sendMessage.timeline(), 30f, false);
+            new StudentConcentrateMessage(sendMessage.timeline(), 30f, false, true);
         messagingTemplate.convertAndSend("/topic/analysis/" + sessionId + "/" + memberId, message);
         eventPublisher.publishEvent(
-            new ConcentrateSaveEvent(memberId, sessionId, sendMessage.timeline(), 30f, false));
+            new ConcentrateSaveEvent(
+                memberId, sessionId, sendMessage.timeline(), true, 30f, false));
         return;
       }
     }
@@ -71,12 +73,12 @@ public class SessionController {
     }
 
     StudentConcentrateMessage message =
-        new StudentConcentrateMessage(sendMessage.timeline(), concentrateValue, feverTime);
+        new StudentConcentrateMessage(sendMessage.timeline(), concentrateValue, feverTime, false);
 
     messagingTemplate.convertAndSend("/topic/analysis/" + sessionId + "/" + memberId, message);
     eventPublisher.publishEvent(
         new ConcentrateSaveEvent(
-            memberId, sessionId, sendMessage.timeline(), concentrateValue, feverTime));
+            memberId, sessionId, sendMessage.timeline(), false, concentrateValue, feverTime));
   }
 
   @PostMapping("/start/{sessionId}")
@@ -98,7 +100,8 @@ public class SessionController {
   }
 
   @PostMapping("/end/analysis/{sessionId}")
-  public ResponseEntity<?> endAnalysis(@PathVariable String sessionId) {
+  public ResponseEntity<?> endAnalysis(
+      @PathVariable String sessionId, @RequestBody(required = false) EndAnalysisRequest request) {
     sessionService.endAnalysis(sessionId);
     return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "분석 종료"));
   }

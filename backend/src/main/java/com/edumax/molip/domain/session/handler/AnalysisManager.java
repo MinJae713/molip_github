@@ -1,5 +1,6 @@
 package com.edumax.molip.domain.session.handler;
 
+import com.edumax.molip.domain.session.dto.response.TeacherAnalysisMessage;
 import com.edumax.molip.domain.session.dto.response.TeacherConcentrateMessage;
 import com.edumax.molip.domain.session.dto.response.TeacherEmotionMessage;
 import java.util.ArrayDeque;
@@ -19,18 +20,30 @@ public class AnalysisManager { // 세션마다 존재
   private final Map<Integer, List<float[]>> emotionBuffer = new ConcurrentHashMap<>();
   private final Map<Integer, List<Float>> concentrationBuffer = new ConcurrentHashMap<>();
   // memberId -> fever타임라인
-  private final Map<String, Deque<Integer>> feverTimeBuffer = new ConcurrentHashMap<>();
+  private final Map<Long, Deque<Integer>> feverTimeBuffer = new ConcurrentHashMap<>();
   // memberId -> lastScore
-  private final Map<String, Float> lastScoreBuffer = new ConcurrentHashMap<>();
+  private final Map<Long, Float> lastScoreBuffer = new ConcurrentHashMap<>();
   // empty time -> initialize or not
-  private final Map<String, Deque<Integer>> emptyBuffer = new ConcurrentHashMap<>();
+  private final Map<Long, Deque<Integer>> emptyBuffer = new ConcurrentHashMap<>();
+  // 멤버별 마지막 상태 저장
+  private final Map<Long, State> lastStateBuffer = new ConcurrentHashMap<>();
+  // 상태 변화 전송용 임시 버퍼
+  private final Map<Long, StateChange> stateChangeBuffer = new ConcurrentHashMap<>();
   private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
   private final SimpMessagingTemplate messagingTemplate; // 웹소켓 전송을 위한 템플릿
   private ScheduledFuture<?> scheduledTask; // 실행 중인 작업을 담는 변수
 
-  private static final int EMPTY_LIMIT = 10; // 180초간 자리비움하면 자리비움 처리
-  private static final int FEVER_LIMIT = 10; // 180초간 풀집중이면 하면 피버타임 처리
+  private static final int EMPTY_LIMIT = 10 + 1; // 180초간 자리비움하면 자리비움 처리
+  private static final int FEVER_LIMIT = 10 + 1; // 180초간 풀집중이면 하면 피버타임 처리
   private static final float CONCENTRATE_DEFAULT = 30;
+
+  enum State {
+    NORMAL,
+    FEVER,
+    EMPTY
+  }
+
+  public record StateChange(Long memberId, State newState) {}
 
   // 감정 이름에 따른 배열 인덱스 매핑 (예시
   public static int getEmotionIndex(String emotionName) {
@@ -61,8 +74,9 @@ public class AnalysisManager { // 세션마다 존재
 
   public boolean insertFeverState(String sessionId, Long memberId, int timeline) {
     log.info("자리비움 삽입 시도 : [{}] - {} - {}", timeline, sessionId, memberId);
-    String key = sessionId + "-" + memberId;
+    Long key = memberId;
     Deque<Integer> feverDeque = feverTimeBuffer.computeIfAbsent(key, k -> new ArrayDeque<>());
+    State lastState = lastStateBuffer.computeIfAbsent(key, k -> State.NORMAL);
 
     synchronized (feverDeque) {
       // 1. 사이즈 제한 관리
@@ -78,9 +92,19 @@ public class AnalysisManager { // 세션마다 존재
         // 마지막 값과 첫 값의 차이가 (LIMIT - 1)이면 연속된 것으로 간주
         if (feverDeque.getLast() - feverDeque.getFirst() == FEVER_LIMIT - 1) {
           log.info("피버타임 처리됨 : {} - {} - {}", timeline, sessionId, feverDeque.size());
+          if (lastState != State.FEVER) {
+            stateChangeBuffer.put(memberId, new StateChange(memberId, State.FEVER));
+          }
+
+          lastStateBuffer.put(key, State.FEVER);
           return true;
         }
       }
+    }
+
+    if (lastState != State.NORMAL) {
+      stateChangeBuffer.put(memberId, new StateChange(memberId, State.NORMAL));
+      lastStateBuffer.put(key, State.NORMAL);
     }
 
     return false;
@@ -88,8 +112,9 @@ public class AnalysisManager { // 세션마다 존재
 
   public boolean insertEmpty(String sessionId, Long memberId, int timeline) {
     log.info("자리비움 삽입 시도 : {} - {} - {}", timeline, sessionId, memberId);
-    String key = sessionId + "-" + memberId;
+    Long key = memberId;
     Deque<Integer> emptyDeque = emptyBuffer.computeIfAbsent(key, k -> new ArrayDeque<>());
+    State lastState = lastStateBuffer.computeIfAbsent(key, k -> State.NORMAL);
 
     synchronized (emptyDeque) {
       // 1. 사이즈 제한 관리
@@ -105,9 +130,19 @@ public class AnalysisManager { // 세션마다 존재
         // 마지막 값과 첫 값의 차이가 (LIMIT - 1)이면 연속된 것으로 간주
         if (emptyDeque.getLast() - emptyDeque.getFirst() == EMPTY_LIMIT - 1) {
           log.info("자리비움 처리됨 : {} - {} - {}", timeline, sessionId, emptyDeque.size());
+          if (lastState != State.EMPTY) {
+            stateChangeBuffer.put(memberId, new StateChange(memberId, State.EMPTY));
+          }
+          lastStateBuffer.put(key, State.EMPTY);
+
           return true;
         }
       }
+    }
+
+    if (lastState != State.NORMAL) {
+      stateChangeBuffer.put(memberId, new StateChange(memberId, State.NORMAL));
+      lastStateBuffer.put(key, State.NORMAL);
     }
 
     return false;
@@ -129,7 +164,7 @@ public class AnalysisManager { // 세션마다 존재
       String sessionId, Long memberId, int timeline, boolean isEmpty, float diff) {
     log.info("집중도 삽입 시도 : {} -empty {} -diff {}", timeline, isEmpty, diff);
 
-    String key = sessionId + "-" + memberId;
+    Long key = memberId;
     Float lastScore = lastScoreBuffer.getOrDefault(key, CONCENTRATE_DEFAULT);
 
     if (isEmpty) {
@@ -180,8 +215,29 @@ public class AnalysisManager { // 세션마다 존재
                 List<float[]> emotionValues = emotionBuffer.get(timeline);
 
                 log.debug("[{}] 스케줄러 작동 중 - 타임라인: {}", sessionId, timeline);
+
+                TeacherAnalysisMessage analysisMessage = new TeacherAnalysisMessage();
+
                 // 2. 데이터가 하나라도 없는 경우에 대한 방어 코드
                 if (emotionValues == null || emotionValues.isEmpty()) {
+                  analysisMessage.setEmotionMessage(
+                      new TeacherEmotionMessage(
+                          "emotion",
+                          timeline,
+                          toEmotion(0),
+                          0f,
+                          toEmotion(1),
+                          0f,
+                          toEmotion(2),
+                          0f,
+                          toEmotion(3),
+                          0f,
+                          toEmotion(4),
+                          0f,
+                          toEmotion(5),
+                          0f,
+                          toEmotion(6),
+                          0f));
                   log.trace("[{}] 타임라인 {}에 감정 데이터가 불충분하여 스킵합니다.", sessionId, timeline);
                 } else {
                   int emotionCount = emotionValues.size(); // 참여 학생 수
@@ -200,12 +256,32 @@ public class AnalysisManager { // 세션마다 존재
                   }
 
                   log.info("[{}] 감정 전송 - 타임라인: {}, 참여 학생 수: {}", sessionId, timeline, emotionCount);
-                  sendEmotion(timeline, avgList, sessionId);
+
+                  analysisMessage.setEmotionMessage(
+                      new TeacherEmotionMessage(
+                          "emotion",
+                          timeline,
+                          toEmotion(0),
+                          avgList[0],
+                          toEmotion(1),
+                          avgList[1],
+                          toEmotion(2),
+                          avgList[2],
+                          toEmotion(3),
+                          avgList[3],
+                          toEmotion(4),
+                          avgList[4],
+                          toEmotion(5),
+                          avgList[5],
+                          toEmotion(6),
+                          avgList[6]));
                 }
 
                 List<Float> concentrateValues = concentrationBuffer.get(timeline);
 
                 if (concentrateValues == null || concentrateValues.isEmpty()) {
+                  analysisMessage.setConcentrateMessage(
+                      new TeacherConcentrateMessage("concentrate", timeline, 0f));
                   log.trace("[{}] 타임라인 {}에 몰입도 데이터가 불충분하여 스킵합니다.", sessionId, timeline);
                 } else {
                   int concentrateCount = concentrateValues.size(); // 참여 학생 수
@@ -221,8 +297,26 @@ public class AnalysisManager { // 세션마다 존재
 
                   log.info(
                       "[{}] 집중도 전송 - 타임라인: {}, 참여 학생 수: {}", sessionId, timeline, concentrateCount);
-                  sendConcentrate(timeline, avgConcentrate, sessionId);
+
+                  analysisMessage.setConcentrateMessage(
+                      new TeacherConcentrateMessage("concentrate", timeline, avgConcentrate));
                 }
+
+                if (stateChangeBuffer.isEmpty()) {
+                  analysisMessage.setStateChangeList(new ArrayList<>());
+                } else {
+                  log.info(
+                      "[{}] 상태 변화 전송 - 타임라인: {}, 변화 수: {}",
+                      sessionId,
+                      timeline,
+                      stateChangeBuffer.size());
+                  List<StateChange> changes = new ArrayList<>(stateChangeBuffer.values());
+                  stateChangeBuffer.clear();
+                  analysisMessage.setStateChangeList(changes);
+                }
+
+                // 5. 웹소켓으로 전송
+                messagingTemplate.convertAndSend("/topic/analysis/" + sessionId, analysisMessage);
 
                 emotionBuffer.remove(timeline);
                 concentrationBuffer.remove(timeline);
@@ -257,35 +351,10 @@ public class AnalysisManager { // 세션마다 존재
     // 3. 남은 버퍼 정리
     emotionBuffer.clear();
     concentrationBuffer.clear();
-  }
-
-  private void sendEmotion(int timeline, float[] avgList, String sessionId) {
-    TeacherEmotionMessage message =
-        new TeacherEmotionMessage(
-            "emotion",
-            timeline,
-            toEmotion(0),
-            avgList[0],
-            toEmotion(1),
-            avgList[1],
-            toEmotion(2),
-            avgList[2],
-            toEmotion(3),
-            avgList[3],
-            toEmotion(4),
-            avgList[4],
-            toEmotion(5),
-            avgList[5],
-            toEmotion(6),
-            avgList[6]);
-
-    messagingTemplate.convertAndSend("/topic/analysis/" + sessionId, message);
-  }
-
-  private void sendConcentrate(int timeline, Float avgConcentrate, String sessionId) {
-    TeacherConcentrateMessage message =
-        new TeacherConcentrateMessage("concentrate", timeline, avgConcentrate);
-
-    messagingTemplate.convertAndSend("/topic/analysis/" + sessionId, message);
+    feverTimeBuffer.clear();
+    lastScoreBuffer.clear();
+    emptyBuffer.clear();
+    lastStateBuffer.clear();
+    stateChangeBuffer.clear();
   }
 }

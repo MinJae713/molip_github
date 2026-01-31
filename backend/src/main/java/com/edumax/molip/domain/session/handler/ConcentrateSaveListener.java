@@ -94,8 +94,9 @@ public class ConcentrateSaveListener {
                 // 필요하다면 timeline을 데이터 앞에 포함시켜 나중에 정렬 순서를 알 수 있게 유지
                 String perValueStr =
                     String.format(
-                        "%d|%.3f,%b",
+                        "%d|%b,%.3f,%b",
                         item.timeline(), // 타임라인 정보는 값 내부에 포함
+                        item.emptyState(),
                         item.concentrateValue(),
                         item.feverTime());
 
