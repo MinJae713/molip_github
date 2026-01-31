@@ -69,9 +69,22 @@ public class VoiceForwardHandler extends BinaryWebSocketHandler {
   protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) {
     String sessionId = (String) session.getAttributes().get("sessionId");
     StreamObserver<STTRequest> requestObserver = grpcStreamMap.get(sessionId);
-    Integer timeline = (Integer) session.getAttributes().get("timeline");
+
+    if (requestObserver == null) {
+      log.error("gRPC stream not found for sessionId: {}", sessionId);
+      return;
+    }
 
     ByteBuffer buffer = message.getPayload();
+
+    // 2. 최소 4바이트(int)는 있어야 timeline을 읽을 수 있음
+    if (buffer.remaining() < 4) {
+      log.error("Payload too short to contain timeline (min 4 bytes)");
+      return;
+    }
+
+    int timeline = buffer.getInt();
+
     byte[] voiceBytes = new byte[buffer.remaining()];
     buffer.get(voiceBytes);
 
