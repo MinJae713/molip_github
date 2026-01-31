@@ -100,7 +100,7 @@ watch(timeLeft, (newVal) => {
         </div>
         <button class="size-10 rounded-full border-2 border-slate-100 overflow-hidden hover:border-indigo-500 transition-all shadow-sm">
           <img 
-            :src="userStore.user?.profile_image_url || 'https://i.pravatar.cc/100'" 
+            :src="userStore.user?.profileImageUrl || 'https://i.pravatar.cc/100'" 
             :alt="userStore.user?.name" 
             class="w-full h-full object-cover" 
           />

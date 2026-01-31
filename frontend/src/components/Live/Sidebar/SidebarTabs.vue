@@ -16,7 +16,7 @@ const emit = defineEmits(['update:modelValue']);
         modelValue === tab ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'
       ]"
     >
-      {{ tab === 'status' ? '상태' : tab === 'chat' ? '채팅' : '질문 (2)' }}
+      {{ tab === 'status' ? '참여자 목록' : tab === 'chat' ? '채팅' : '질문하기' }}
       
       <!-- 하단 인디케이터 -->
       <div 

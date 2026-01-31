@@ -18,8 +18,7 @@ import SessionEmotionAnalysis from '@/components/Live/AI/SessionEmotionAnalysis.
 // 사이드바 컴포넌트
 import SidebarStats from '@/components/Live/Sidebar/SidebarStats.vue';
 import SidebarTabs from '@/components/Live/Sidebar/SidebarTabs.vue';
-import ChatPanel from '@/components/Live/Sidebar/ChatPanel.vue';
-import QnAPanel from '@/components/Live/Sidebar/QnAPanel.vue';
+import TrainerLiveChatContainer from '@/components/Live/Sidebar/TrainerLiveChatContainer.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -61,7 +60,7 @@ const handleStudentClick = (student: any) => {
 </script>
 
 <template>
-  <div class="h-screen bg-slate-50 flex flex-col overflow-hidden font-sans text-slate-900">
+  <div class="h-screen bg-slate-50 flex flex-col overflow-hidden text-slate-900">
     <LiveHeader @end-class="isEndModalOpen = true" />
     
     <div class="flex-1 flex overflow-hidden">
@@ -92,26 +91,29 @@ const handleStudentClick = (student: any) => {
         </div>
 
         <div class="flex-1 overflow-hidden flex flex-col bg-white">
-          <Transition name="fade" mode="out-in">
-            <div v-if="activeTab === 'status'" class="flex-1 overflow-y-auto p-7 pt-4 space-y-2 custom-scrollbar">
-              <div v-if="liveStore.participants?.length > 0" class="flex flex-col gap-2">
-                <ParticipantItem 
-                  v-for="p in liveStore.participants" 
-                  :key="p.id" 
-                  :participant="p"
-                  @click="handleStudentClick(p)"
-                  class="cursor-pointer hover:ring-2 hover:ring-indigo-100 transition-all rounded-2xl active:scale-[0.98]" 
-                />
-              </div>
-              <div v-else class="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
-                <span class="material-symbols-outlined text-5xl mb-2">group_off</span>
-                <p class="text-sm font-medium tracking-tight">참여자가 없습니다.</p>
-              </div>
+          <!-- Transition 제거 및 v-show 적용으로 컴포넌트 유지 (연결 끊김 방지) -->
+          <div v-show="activeTab === 'status'" class="flex-1 overflow-y-auto p-7 pt-4 space-y-2 custom-scrollbar">
+            <div v-if="liveStore.participants?.length > 0" class="flex flex-col gap-2">
+              <ParticipantItem 
+                v-for="p in liveStore.participants" 
+                :key="p.id" 
+                :participant="p"
+                @click="handleStudentClick(p)"
+                class="cursor-pointer hover:ring-2 hover:ring-indigo-100 transition-all rounded-2xl active:scale-[0.98]" 
+              />
             </div>
+            <div v-else class="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
+              <span class="material-symbols-outlined text-5xl mb-2">group_off</span>
+              <p class="text-sm font-medium tracking-tight">참여자가 없습니다.</p>
+            </div>
+          </div>
 
-            <ChatPanel v-else-if="activeTab === 'chat'" />
-            <QnAPanel v-else />
-          </Transition>
+          <div v-show="activeTab !== 'status'" class="flex-1 flex flex-col min-h-0">
+              <TrainerLiveChatContainer 
+                :room-id="String(route.params.sessionId)" 
+                :view-type="activeTab === 'chat' ? 'chat' : 'qa'" 
+              />
+          </div>
         </div>
 
         <div class="flex flex-col shrink-0">

@@ -18,18 +18,18 @@ import SessionEmotionAnalysis from '@/components/Live/AI/SessionEmotionAnalysis.
 // 사이드바 컴포넌트
 import SidebarStats from '@/components/Live/Sidebar/SidebarStats.vue';
 import SidebarTabs from '@/components/Live/Sidebar/SidebarTabs.vue';
-import ChatPanel from '@/components/Live/Sidebar/ChatPanel.vue';
-import QnAPanel from '@/components/Live/Sidebar/QnAPanel.vue';
+import TrainerLiveChatContainer from '@/components/Live/Sidebar/TrainerLiveChatContainer.vue';
 
 const router = useRouter();
 const route = useRoute();
 const liveStore = useLiveStore();
 
-// --- 초기화 로직 (🔥 디버깅 강화) ---
+// --- 초기화 로직 ---
 onMounted(async () => {
   console.log('🔵 [DEBUG] onMounted 시작');
   console.log('🔵 [DEBUG] route.params:', route.params);
   
+  // route.params의 값은 항상 string이므로 명시적으로 변환이 필요합니다.
   const courseId = Number(route.params.courseId);
   const sessionId = Number(route.params.sessionId);
   
@@ -47,6 +47,7 @@ onMounted(async () => {
       // 🔥 함수가 존재하는지 체크
       if (typeof liveStore.initLiveRoom === 'function') {
         console.log('🟢 [DEBUG] initLiveRoom 함수 존재 확인');
+        // 스토어의 액션에 number 타입을 전달합니다.
         await liveStore.initLiveRoom(courseId, sessionId);
         console.log('🟢 [DEBUG] initLiveRoom 완료');
       } else {
@@ -78,7 +79,7 @@ const activeTab = ref<'status' | 'chat' | 'qna'>('status');
 const handleEndSession = async () => {
   await liveStore.endLiveSession();
   isEndModalOpen.value = false;
-  router.push('/trainer/dashboard');
+  router.push('/trainer/dashboard'); //고쳐야함
 };
 
 /** 학생 클릭 시 모니터링 시작 핸들러 */
@@ -88,8 +89,7 @@ const handleStudentClick = (student: any) => {
 </script>
 
 <template>
-  <div class="h-screen bg-slate-50 flex flex-col overflow-hidden font-sans text-slate-900">
-    <!-- 🔥 디버깅용 상태 표시 -->
+  <div class="h-screen bg-slate-50 flex flex-col overflow-hidden text-slate-900">
     <div class="fixed top-4 right-4 bg-black/80 text-white p-4 rounded-lg z-[200] text-xs font-mono">
       <div>연결 상태: {{ liveStore.isConnecting ? '연결 중...' : liveStore.isLiveStarted ? '✅ 연결됨' : '❌ 대기' }}</div>
       <div>에러: {{ liveStore.error || '없음' }}</div>
@@ -127,26 +127,28 @@ const handleStudentClick = (student: any) => {
         </div>
 
         <div class="flex-1 overflow-hidden flex flex-col bg-white">
-          <Transition name="fade" mode="out-in">
-            <div v-if="activeTab === 'status'" class="flex-1 overflow-y-auto p-7 pt-4 space-y-2 custom-scrollbar">
-              <div v-if="liveStore.participants?.length > 0" class="flex flex-col gap-2">
-                <ParticipantItem 
-                  v-for="p in liveStore.participants" 
-                  :key="p.id" 
-                  :participant="p"
-                  @click="handleStudentClick(p)"
-                  class="cursor-pointer hover:ring-2 hover:ring-indigo-100 transition-all rounded-2xl active:scale-[0.98]" 
-                />
-              </div>
-              <div v-else class="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
-                <span class="material-symbols-outlined text-5xl mb-2">group_off</span>
-                <p class="text-sm font-medium tracking-tight">참여자가 없습니다.</p>
-              </div>
+          <div v-show="activeTab === 'status'" class="flex-1 overflow-y-auto p-7 pt-4 space-y-2 custom-scrollbar">
+            <div v-if="liveStore.participants?.length > 0" class="flex flex-col gap-2">
+              <ParticipantItem 
+                v-for="p in liveStore.participants" 
+                :key="p.id" 
+                :participant="p"
+                @click="handleStudentClick(p)"
+                class="cursor-pointer hover:ring-2 hover:ring-indigo-100 transition-all rounded-2xl active:scale-[0.98]" 
+              />
             </div>
+            <div v-else class="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
+              <span class="material-symbols-outlined text-5xl mb-2">group_off</span>
+              <p class="text-sm font-medium tracking-tight">참여자가 없습니다.</p>
+            </div>
+          </div>
 
-            <ChatPanel v-else-if="activeTab === 'chat'" />
-            <QnAPanel v-else />
-          </Transition>
+          <div v-show="activeTab !== 'status'" class="flex-1 flex flex-col min-h-0">
+              <TrainerLiveChatContainer 
+                :room-id="String(route.params.sessionId)" 
+                :view-type="activeTab === 'chat' ? 'chat' : 'qa'" 
+              />
+          </div>
         </div>
 
         <div class="flex flex-col shrink-0">
