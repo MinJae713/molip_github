@@ -3,7 +3,6 @@ package com.edumax.molip.domain.session.controller;
 import com.edumax.molip.common.model.MemberUserDetails;
 import com.edumax.molip.domain.session.dto.ConcentrateSaveEvent;
 import com.edumax.molip.domain.session.dto.SendConcentrateMessage;
-import com.edumax.molip.domain.session.dto.request.EndAnalysisRequest;
 import com.edumax.molip.domain.session.dto.request.SessionCreateRequest;
 import com.edumax.molip.domain.session.dto.request.SessionUpdateRequest;
 import com.edumax.molip.domain.session.dto.response.SessionDetailResponse;
@@ -91,19 +90,6 @@ public class SessionController {
   public ResponseEntity<?> endSession(@PathVariable String sessionId) {
     sessionService.endSession(sessionId);
     return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "강의 종료"));
-  }
-
-  @PostMapping("/start/analysis/{sessionId}")
-  public ResponseEntity<Map<String, String>> startAnalysis(@PathVariable String sessionId) {
-    sessionService.startAnalysis(sessionId);
-    return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "분석 시작"));
-  }
-
-  @PostMapping("/end/analysis/{sessionId}")
-  public ResponseEntity<?> endAnalysis(
-      @PathVariable String sessionId, @RequestBody(required = false) EndAnalysisRequest request) {
-    sessionService.endAnalysis(sessionId);
-    return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "분석 종료"));
   }
 
   @PostMapping

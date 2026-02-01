@@ -12,10 +12,6 @@ public interface SessionService {
 
   void endSession(String sessionId);
 
-  void startAnalysis(String sessionId);
-
-  void endAnalysis(String sessionId);
-
   Long createSession(SessionCreateRequest request, Long memberId);
 
   SessionSimpleResponse getSessionSimple(Long sessionId, Long memberId);

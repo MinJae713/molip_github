@@ -35,6 +35,9 @@ public class EmotionGraph {
   private LearnerAnalysis learnerAnalysis;
 
   @ManyToOne
-  @JoinColumn(name = "workspace_member_id", nullable = false)
+  @JoinColumn(name = "workspace_member_id", nullable = true)
   private WorkspaceMember workspaceMember;
+
+  @Column(nullable = false)
+  private Long memberId;
 }

@@ -44,7 +44,7 @@ public class QuizService {
           redisTemplate.opsForZSet().reverseRange(key, s, e).stream()
               .map(
                   value -> {
-                    return value.split("|")[1];
+                    return value.split("\\|")[1];
                   })
               .toList();
 
