@@ -4,6 +4,7 @@ import traceback
 import time
 import uuid
 import asyncio
+# from app.core.config import settings
 from app.models.model_loader import models
 from app.db.chroma_client import get_vectorstore
 from app.core.logger import log

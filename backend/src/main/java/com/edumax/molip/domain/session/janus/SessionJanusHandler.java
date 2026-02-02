@@ -194,6 +194,7 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
             clientSession.getAttributes().put("displayName", displayName);
             clientSession.getAttributes().put("courseId", session.getCourse().getCourseId());
             clientSession.getAttributes().put("sessionId", session.getSessionId());
+            clientSession.getAttributes().put("recordingId", session.getRecordingId());
 
             body.put("display", displayName);
             String newPayload = objectMapper.writeValueAsString(json);
@@ -220,23 +221,22 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
           && ("publish".equals(body.get("request")) || "configure".equals(body.get("request")))) {
         String role = (String) clientSession.getAttributes().get("role");
         String displayName = (String) clientSession.getAttributes().get("displayName");
-        Long courseId = (Long) clientSession.getAttributes().get("courseId");
-        Long sessionId = (Long) clientSession.getAttributes().get("sessionId");
-
         if (role != null && displayName != null) {
           body.put("display", displayName);
-          if ("TEACHER".equals(role) && "publish".equals(body.get("request"))) {
-            String uuid = java.util.UUID.randomUUID().toString().replace("-", "");
-            String filename =
-                String.format(
-                    "%s_%d_%d_%s",
-                    uuid,
-                    courseId != null ? courseId : 0L,
-                    sessionId != null ? sessionId : 0L,
-                    String.valueOf(System.currentTimeMillis()));
+          if ("TEACHER".equals(role)
+              && ("publish".equals(body.get("request"))
+                  || "configure".equals(body.get("request")))) {
+            String recordingId = (String) clientSession.getAttributes().get("recordingId");
+            if (recordingId == null) {
+              recordingId = "Unknown";
+            }
+
+            String filename = String.format("%s_%d", recordingId, System.currentTimeMillis());
+
             body.put("record", true);
             body.put("filename", filename);
             body.put("rec_dir", "/opt/janus/recordings");
+            log.info("[Janus Recording] Enabled for TEACHER. Filename: {}", filename);
           } else if ("STUDENT".equals(role)) {
             body.put("record", false);
           }
