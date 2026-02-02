@@ -4,12 +4,12 @@ import InviteBanner from '@/components/Admin/AdminWorkspaceView/InviteCodeBanner
 import AdminStatTable from '@/components/Admin/AdminWorkspaceView/AdminStatTable.vue';
 import CourseDetailModal from '@/components/Admin/AdminWorkspaceView/CourseDetailModal.vue';
 import CreateCodeModal from '@/components/Admin/InviteCodeView/CreateCodeModal.vue';
-import { useAdminJoinCodeStore } from '@/stores/adminJoinCode';
+import { useWorkspaceAdminStore } from '@/stores/workspaceAdmin';
 import { ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
-const joinCodeStore = useAdminJoinCodeStore();
+const adminStore = useWorkspaceAdminStore();
 
 // 모달 상태
 const isCreateModalOpen = ref(false);
@@ -19,7 +19,7 @@ const newlyCreatedCode = ref<string | null>(null);
 const onCreateCode = async (newData: { joinCodeName: string; endedDate: string }) => {
   const workspaceId = Number(route.params.id);
   try {
-    const response = await joinCodeStore.createJoinCode({
+    const response = await adminStore.createJoinCode({
       workspaceId,
       joinCodeName: newData.joinCodeName,
       endedDate: newData.endedDate,

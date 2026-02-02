@@ -54,7 +54,14 @@
       <!-- 테이블 -->
       <InviteCodeTable :codes="filteredCodes || []" @delete="openDeleteSingle"/>
 
-      <div class="p-6 border-t border-slate-100 flex justify-between items-center bg-white text-sm"></div>
+      <div class="p-6 border-t border-slate-100 flex justify-between items-center bg-white text-sm">
+        <p class="text-slate-500">
+          <span v-if="searchText">전체 {{ tabs[currentTab].count }}건 중 </span>
+          <span v-else>전체 </span>
+          <span class="font-bold text-slate-900">{{ filteredCodes.length }}건</span>
+          <span v-if="searchText"> 표시됨</span>
+        </p>
+      </div>
     </div>
 
     <!-- 삭제 확인 모달 -->
@@ -65,7 +72,7 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { useAdminJoinCodeStore } from '@/stores/adminJoinCode';
+import { useWorkspaceAdminStore } from '@/stores/workspaceAdmin';
 import type { CodeItem } from '@/types';
 import InviteCodeTable from '@/components/Admin/InviteCodeView/InviteCodeTable.vue';
 import DeleteConfirmModal from '@/components/Admin/InviteCodeView/DeleteConfirmModal.vue';
@@ -75,7 +82,7 @@ import CreateCodeModal from '@/components/Admin/InviteCodeView/CreateCodeModal.v
  * STORE & ROUTE SETUP
  * ========================== */
 const route = useRoute();
-const joinCodeStore = useAdminJoinCodeStore();
+const adminStore = useWorkspaceAdminStore();
 
 /* ==========================
  * REACTIVE STATE
@@ -111,7 +118,7 @@ const calculateStatus = (endedDate: string): '활성' | '만료임박' | '만료
  * - 탭 & 검색 필터 적용
  * ========================== */
 const codesWithStatus = computed<CodeItem[]>(() =>
-  joinCodeStore.joinCodes.map(code => ({
+  adminStore.joinCodes.map(code => ({
     ...code,
     createdAt: code.createdAt || '-', // undefined 방지
     status: calculateStatus(code.endedDate)
@@ -154,7 +161,7 @@ const tabs = computed(() => ({
  * ========================== */
 onMounted(() => {
   const workspaceId = Number(route.params.id);
-  joinCodeStore.fetchJoinCodes(workspaceId);
+  adminStore.fetchJoinCodes(workspaceId);
 });
 
 /* ==========================
@@ -170,7 +177,7 @@ const handleDelete = async () => {
   if (!targetDeleteId.value) return;
   const workspaceId = Number(route.params.id);
   try {
-    await joinCodeStore.deleteJoinCode(targetDeleteId.value, workspaceId);
+    await adminStore.deleteJoinCode(targetDeleteId.value, workspaceId);
   } finally {
     isDeleteModalOpen.value = false;
     targetDeleteId.value = null;
@@ -181,7 +188,7 @@ const handleDelete = async () => {
 const onCreateCode = async (newData: { joinCodeName: string; endedDate: string }) => {
   const workspaceId = Number(route.params.id);
   try {
-    const response = await joinCodeStore.createJoinCode({
+    const response = await adminStore.createJoinCode({
       workspaceId,
       joinCodeName: newData.joinCodeName,
       endedDate: newData.endedDate,

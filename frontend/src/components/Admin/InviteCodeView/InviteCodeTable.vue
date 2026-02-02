@@ -2,15 +2,21 @@
   <table class="w-full text-left border-collapse">
     <thead>
       <tr class="bg-slate-50/50 border-b border-slate-100">
+        <th class="p-4 w-12 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">No.</th>
         <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[30%]">코드명 / 식별값</th>
         <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[20%]">발급일</th>
         <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[20%]">만료일</th>
-        <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-center w-[15%]">상태</th>
-        <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-center w-[15%]">관리</th>
+        <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-center w-[10%]">상태</th>
+        <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-center w-[10%]">관리</th>
       </tr>
     </thead>
     <tbody class="divide-y divide-slate-50">
-      <tr v-for="item in codes" :key="item.joinCodeId" class="hover:bg-slate-50/30 transition-colors group">
+      <tr v-for="(item, index) in codes" :key="item.joinCodeId" class="hover:bg-slate-50/30 transition-colors group">
+        <!-- 인덱스 -->
+        <td class="p-4 text-center text-sm text-slate-500">
+          {{ index + 1 }}
+        </td>
+
         <!-- 코드명 / 식별값 -->
         <td class="p-4">
           <div class="flex items-center gap-3">
