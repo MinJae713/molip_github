@@ -86,7 +86,7 @@ public class Session {
   @Column(length = 255)
   private String pin;
 
-  @Column(name = "recording_id", length = 20)
+  @Column(name = "recording_id", length = 40)
   private String recordingId;
 
   @ManyToOne
