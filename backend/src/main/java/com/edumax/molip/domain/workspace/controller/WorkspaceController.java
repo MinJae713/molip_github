@@ -23,7 +23,6 @@ import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdResponse;
 import com.edumax.molip.domain.workspace.service.WorkspaceService;
-import com.edumax.molip.domain.workspace.types.WorkspaceMemberRole;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -70,13 +69,12 @@ public class WorkspaceController {
     return ResponseEntity.ok(workspaceService.findMyStats(workspaceId));
   }
 
-  @GetMapping("/{workspace_id}/courses/{role}")
+  @GetMapping("/{workspace_id}/courses")
   public ResponseEntity<List<FindWorkspaceCoursesByIdResponse>> findWorkspaceCoursesById(
       @PathVariable(name = "workspace_id") Long workspaceId,
-      @PathVariable WorkspaceMemberRole role,
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(
-        workspaceService.findWorkspaceCoursesById(workspaceId, role, member.getMemberId()));
+        workspaceService.findWorkspaceCoursesById(workspaceId, member.getMemberId()));
   }
 
   @GetMapping("/me")

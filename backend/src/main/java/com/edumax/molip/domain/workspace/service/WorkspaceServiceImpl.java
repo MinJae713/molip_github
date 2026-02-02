@@ -241,7 +241,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
   @Override
   public List<FindWorkspaceCoursesByIdResponse> findWorkspaceCoursesById(
-      Long workspaceId, WorkspaceMemberRole role, Long memberId) {
+      Long workspaceId, Long memberId) {
     Member member = memberRepository.findById(memberId).orElseThrow(NoMemberException::new);
     Workspace workspace =
         workspaceRepository
@@ -251,7 +251,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         workspaceMemberRepository
             .findByMemberAndWorkspace(member, workspace)
             .orElseThrow(NoWorkspaceMemberException::new);
-    return role == WorkspaceMemberRole.LEARNER
+    return workspaceMember.getRole() == WorkspaceMemberRole.LEARNER
         ? findWorkspaceCoursesByIdLearner(workspaceMember, workspace)
         : findWorkspaceCoursesByIdTrainer(workspaceMember, workspace);
     // 위에서 예외 나오는 경우? -> 현재 사용자가 입력 받은 워스 멤버가 아니라면 에러남?

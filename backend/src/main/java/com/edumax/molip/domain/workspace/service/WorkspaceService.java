@@ -21,7 +21,6 @@ import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberRes
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdResponse;
-import com.edumax.molip.domain.workspace.types.WorkspaceMemberRole;
 import java.util.List;
 
 public interface WorkspaceService {
@@ -34,7 +33,7 @@ public interface WorkspaceService {
   FindMyStatsResponse findMyStats(Long workspaceId); // 내 워크스페이스 통계 조회
 
   List<FindWorkspaceCoursesByIdResponse> findWorkspaceCoursesById(
-      Long workspaceId, WorkspaceMemberRole role, Long memberId); // 워크스페이스별 강의 목록 조회
+      Long workspaceId, Long memberId); // 워크스페이스별 강의 목록 조회
 
   List<FindWorkspaceResponse> findMyWorkspaces(Long memberId); // 내 워크스페이스 목록 조회
 
