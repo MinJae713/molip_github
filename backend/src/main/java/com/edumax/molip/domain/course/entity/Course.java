@@ -7,6 +7,7 @@ import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.workspace.entity.Workspace;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -154,5 +155,45 @@ public class Course {
         .mapToDouble(CourseLearner::getSessionAttandanceRate)
         .average()
         .orElse(-9999);
+  }
+
+  public LocalDate getSessionStartDate() {
+    LocalDate startDate = LocalDate.of(9999, 12, 31);
+    for (Session session : sessions) {
+      LocalDate date = session.getDate();
+      if (startDate.isAfter(date)) {
+        startDate = date;
+      }
+    }
+    return startDate;
+  }
+
+  public LocalDate getSessionEndDate() {
+    LocalDate startDate = LocalDate.of(0, 1, 1);
+    for (Session session : sessions) {
+      LocalDate date = session.getDate();
+      if (startDate.isBefore(date)) {
+        startDate = date;
+      }
+    }
+    return startDate;
+  }
+
+  public Double getInviteRate() {
+    // 모집율
+    double divided = (double) courseLearners.size() / maxLearner;
+    return (double) Math.round(divided * 100) / 100;
+  }
+
+  public Double getProceedRate(long finishedSessionCount) {
+    // 진도율
+    double divided = (double) finishedSessionCount / (double) getSessionCount();
+    return (double) Math.round(divided * 100) / 100;
+  }
+
+  public Double getCertificatedRate() {
+    // 수료율
+    double divided = (double) courseCertificateds.size() / (double) courseLearners.size();
+    return (double) Math.round(divided * 100) / 100;
   }
 }

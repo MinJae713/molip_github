@@ -13,7 +13,6 @@ import com.edumax.molip.domain.workspace.dto.response.DeleteJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.DeleteWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindMyStatsResponse;
-import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceCoursesByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegisterResponse;
@@ -21,6 +20,8 @@ import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdResponse;
+import com.edumax.molip.domain.workspace.types.WorkspaceMemberRole;
 import java.util.List;
 
 public interface WorkspaceService {
@@ -33,7 +34,7 @@ public interface WorkspaceService {
   FindMyStatsResponse findMyStats(Long workspaceId); // 내 워크스페이스 통계 조회
 
   List<FindWorkspaceCoursesByIdResponse> findWorkspaceCoursesById(
-      Long workspaceId, Long memberId); // 워크스페이스별 강의 목록 조회
+      Long workspaceId, WorkspaceMemberRole role, Long memberId); // 워크스페이스별 강의 목록 조회
 
   List<FindWorkspaceResponse> findMyWorkspaces(Long memberId); // 내 워크스페이스 목록 조회
 

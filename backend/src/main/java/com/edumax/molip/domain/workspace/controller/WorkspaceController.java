@@ -14,7 +14,6 @@ import com.edumax.molip.domain.workspace.dto.response.DeleteJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.DeleteWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindMyStatsResponse;
-import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceCoursesByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegisterResponse;
@@ -22,7 +21,9 @@ import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdResponse;
 import com.edumax.molip.domain.workspace.service.WorkspaceService;
+import com.edumax.molip.domain.workspace.types.WorkspaceMemberRole;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -69,12 +70,13 @@ public class WorkspaceController {
     return ResponseEntity.ok(workspaceService.findMyStats(workspaceId));
   }
 
-  @GetMapping("/{workspace_id}/courses")
+  @GetMapping("/{workspace_id}/courses/{role}")
   public ResponseEntity<List<FindWorkspaceCoursesByIdResponse>> findWorkspaceCoursesById(
       @PathVariable(name = "workspace_id") Long workspaceId,
+      @PathVariable WorkspaceMemberRole role,
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(
-        workspaceService.findWorkspaceCoursesById(workspaceId, member.getMemberId()));
+        workspaceService.findWorkspaceCoursesById(workspaceId, role, member.getMemberId()));
   }
 
   @GetMapping("/me")

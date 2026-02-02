@@ -19,6 +19,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
@@ -123,4 +124,15 @@ public class WorkspaceMember {
   @OneToMany(mappedBy = "workspaceMember")
   @Builder.Default
   private List<CourseCertificated> courseCertificateds = new ArrayList<>();
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof WorkspaceMember
+        && Objects.equals(workspaceMemberId, ((WorkspaceMember) o).workspaceMemberId);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(workspaceMemberId);
+  }
 }
