@@ -2,8 +2,11 @@ package com.edumax.molip.domain.review.controller;
 
 import com.edumax.molip.domain.quiz.dto.response.AiQuizMessage;
 import com.edumax.molip.domain.quiz.service.QuizService;
+import com.edumax.molip.domain.review.entity.TimelineElement;
 import com.edumax.molip.domain.review.service.ReviewService;
+import com.edumax.molip.domain.review.service.StorageService;
 import com.edumax.molip.domain.session.dto.request.EndAnalysisRequest;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,11 +20,43 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/review")
+@RequestMapping("/api/review")
 @RequiredArgsConstructor
 public class ReviewController {
   private final QuizService quizService;
   private final ReviewService reviewService;
+  private final StorageService storageService;
+
+  @PostMapping("/test")
+  public ResponseEntity<?> testEndpoint() {
+    List<TimelineElement> testMergedList =
+        List.of(
+            new TimelineElement(
+                1000, // timeline (ms)
+                false, // empty
+                0.85f, // concentrateValue
+                false, // fever
+                new float[] {0.7f, 0.0f, 0.0f, 0.1f, 0.0f, 0.0f, 0.2f} // emotionValueList
+                ),
+            new TimelineElement(
+                2000,
+                true, // 자리를 비운 상태
+                0.0f,
+                false,
+                new float[] {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}),
+            new TimelineElement(
+                3000, false, 0.62f, false, new float[] {0.1f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.9f}),
+            new TimelineElement(
+                4000,
+                false,
+                0.98f, // 매우 높은 집중
+                true, // Fever 상태 (몰입 절정)
+                new float[] {0.4f, 0.0f, 0.0f, 0.6f, 0.0f, 0.0f, 0.0f}));
+    storageService.saveTimelineAnalysis(1L, 1L, testMergedList);
+    List<TimelineElement> retrievedList = storageService.getTimelineAnalysis(1L, 1L);
+
+    return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", retrievedList));
+  }
 
   @PostMapping("/start/analysis/{sessionId}")
   public ResponseEntity<Map<String, String>> startAnalysis(@PathVariable String sessionId) {

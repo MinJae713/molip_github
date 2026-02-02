@@ -21,4 +21,9 @@ public class QuizController {
     AiQuizMessage aiQuizMessage = quizService.createQuizRedis(roomId, 200);
     messagingTemplate.convertAndSend("/topic/quiz/" + roomId, aiQuizMessage);
   }
+
+  @MessageMapping("/quiz/send/{roomId}")
+  public void sendQuiz(@DestinationVariable String roomId, AiQuizMessage quizMessage) {
+    messagingTemplate.convertAndSend("/topic/surprise-quiz/" + roomId, quizMessage);
+  }
 }

@@ -11,7 +11,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
-@Table(name = "LeanerAnalysis")
+@Table(name = "leaner_analysis")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -29,9 +29,6 @@ public class LearnerAnalysis {
   @JoinColumn(name = "session_id", nullable = false)
   @OnDelete(action = OnDeleteAction.CASCADE)
   private Session session;
-
-  @Column(name = "video_url", length = 255)
-  private String videoUrl;
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
@@ -51,9 +48,6 @@ public class LearnerAnalysis {
 
   @Column(name = "avg_concentrate", nullable = false)
   private Float avgConcentrate;
-
-  @Column(name = "avg_emotion", nullable = false, length = 127)
-  private String avgEmotion;
 
   /** AI 데드존 퀴즈 */
   @OneToMany(mappedBy = "learnerAnalysis")

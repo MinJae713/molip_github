@@ -7,11 +7,13 @@ import com.edumax.molip.grpc.stt.STTServiceGrpc;
 import com.google.protobuf.ByteString;
 import io.grpc.stub.StreamObserver;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.BinaryMessage;
 import org.springframework.web.socket.CloseStatus;
@@ -25,6 +27,12 @@ public class VoiceForwardHandler extends BinaryWebSocketHandler {
   private final ApplicationEventPublisher eventPublisher;
   private final STTServiceGrpc.STTServiceStub sttServiceStub;
   private final Map<String, StreamObserver<STTRequest>> grpcStreamMap = new ConcurrentHashMap<>();
+
+  private final StringRedisTemplate redisTemplate;
+
+  // 상수는 static final로 관리하는 것이 메모리 효율상 좋습니다.
+  private static final String KEY_FORMAT = "quiz:stt:session-id:%s";
+  private static final Duration TTL = Duration.ofDays(1);
 
   // 연결할때 호출
   @Override
@@ -41,11 +49,16 @@ public class VoiceForwardHandler extends BinaryWebSocketHandler {
                 response.getTimeline(),
                 response.getText());
 
-            eventPublisher.publishEvent(
+            handleSttResult(
                 new SttSaveEvent(
                     (String) session.getAttributes().get("sessionId"),
                     response.getText(),
                     response.getTimeline()));
+            //            eventPublisher.publishEvent(
+            //                new SttSaveEvent(
+            //                    (String) session.getAttributes().get("sessionId"),
+            //                    response.getText(),
+            //                    response.getTimeline()));
           }
 
           @Override
@@ -62,6 +75,18 @@ public class VoiceForwardHandler extends BinaryWebSocketHandler {
     // 비동기 gRPC 스트림 시작 및 맵에 보관
     StreamObserver<STTRequest> requestObserver = sttServiceStub.sendSTT(responseObserver);
     grpcStreamMap.put((String) session.getAttributes().get("sessionId"), requestObserver);
+  }
+
+  public void handleSttResult(SttSaveEvent event) {
+    String key = generateKey(event.sessionId());
+
+    String value = event.timeline() + "|" + event.text();
+    redisTemplate.opsForZSet().add(key, value, event.timeline());
+    redisTemplate.expire(key, TTL);
+  }
+
+  private String generateKey(String sessionId) {
+    return String.format(KEY_FORMAT, sessionId);
   }
 
   // 데이터 수신시 호출

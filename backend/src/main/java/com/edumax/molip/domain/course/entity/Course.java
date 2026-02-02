@@ -126,17 +126,13 @@ public class Course {
   @Column(name = "avg_quiz_correct")
   private Float avgQuizCorrect; // NULL 허용
 
-  @Column(name = "learner_count", nullable = false)
-  private Integer learnerCount = 0; // DEFAULT 0
-
-  @Column(name = "session_count", nullable = false)
-  private Integer sessionCount = 0; // DEFAULT 0
-
+  @Builder.Default
   @Column(name = "end_session_count", nullable = false)
   private Integer endSessionCount = 0; // DEFAULT 0
 
+  @Builder.Default
   @Column(name = "score_top3", nullable = false, length = 127)
-  private String scoreTop3; // JSON 데이터
+  private String scoreTop3 = "{}"; // JSON 데이터
 
   public Integer getSessionCount() {
     // 세션 총 개수

@@ -125,6 +125,34 @@ public class AuthController {
     return ResponseEntity.ok(Map.of("message", "로그아웃 되었습니다."));
   }
 
+  @PostMapping("/register/admin")
+  public ResponseEntity<Map<String, String>> registerAdmin(@RequestBody RegisterRequest request) {
+    try {
+      Member member =
+          Member.builder()
+              .email(request.email)
+              .passwordHash(request.password)
+              .name(request.name)
+              .age(request.age)
+              .address(request.address)
+              .gender(Member.Gender.fromDescription(request.gender))
+              .role(Member.Role.ADMIN)
+              .authProvider(Member.AuthProvider.LOCAL)
+              .build();
+
+      System.out.println("member = " + member);
+      memberService.registerMember(member, Member.AuthProvider.LOCAL);
+      return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "회원가입이 완료되었습니다."));
+    } catch (DuplicateEmailException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+          .body(Map.of("message", "이미 존재하는 이메일입니다."));
+    } catch (RuntimeException e) {
+      log.error("회원가입 실패 : {}", e);
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+          .body(Map.of("message", "회원가입에 실패했습니다: " + e.getMessage()));
+    }
+  }
+
   @PostMapping("/register")
   public ResponseEntity<Map<String, String>> register(@RequestBody RegisterRequest request) {
     try {

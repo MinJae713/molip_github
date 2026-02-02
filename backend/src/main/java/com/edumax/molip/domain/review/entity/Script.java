@@ -18,7 +18,7 @@ public class Script {
   private Long scriptId;
 
   @Column(nullable = false)
-  private Integer time;
+  private Integer timelines;
 
   @Column(nullable = false, length = 255)
   private String message;
