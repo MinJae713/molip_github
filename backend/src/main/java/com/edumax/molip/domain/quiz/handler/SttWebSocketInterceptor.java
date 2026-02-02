@@ -1,10 +1,8 @@
 package com.edumax.molip.domain.quiz.handler;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
-import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor;
 
@@ -21,16 +19,6 @@ public class SttWebSocketInterceptor extends HttpSessionHandshakeInterceptor {
     String path = request.getURI().getPath();
     String roomId = path.substring(path.lastIndexOf('/') + 1);
     attributes.put("sessionId", roomId);
-
-    if (request instanceof ServletServerHttpRequest servletRequest) {
-      HttpServletRequest httpRequest = servletRequest.getServletRequest();
-
-      String timelineStr = httpRequest.getParameter("timeline");
-
-      if (timelineStr != null) {
-        attributes.put("timeline", Integer.parseInt(httpRequest.getParameter("timeline")));
-      }
-    }
 
     return super.beforeHandshake(request, response, wsHandler, attributes);
   }
