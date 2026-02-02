@@ -107,6 +107,9 @@ public class ReviewService {
 
   @Transactional
   public void endAnalysis(String sessionId, EndAnalysisRequest request) {
+    emotionSaveListener.stopLecture(sessionId); // redis 전송 스케줄러 정지
+    analysisManagerRegistry.removeManager(sessionId); // 분석 Buffer 삭제
+
     Long sessionIdLong = Long.parseLong(sessionId);
     String joinKey = getJoinKey(sessionId);
 
@@ -385,9 +388,6 @@ public class ReviewService {
 
     course.setEndSessionCount(endSessionCnt);
     courseRepository.save(course);
-
-    emotionSaveListener.stopLecture(sessionId); // redis 전송 스케줄러 정지
-    analysisManagerRegistry.removeManager(sessionId); // 분석 Buffer 삭제
   }
 
   record ConcentrateElement(boolean empty, float concentrateValue, boolean fever) {}
