@@ -15,6 +15,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class FindWorkspaceMemberResponse {
+  private Long workspaceMemberId;
+  private String email;
   private String profileImageUrl;
   private String name;
   private WorkspaceMemberRole role;
@@ -25,6 +27,8 @@ public class FindWorkspaceMemberResponse {
   public static FindWorkspaceMemberResponse from(WorkspaceMember workspaceMember) {
     Member member = workspaceMember.getMember();
     return FindWorkspaceMemberResponse.builder()
+        .workspaceMemberId(workspaceMember.getWorkspaceMemberId())
+        .email(member.getEmail())
         .profileImageUrl(member.getProfileImageUrl())
         .name(member.getName())
         .role(workspaceMember.getRole())
