@@ -194,6 +194,7 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
             clientSession.getAttributes().put("displayName", displayName);
             clientSession.getAttributes().put("courseId", session.getCourse().getCourseId());
             clientSession.getAttributes().put("sessionId", session.getSessionId());
+            clientSession.getAttributes().put("recordingId", session.getRecordingId());
 
             body.put("display", displayName);
             String newPayload = objectMapper.writeValueAsString(json);
@@ -220,23 +221,22 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
           && ("publish".equals(body.get("request")) || "configure".equals(body.get("request")))) {
         String role = (String) clientSession.getAttributes().get("role");
         String displayName = (String) clientSession.getAttributes().get("displayName");
-        Long courseId = (Long) clientSession.getAttributes().get("courseId");
-        Long sessionId = (Long) clientSession.getAttributes().get("sessionId");
-
         if (role != null && displayName != null) {
           body.put("display", displayName);
-          if ("TEACHER".equals(role) && "publish".equals(body.get("request"))) {
-            String uuid = java.util.UUID.randomUUID().toString().replace("-", "");
-            String filename =
-                String.format(
-                    "%s_%d_%d_%s",
-                    uuid,
-                    courseId != null ? courseId : 0L,
-                    sessionId != null ? sessionId : 0L,
-                    String.valueOf(System.currentTimeMillis()));
+          if ("TEACHER".equals(role)
+              && ("publish".equals(body.get("request"))
+                  || "configure".equals(body.get("request")))) {
+            String recordingId = (String) clientSession.getAttributes().get("recordingId");
+            if (recordingId == null) {
+              recordingId = "Unknown";
+            }
+
+            String filename = String.format("%s_%d", recordingId, System.currentTimeMillis());
+
             body.put("record", true);
             body.put("filename", filename);
             body.put("rec_dir", "/opt/janus/recordings");
+            log.info("[Janus Recording] Enabled for TEACHER. Filename: {}", filename);
           } else if ("STUDENT".equals(role)) {
             body.put("record", false);
           }
@@ -257,27 +257,30 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
       // 메시지가 JSON이고 publishers 목록이 있는지 확인하여 필터링
       if (clientSession.isOpen() && payload.contains("publishers")) {
         Map<String, Object> json = objectMapper.readValue(payload, new TypeReference<>() {});
-        
+
         // Janus 이벤트 구조: { "janus": "event", "plugindata": { "data": { ... } } }
         if (json.containsKey("plugindata")) {
           Map<String, Object> plugindata = (Map<String, Object>) json.get("plugindata");
           if (plugindata != null && plugindata.containsKey("data")) {
             Map<String, Object> data = (Map<String, Object>) plugindata.get("data");
-            
+
             if (data != null && data.containsKey("publishers")) {
               Object roleObj = clientSession.getAttributes().get("role");
               if ("STUDENT".equals(roleObj)) {
-                List<Map<String, Object>> publishers = (List<Map<String, Object>>) data.get("publishers");
+                List<Map<String, Object>> publishers =
+                    (List<Map<String, Object>>) data.get("publishers");
                 if (publishers != null) {
                   // [선생] 태그가 있는 퍼블리셔만 남기고 필터링
-                  publishers.removeIf(p -> {
-                    String display = (String) p.get("display");
-                    return display == null || !display.contains("[선생]");
-                  });
-                  
+                  publishers.removeIf(
+                      p -> {
+                        String display = (String) p.get("display");
+                        return display == null || !display.contains("[선생]");
+                      });
+
                   // 필터링된 데이터로 페이로드 업데이트
                   payload = objectMapper.writeValueAsString(json);
-                  log.info("[Backend Filter] Filtered publishers for STUDENT: {}", publishers.size());
+                  log.info(
+                      "[Backend Filter] Filtered publishers for STUDENT: {}", publishers.size());
                 }
               }
             }

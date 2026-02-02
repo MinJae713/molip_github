@@ -83,6 +83,7 @@ public class SessionServiceImpl implements SessionService {
             .useEmotion(request.getUseEmotion())
             .useQuiz(request.getUseQuiz())
             .quizCount(request.getQuizCount())
+            .recordingId(generateRecordingId())
             .build();
 
     Session savedSession = sessionRepository.save(session);
@@ -443,5 +444,15 @@ public class SessionServiceImpl implements SessionService {
     } else {
       return focusOn && !movement;
     }
+  }
+
+  private String generateRecordingId() {
+    String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    StringBuilder sb = new StringBuilder(40);
+    Random random = new Random();
+    for (int i = 0; i < 40; i++) {
+      sb.append(chars.charAt(random.nextInt(chars.length())));
+    }
+    return sb.toString();
   }
 }

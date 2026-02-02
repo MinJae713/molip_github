@@ -86,6 +86,9 @@ public class Session {
   @Column(length = 255)
   private String pin;
 
+  @Column(name = "recording_id", length = 20)
+  private String recordingId;
+
   @ManyToOne
   @JoinColumn(name = "course_id", nullable = false)
   @OnDelete(action = OnDeleteAction.CASCADE)
