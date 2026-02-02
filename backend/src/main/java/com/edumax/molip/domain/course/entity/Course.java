@@ -137,4 +137,22 @@ public class Course {
 
   @Column(name = "score_top3", nullable = false, length = 127)
   private String scoreTop3; // JSON 데이터
+
+  public Integer getSessionCount() {
+    // 세션 총 개수
+    return sessions.size();
+  }
+
+  public Integer getCourseLearnerCount() {
+    // 수강생 총 수
+    return courseLearners.size();
+  }
+
+  public Double getCourseLearnerAttandanceRate() {
+    // 수강생 평균 참석률
+    return courseLearners.stream()
+        .mapToDouble(CourseLearner::getSessionAttandanceRate)
+        .average()
+        .orElse(-9999);
+  }
 }

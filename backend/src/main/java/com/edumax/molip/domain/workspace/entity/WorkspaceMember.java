@@ -6,6 +6,7 @@ import com.edumax.molip.domain.chatting.entity.ReviewChattingRoom;
 import com.edumax.molip.domain.chatting.entity.SessionChattingMessage;
 import com.edumax.molip.domain.course.entity.Course;
 import com.edumax.molip.domain.course.entity.CourseApply;
+import com.edumax.molip.domain.course.entity.CourseCertificated;
 import com.edumax.molip.domain.course.entity.Zzim;
 import com.edumax.molip.domain.member.entity.Member;
 import com.edumax.molip.domain.quiz.entity.ExitQuizResult;
@@ -81,7 +82,7 @@ public class WorkspaceMember {
 
   @OneToMany(mappedBy = "leaner")
   @Builder.Default
-  private List<Course> courses = new ArrayList<>();
+  private List<Course> courses = new ArrayList<>(); // 강사인 경우만 지정됨 - 본인의 강의들
 
   @OneToMany(mappedBy = "workspaceMember")
   @Builder.Default
@@ -118,4 +119,8 @@ public class WorkspaceMember {
   @OneToMany(mappedBy = "workspaceMember")
   @Builder.Default
   private List<ReviewChattingMessage> reviewChattingMessages = new ArrayList<>();
+
+  @OneToMany(mappedBy = "workspaceMember")
+  @Builder.Default
+  private List<CourseCertificated> courseCertificateds = new ArrayList<>();
 }

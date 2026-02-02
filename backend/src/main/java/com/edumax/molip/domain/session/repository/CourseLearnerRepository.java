@@ -1,6 +1,8 @@
 package com.edumax.molip.domain.session.repository;
 
+import com.edumax.molip.domain.course.entity.Course;
 import com.edumax.molip.domain.session.entity.CourseLearner;
+import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,4 +19,7 @@ public interface CourseLearnerRepository extends JpaRepository<CourseLearner, Lo
 
   List<CourseLearner> findByWorkspaceMember_Member_IdAndCourse_Workspace_WorkspaceId(
       Long memberId, Long workspaceId);
+
+  Optional<CourseLearner> findByCourseAndWorkspaceMember(
+      Course course, WorkspaceMember workspaceMember);
 }

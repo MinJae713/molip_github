@@ -1,6 +1,7 @@
 package com.edumax.molip.domain.workspace.service;
 
 import com.edumax.molip.domain.course.entity.Course;
+import com.edumax.molip.domain.course.entity.CourseApply;
 import com.edumax.molip.domain.course.repository.CourseApplyRepository;
 import com.edumax.molip.domain.course.repository.ZzimRepository;
 import com.edumax.molip.domain.course.types.CourseCategory;
@@ -49,6 +50,7 @@ import com.edumax.molip.domain.workspace.repository.InviteCodeRepository;
 import com.edumax.molip.domain.workspace.repository.WorkspaceMemberRepository;
 import com.edumax.molip.domain.workspace.repository.WorkspaceRegisterRepository;
 import com.edumax.molip.domain.workspace.repository.WorkspaceRepository;
+import com.edumax.molip.domain.workspace.types.CourseApplyStatus;
 import com.edumax.molip.domain.workspace.types.WorkspaceMemberRole;
 import com.edumax.molip.domain.workspace.types.WorkspaceMemberStatus;
 import com.edumax.molip.domain.workspace.types.WorkspaceRegisterStatus;
@@ -251,7 +253,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
           String subCategory = course.getSubCategory();
           List<Session> sessions = course.getSessions();
           Integer totalLessons = sessions.size();
-          Integer currentLessons = 0;
+          int currentLessons = 0;
           for (Session session : sessions) {
             currentLessons +=
                 learnerAnalysisRepository.findById(session.getSessionId()).isPresent() ? 1 : 0;
@@ -262,10 +264,18 @@ public class WorkspaceServiceImpl implements WorkspaceService {
               courseId + ", " + isLiked + ", " + workspaceMember.getWorkspaceMemberId());
           LocalDateTime dDay = course.getCreatedAt();
           CourseStatus status = course.getStatus();
-          Boolean enrollmentStatus =
-              courseApplyRepository
-                  .findByWorkspaceMemberAndCourse(workspaceMember, course)
-                  .isPresent();
+          CourseApplyStatus applyStatus = null;
+          Optional<CourseApply> courseApply =
+              courseApplyRepository.findByWorkspaceMemberAndCourse(workspaceMember, course);
+          if (courseApply.isPresent()) {
+            applyStatus =
+                courseApply.orElse(null).getIsApplied()
+                    ? CourseApplyStatus.APPROVE
+                    : CourseApplyStatus.PENDING;
+          } else {
+            applyStatus = CourseApplyStatus.NONE;
+          }
+
           result.add(
               FindWorkspaceCoursesByIdResponse.builder()
                   .courseId(courseId)
@@ -279,7 +289,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                   .isLiked(isLiked)
                   .dDay(dDay)
                   .status(status)
-                  .enrollmentStatus(enrollmentStatus)
+                  .applyStatus(applyStatus)
                   .build());
         });
     return result;
