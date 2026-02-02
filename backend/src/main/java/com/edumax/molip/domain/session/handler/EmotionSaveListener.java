@@ -3,8 +3,10 @@ package com.edumax.molip.domain.session.handler;
 import com.edumax.molip.domain.session.dto.EmotionSaveEvent;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -50,12 +52,12 @@ public class EmotionSaveListener {
   public void stopLecture(String sessionId) {
     ScheduledFuture<?> future = scheduledTasks.remove(sessionId);
     if (future != null) {
-      flushBatch(); // 종료 전 남은 데이터 최종 처리
       future.cancel(false); // 스케줄러 정지
+      flushBatch(); // 종료 전 남은 데이터 최종 처리
     }
   }
 
-  @Async("EmotionSaveExecutor")
+  @Async("emotionSaveExecutor")
   @EventListener
   public void handleEmotionResult(EmotionSaveEvent event) {
     eventBuffer.offer(event);
@@ -76,19 +78,17 @@ public class EmotionSaveListener {
     if (batch.isEmpty()) {
       return;
     }
+    Set<String> processedKeys = new HashSet<>();
 
     redisTemplate.executePipelined(
         (RedisCallback<?>)
             connection -> {
               for (EmotionSaveEvent item : batch) {
-                byte[] genKey =
-                    redisTemplate
-                        .getStringSerializer()
-                        .serialize(generateGeneralKey(item.sessionId()));
-                byte[] perKey =
-                    redisTemplate
-                        .getStringSerializer()
-                        .serialize(generatePersonalKey(item.sessionId(), item.memberId()));
+                String genKeyStr = generateGeneralKey(item.sessionId());
+                String perKeyStr = generatePersonalKey(item.sessionId(), item.memberId());
+
+                byte[] genKey = redisTemplate.getStringSerializer().serialize(genKeyStr);
+                byte[] perKey = redisTemplate.getStringSerializer().serialize(perKeyStr);
 
                 // score(timeline)를 제외하고 데이터 포맷 구성
                 // 필요하다면 timeline을 데이터 앞에 포함시켜 나중에 정렬 순서를 알 수 있게 유지
@@ -115,8 +115,12 @@ public class EmotionSaveListener {
                 connection.listCommands().rPush(perKey, perValue);
 
                 // Expire 설정 유지
-                connection.keyCommands().expire(genKey, TTL.getSeconds());
-                connection.keyCommands().expire(perKey, TTL.getSeconds());
+                if (processedKeys.add(genKeyStr)) {
+                  connection.keyCommands().expire(genKey, TTL.getSeconds());
+                }
+                if (processedKeys.add(perKeyStr)) {
+                  connection.keyCommands().expire(perKey, TTL.getSeconds());
+                }
               }
               return null;
             });

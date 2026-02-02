@@ -17,4 +17,5 @@ public class QuestionMessage {
   private String content;
   private String name;
   private String timestamp;
+  private String profileImageUrl;
 }

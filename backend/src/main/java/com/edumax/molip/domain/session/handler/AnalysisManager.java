@@ -2,6 +2,7 @@ package com.edumax.molip.domain.session.handler;
 
 import com.edumax.molip.domain.session.dto.response.TeacherConcentrateMessage;
 import com.edumax.molip.domain.session.dto.response.TeacherEmotionMessage;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
@@ -13,17 +14,23 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 @Slf4j
 @RequiredArgsConstructor
-public class EmotionManager { // 세션마다 존재
+public class AnalysisManager { // 세션마다 존재
   // 1. 데이터 구조 정의: timeline별로 7개의 감정 수치를 담는 배열
   private final Map<Integer, List<float[]>> emotionBuffer = new ConcurrentHashMap<>();
   private final Map<Integer, List<Float>> concentrationBuffer = new ConcurrentHashMap<>();
-  private final Map<Integer, Deque<Integer>> feverTimeBuffer =
-      new ConcurrentHashMap<>(); // memberId -> fever타임라인
-  private final Map<Integer, Integer> lastScorebuffer =
-      new ConcurrentHashMap<>(); // memberId -> lastScore
+  // memberId -> fever타임라인
+  private final Map<String, Deque<Integer>> feverTimeBuffer = new ConcurrentHashMap<>();
+  // memberId -> lastScore
+  private final Map<String, Float> lastScoreBuffer = new ConcurrentHashMap<>();
+  // empty time -> initialize or not
+  private final Map<String, Deque<Integer>> emptyBuffer = new ConcurrentHashMap<>();
   private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
   private final SimpMessagingTemplate messagingTemplate; // 웹소켓 전송을 위한 템플릿
   private ScheduledFuture<?> scheduledTask; // 실행 중인 작업을 담는 변수
+
+  private static final int EMPTY_LIMIT = 10; // 180초간 자리비움하면 자리비움 처리
+  private static final int FEVER_LIMIT = 10; // 180초간 풀집중이면 하면 피버타임 처리
+  private static final float CONCENTRATE_DEFAULT = 30;
 
   // 감정 이름에 따른 배열 인덱스 매핑 (예시
   public static int getEmotionIndex(String emotionName) {
@@ -52,6 +59,60 @@ public class EmotionManager { // 세션마다 존재
     };
   }
 
+  public boolean insertFeverState(String sessionId, Long memberId, int timeline) {
+    log.info("자리비움 삽입 시도 : [{}] - {} - {}", timeline, sessionId, memberId);
+    String key = sessionId + "-" + memberId;
+    Deque<Integer> feverDeque = feverTimeBuffer.computeIfAbsent(key, k -> new ArrayDeque<>());
+
+    synchronized (feverDeque) {
+      // 1. 사이즈 제한 관리
+      while (feverDeque.size() >= FEVER_LIMIT) {
+        feverDeque.pollFirst();
+      }
+
+      // 2. 새로운 타임라인 추가
+      feverDeque.addLast(timeline);
+
+      // 3. 꽉 찼을 때만 로직 검사
+      if (feverDeque.size() == FEVER_LIMIT) {
+        // 마지막 값과 첫 값의 차이가 (LIMIT - 1)이면 연속된 것으로 간주
+        if (feverDeque.getLast() - feverDeque.getFirst() == FEVER_LIMIT - 1) {
+          log.info("피버타임 처리됨 : {} - {} - {}", timeline, sessionId, feverDeque.size());
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  public boolean insertEmpty(String sessionId, Long memberId, int timeline) {
+    log.info("자리비움 삽입 시도 : {} - {} - {}", timeline, sessionId, memberId);
+    String key = sessionId + "-" + memberId;
+    Deque<Integer> emptyDeque = emptyBuffer.computeIfAbsent(key, k -> new ArrayDeque<>());
+
+    synchronized (emptyDeque) {
+      // 1. 사이즈 제한 관리
+      while (emptyDeque.size() >= EMPTY_LIMIT) {
+        emptyDeque.pollFirst();
+      }
+
+      // 2. 새로운 타임라인 추가
+      emptyDeque.addLast(timeline);
+
+      // 3. 꽉 찼을 때만 로직 검사
+      if (emptyDeque.size() == EMPTY_LIMIT) {
+        // 마지막 값과 첫 값의 차이가 (LIMIT - 1)이면 연속된 것으로 간주
+        if (emptyDeque.getLast() - emptyDeque.getFirst() == EMPTY_LIMIT - 1) {
+          log.info("자리비움 처리됨 : {} - {} - {}", timeline, sessionId, emptyDeque.size());
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
   /** 학생들이 1초마다 감정 정보를 삽입하는 메서드 */
   public void insertEmotion(int timeline, float[] emotionValueList) {
     log.info("감정 삽입 시도 - 타임라인: {}", timeline);
@@ -64,15 +125,37 @@ public class EmotionManager { // 세션마다 존재
     log.debug("데이터 삽입 완료 - 현재 해당 타임라인 데이터 수: {}", studentEmotionList.size());
   }
 
-  public void insertConcentrate(int timeline, Float concentrateValue) {
-    log.info("집중도 삽입 시도 - 타임라인: {}", timeline);
+  public float insertConcentrate(
+      String sessionId, Long memberId, int timeline, boolean isEmpty, float diff) {
+    log.info("집중도 삽입 시도 : {} -empty {} -diff {}", timeline, isEmpty, diff);
+
+    String key = sessionId + "-" + memberId;
+    Float lastScore = lastScoreBuffer.getOrDefault(key, CONCENTRATE_DEFAULT);
+
+    if (isEmpty) {
+      lastScore = CONCENTRATE_DEFAULT;
+    } else {
+      lastScore += diff;
+      if (lastScore > 100) {
+        lastScore = 100f;
+      }
+      if (lastScore < 0) {
+        lastScore = 0f;
+      }
+    }
+
+    lastScoreBuffer.put(key, lastScore);
+
     List<Float> studentConcentrateList =
         concentrationBuffer.computeIfAbsent(timeline, k -> new ArrayList<>());
 
     synchronized (studentConcentrateList) {
-      studentConcentrateList.add(concentrateValue);
+      studentConcentrateList.add(lastScore);
     }
+
     log.debug("데이터 삽입 완료 - 현재 해당 타임라인 데이터 수: {}", studentConcentrateList.size());
+
+    return lastScore;
   }
 
   /**
@@ -94,18 +177,15 @@ public class EmotionManager { // 세션마다 존재
             () -> {
               try { // 스케줄러 내부의 예외는 반드시 try-catch로 감싸야 중단되지 않습니다.
                 int timeline = currentTimeline[0];
-                List<float[]> emotionValues = emotionBuffer.remove(timeline);
-                List<Float> concentrateValues = concentrationBuffer.remove(timeline);
+                List<float[]> emotionValues = emotionBuffer.get(timeline);
 
-                int emotionCount = emotionValues.size(); // 참여 학생 수
-                int concentrateCount = concentrateValues.size(); // 참여 학생 수
-
-                // 매 초마다 스케줄러가 돌고 있다는 로그
                 log.debug("[{}] 스케줄러 작동 중 - 타임라인: {}", sessionId, timeline);
-
-                if (emotionValues != null && !emotionValues.isEmpty()) {
+                // 2. 데이터가 하나라도 없는 경우에 대한 방어 코드
+                if (emotionValues == null || emotionValues.isEmpty()) {
+                  log.trace("[{}] 타임라인 {}에 감정 데이터가 불충분하여 스킵합니다.", sessionId, timeline);
+                } else {
+                  int emotionCount = emotionValues.size(); // 참여 학생 수
                   float[] avgList = new float[7];
-                  Float avgConcentrate = 0f;
 
                   synchronized (emotionValues) {
                     for (float[] studentData : emotionValues) {
@@ -115,36 +195,44 @@ public class EmotionManager { // 세션마다 존재
                     }
                   }
 
-                  synchronized (concentrateValues) {
-                    for (Float studentData : concentrateValues) {
-                      for (int i = 0; i < 7; i++) {
-                        avgConcentrate += studentData;
-                      }
-                    }
+                  for (int i = 0; i < 7; i++) {
+                    avgList[i] /= emotionCount;
                   }
-
-                  for (int i = 0; i < avgList.length; i++) {
-                    avgList[i] = avgList[i] / emotionCount;
-                  }
-                  avgConcentrate /= concentrateCount;
 
                   log.info("[{}] 감정 전송 - 타임라인: {}, 참여 학생 수: {}", sessionId, timeline, emotionCount);
                   sendEmotion(timeline, avgList, sessionId);
+                }
+
+                List<Float> concentrateValues = concentrationBuffer.get(timeline);
+
+                if (concentrateValues == null || concentrateValues.isEmpty()) {
+                  log.trace("[{}] 타임라인 {}에 몰입도 데이터가 불충분하여 스킵합니다.", sessionId, timeline);
+                } else {
+                  int concentrateCount = concentrateValues.size(); // 참여 학생 수
+                  Float avgConcentrate = 0f;
+
+                  synchronized (concentrateValues) {
+                    for (Float studentData : concentrateValues) {
+                      avgConcentrate += studentData;
+                    }
+                  }
+
+                  avgConcentrate /= concentrateCount;
+
                   log.info(
                       "[{}] 집중도 전송 - 타임라인: {}, 참여 학생 수: {}", sessionId, timeline, concentrateCount);
                   sendConcentrate(timeline, avgConcentrate, sessionId);
-                } else {
-                  // 데이터가 없어서 전송을 스킵하는 경우
-                  log.trace("[{}] 타임라인 {}에 전송할 데이터가 없습니다.", sessionId, timeline);
                 }
 
+                emotionBuffer.remove(timeline);
+                concentrationBuffer.remove(timeline);
                 currentTimeline[0]++;
               } catch (Exception e) {
                 // 이 로그가 찍힌다면 스케줄러 내부 로직에서 에러가 난 것입니다.
                 log.error("[{}] 스케줄러 실행 중 치명적 오류 발생!", sessionId, e);
               }
             },
-            10,
+            5,
             1,
             TimeUnit.SECONDS);
   }
@@ -168,6 +256,7 @@ public class EmotionManager { // 세션마다 존재
 
     // 3. 남은 버퍼 정리
     emotionBuffer.clear();
+    concentrationBuffer.clear();
   }
 
   private void sendEmotion(int timeline, float[] avgList, String sessionId) {
@@ -193,8 +282,9 @@ public class EmotionManager { // 세션마다 존재
     messagingTemplate.convertAndSend("/topic/analysis/" + sessionId, message);
   }
 
-  private void sendConcentrate(int timeline, Float avgList, String sessionId) {
-    TeacherConcentrateMessage message = new TeacherConcentrateMessage(timeline, avgList);
+  private void sendConcentrate(int timeline, Float avgConcentrate, String sessionId) {
+    TeacherConcentrateMessage message =
+        new TeacherConcentrateMessage("concentrate", timeline, avgConcentrate);
 
     messagingTemplate.convertAndSend("/topic/analysis/" + sessionId, message);
   }
