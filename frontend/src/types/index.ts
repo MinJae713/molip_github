@@ -53,26 +53,9 @@ export interface User {
   memberId: number;
   name: string;
   email: string;
-  profileImageUrl: string;
+  profileImageUrl?: string | null;
   role?: string;
   auth?: string;
-}
-
-// 특정 워크스페이스 내에서의 멤버 정보 (Relationship)
-export interface WorkspaceMember extends User {
-  workspaceId: number | string;
-  role: "Admin" | "Instructor" | "Learner"; // 워크스페이스별 역할
-  status: "ACTIVE" | "INACTIVE"; // 워크스페이스별 상태
-  joinedAt: string;
-  lastLogin: string;
-  courses?: string[]; // [추가] 수강 중인 강의 목록 (없을 수 있으므로 선택적 속성)
-  // 이미지 상세 정보에 필요한 통계
-  stats?: {
-    progress: number;
-    courseCount: number;
-    quizAverage: number;
-  };
-  profileImage?: string; // Added for compatibility
 }
 
 export interface WorkspaceStats {
@@ -198,4 +181,71 @@ export interface CodeItem {
   endedDate: string;
   createdAt?: string; // undefined 허용
   status: '활성' | '만료임박' | '만료';
+}
+
+/* ==========================================================
+ * WORKSPACE ADMIN TYPE
+ * ========================================================== */
+
+/** 1. 초대코드 (Invite Code) */
+export interface JoinCode {
+  joinCodeId: number;
+  identifyValue: string; // 실제 초대 코드
+  joinCodeName: string;  // 관리용 이름
+  endedDate: string;     // 만료일 (ISO)
+  createdAt?: string;    // 생성일 (ISO)
+  status?: string;       // 클라이언트 계산용 (활성/만료 등)
+}
+
+export interface CreateJoinCodePayload {
+  workspaceId: number;
+  endedDate: string;
+  joinCodeName: string;
+}
+
+export interface CreateJoinCodeResponse {
+  identifyValue: string;
+}
+
+/** 2. 가입 신청 (Join Request) */
+export interface JoinRequest {
+  workspaceRegisterId: number; // PK
+  workspaceId: number;
+  memberId: number;
+  email: string;
+  name: string;
+  profileImageUrl?: string;
+  createdAt: string;       // 생성일 (신청일)
+  updatedAt?: string;      // 수정일 (처리일)
+  status: 'PENDING' | 'APPROVE' | 'REJECTED';
+  approvedAt?: string;     // 승인일
+  rejectReason?: string;   // 반려 사유
+  rejectType?: 'AFFLIATION_MISMATCH' | 'INVITE_CODE_USE_MISS' | 'OVER_CAPACITY' | 'ETC'; // 반려 유형
+}
+
+/** 3. 워크스페이스 멤버 (Member) */
+export interface WorkspaceMember extends User {
+  workspaceMemberId: number; // 워크스페이스-멤버 관계의 PK - 백엔드 요청하기
+  workspaceId: number | string;
+
+  // 역할 및 상태 (백엔드 Enum 통일)
+  role: "TRAINER" | "LEARNER";
+  status: "ACTIVE" | "INACTIVE";
+
+  // 날짜 정보 (백엔드 명세서 필드명 준수)
+  createdAt: string;         // 워크스페이스 가입일
+  connectedAt?: string | null; // 최근 접속일 (없을 수 있음)
+
+  // 추가 통계 정보 (선택적)
+  courses?: string[];
+  stats?: {
+    progress: number;
+    courseCount: number;
+    quizAverage: number;
+  };
+}
+
+export interface ChangeRoleRequest {
+  workspaceMemberId: number;
+  workspaceMemberRole: "TRAINER" | "LEARNER"; // 오타 방지용 안전장치
 }

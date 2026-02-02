@@ -1,58 +1,13 @@
 import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
 import api from "@/api";
-
-/* ==========================================================
- * TYPE DEFINITIONS
- * ========================================================== */
-
-/** 1. 초대코드 (Invite Code) */
-export interface JoinCode {
-  joinCodeId: number;
-  identifyValue: string; // 실제 초대 코드
-  joinCodeName: string;  // 관리용 이름
-  endedDate: string;     // 만료일 (ISO)
-  createdAt?: string;    // 생성일 (ISO)
-  status?: string;       // 클라이언트 계산용 (활성/만료 등)
-}
-
-export interface CreateJoinCodePayload {
-  workspaceId: number;
-  endedDate: string;
-  joinCodeName: string;
-}
-
-export interface CreateJoinCodeResponse {
-  identifyValue: string;
-}
-
-/** 2. 가입 신청 (Join Request) */
-export interface JoinRequest {
-  workspaceRegisterId: number; // PK
-  workspaceId: number;
-  memberId: number;
-  email: string;
-  name: string;
-  profileImageUrl?: string;
-  createdAt: string;       // 생성일 (신청일)
-  updatedAt?: string;      // 수정일 (처리일)
-  status: 'PENDING' | 'APPROVE' | 'REJECTED';
-  approvedAt?: string;     // 승인일
-  rejectReason?: string;   // 반려 사유
-  rejectType?: 'AFFLIATION_MISMATCH' | 'INVITE_CODE_USE_MISS' | 'OVER_CAPACITY' | 'ETC'; // 반려 유형
-}
-
-/** 3. 워크스페이스 멤버 (Member) */
-export interface WorkspaceMember {
-  id: number; // memberId
-  email: string;
-  name: string;
-  profileImageUrl?: string;
-  role: 'TRAINER' | 'LEARNER';
-  joinedAt?: string;
-  status?: string;
-}
-
+import type { 
+  JoinCode, 
+  CreateJoinCodePayload, 
+  CreateJoinCodeResponse, 
+  JoinRequest, 
+  WorkspaceMember 
+} from '@/types';
 
 export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
 
@@ -78,10 +33,21 @@ export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
 
   /** 활성화된(만료되지 않은) 초대코드 목록 */
   const activeJoinCodes = computed(() => {
-    const now = new Date();
-    return joinCodes.value.filter(code => new Date(code.endedDate) >= now);
-  });
+    // 1. 기준 시간을 오늘 00:00:00으로 설정 (날짜 비교의 정확성)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
+    return joinCodes.value.filter(code => {
+      if (!code.endedDate) return false;
+      
+      // 2. 만료일을 Date 객체로 변환
+      const expirationDate = new Date(code.endedDate);
+      
+      // 3. 만료일이 오늘 00:00:00 이후라면 활성 상태로 간주
+      return expirationDate >= today;
+    });
+  });
+  
   /* ==========================================================
    * ACTIONS
    * ========================================================== */
@@ -92,6 +58,7 @@ export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
 
   /** 초대코드 목록 조회 */
   const fetchJoinCodes = async (workspaceId: number) => {
+    if (isLoading.value) return;
     isLoading.value = true;
     error.value = null;
     try {
@@ -108,6 +75,9 @@ export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
 
   /** 초대코드 생성 */
   const createJoinCode = async (payload: CreateJoinCodePayload): Promise<CreateJoinCodeResponse> => {
+    if (isLoading.value) {
+      return Promise.reject(new Error("이미 처리 중인 요청이 있습니다."));
+    }
     isLoading.value = true;
     error.value = null;
     try {
@@ -136,11 +106,18 @@ export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
 
   /** 초대코드 삭제 */
   const deleteJoinCode = async (joinCodeId: number, workspaceId: number) => {
+    if (isLoading.value) return;
     isLoading.value = true;
     error.value = null;
     try {
-      await api.delete(`/workspaces/joinCode/${joinCodeId}`);
-      await fetchJoinCodes(workspaceId);
+      const { data } = await api.delete<{ apiResult: boolean }>(`/workspaces/joinCode/${joinCodeId}`);
+      
+      if (data.apiResult) {
+        // 삭제 성공 시 목록 갱신
+        await fetchJoinCodes(workspaceId);
+      } else {
+        throw new Error("삭제 처리에 실패했습니다.");
+      }
     } catch (e) {
       console.error("초대코드 삭제 실패", e);
       error.value = "초대코드 삭제에 실패했습니다.";
@@ -157,14 +134,17 @@ export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
 
   /** 가입 신청 목록 조회 */
   const fetchJoinRequests = async (workspaceId: number) => {
+    if (isLoading.value) return;
     isLoading.value = true;
     error.value = null;
     try {
       const { data } = await api.get<JoinRequest[]>(`/workspaces/${workspaceId}/register`);
-      joinRequests.value = data;
+      // 데이터가 null로 올 경우를 대비한 방어 코드
+      joinRequests.value = Array.isArray(data) ? data : [];
     } catch (e) {
       console.error("가입 신청 목록 조회 실패", e);
       error.value = "가입 신청 목록을 불러오지 못했습니다.";
+      joinRequests.value = []; // 에러 시 빈 배열로 초기화
     } finally {
       isLoading.value = false;
     }
@@ -175,17 +155,16 @@ export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
     workspaceId: number,
     workspaceRegisterId: number,
     status: 'APPROVE' | 'REJECTED',
-    rejectData?: { type: string; reason: string }
+    rejectReason: string = "" // 사유만 받도록 단순화
   ) => {
+    if (isLoading.value) return;
     isLoading.value = true; // 로딩 추가
     error.value = null;
     try {
-      await api.patch(`/workspaces/register/status`, {
+      await api.patch(`/workspaces/register`, {
         workspaceRegisterId,
-        workspaceId,
         status,
-        rejectType: rejectData?.type || null,
-        rejectReason: rejectData?.reason || ""
+        rejectReason: status === 'REJECTED' ? rejectReason : ""
       });
 
       // 처리 후 목록 갱신
@@ -206,12 +185,15 @@ export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
 
   /** 워크스페이스 멤버 목록 조회 */
   const fetchMembers = async (workspaceId: number) => {
+    if (isLoading.value) return;
     isLoading.value = true;
+    error.value = null;
     try {
-      const { data } = await api.get<WorkspaceMember[]>(`/workspaces/${workspaceId}/members`);
+      const { data } = await api.get<WorkspaceMember[]>(`/workspaces/${workspaceId}/member`);
       members.value = Array.isArray(data) ? data : [];
     } catch (e) {
       console.error("멤버 목록 조회 실패", e);
+      error.value = "멤버 목록을 불러오지 못했습니다.";
       members.value = [];
     } finally {
       isLoading.value = false;
@@ -219,42 +201,62 @@ export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
   };
 
   /** 멤버 역할 변경 */
-  const changeMemberRole = async (memberId: number, role: string) => {
+  const changeMemberRole = async (workspaceMemberId: number, newRole: 'TRAINER' | 'LEARNER') => {
+    if (isLoading.value) return;
     isLoading.value = true;
+    error.value = null;
+
     try {
-      await api.patch(`/workspaces/changeRole`, {
-        workspaceMemberId: memberId,
-        workspaceMemberRole: role
+      // API 명세서 규격에 맞게 요청
+      const { data } = await api.patch<{ apiResult: boolean }>('/workspaces/changeRole', {
+        workspaceMemberId,
+        workspaceMemberRole: newRole
       });
 
-      // 성공 시 로컬 상태 업데이트 (불필요한 리패치 방지)
-      const target = members.value.find(m => m.id === memberId);
-      if (target) {
-        target.role = role as any;
+      if (data.apiResult) {
+        // 💡 꿀팁: 성공 시 서버에서 다시 목록을 안 불러와도 되게 로컬 state 업데이트
+        const member = members.value.find(m => m.workspaceMemberId === workspaceMemberId);
+        if (member) {
+          member.role = newRole;
+        }
+        console.log(`${workspaceMemberId}번 멤버의 역할이 ${newRole}로 변경되었습니다.`);
+      } else {
+        throw new Error("서버 처리 결과가 실패로 돌아왔습니다.");
       }
     } catch (e) {
-      console.error("권한 변경 실패", e);
-      error.value = "권한 변경에 실패했습니다.";
-      throw e;
+      console.error("멤버 역할 변경 실패:", e);
+      error.value = "역할을 변경하는 중 오류가 발생했습니다.";
+      throw e; // 컴포넌트에서 알림(Toast 등)을 띄울 수 있도록 에러 토스
     } finally {
       isLoading.value = false;
     }
   };
 
   /** 멤버 비활성화 (추방/탈퇴 처리) */
-  const inactiveMember = async (memberId: number, isSendMail: boolean = false) => {
+  const inactiveMember = async (workspaceMemberId: number, isSendMail: boolean = false) => {
+    if (isLoading.value) return;
     isLoading.value = true;
+    error.value = null;
+
     try {
-      await api.patch(`/workspaces/inactive`, {
-        workspaceMemberId: memberId,
+      const { data } = await api.patch<{ apiResult: boolean }>('/workspaces/inactive', {
+        workspaceMemberId,
         isSendMail
       });
 
-      // 성공 시 로컬 목록에서 제거
-      members.value = members.value.filter(m => m.id !== memberId);
+      if (data.apiResult) {
+        // 💡 삭제 대신 상태값만 업데이트
+        const member = members.value.find(m => m.workspaceMemberId === workspaceMemberId);
+        if (member) {
+          member.status = 'INACTIVE'; // 상태를 INACTIVE로 변경
+        }
+        console.log(`${workspaceMemberId}번 멤버 상태가 비활성으로 변경되었습니다.`);
+      } else {
+        throw new Error("비활성화 처리에 실패했습니다.");
+      }
     } catch (e) {
-      console.error("멤버 비활성화 실패", e);
-      error.value = "멤버 비활성화에 실패했습니다.";
+      console.error("멤버 비활성화 실패:", e);
+      error.value = "멤버 상태 변경 중 오류가 발생했습니다.";
       throw e;
     } finally {
       isLoading.value = false;
