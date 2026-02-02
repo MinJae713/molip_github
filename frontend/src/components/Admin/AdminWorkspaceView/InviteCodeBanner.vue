@@ -32,7 +32,7 @@ const emit = defineEmits<{
 
     <button 
       @click="emit('generate')"
-      class="flex items-center gap-2 bg-white border border-slate-300 px-5 py-2.5 rounded-xl font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 shadow-sm"
+      class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95"
     >
       <span class="material-symbols-outlined text-xl">add_circle</span>
       <span class="text-sm">신규 코드 발급하기</span>

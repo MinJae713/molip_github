@@ -3,6 +3,40 @@ import StatCard from '@/components/Admin/AdminWorkspaceView/StatCard.vue';
 import InviteBanner from '@/components/Admin/AdminWorkspaceView/InviteCodeBanner.vue';
 import AdminStatTable from '@/components/Admin/AdminWorkspaceView/AdminStatTable.vue';
 import CourseDetailModal from '@/components/Admin/AdminWorkspaceView/CourseDetailModal.vue';
+import CreateCodeModal from '@/components/Admin/InviteCodeView/CreateCodeModal.vue';
+import { useAdminJoinCodeStore } from '@/stores/adminJoinCode';
+import { ref } from 'vue';
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
+const joinCodeStore = useAdminJoinCodeStore();
+
+// 모달 상태
+const isCreateModalOpen = ref(false);
+const newlyCreatedCode = ref<string | null>(null);
+
+// 코드 생성 핸들러
+const onCreateCode = async (newData: { joinCodeName: string; endedDate: string }) => {
+  const workspaceId = Number(route.params.id);
+  try {
+    const response = await joinCodeStore.createJoinCode({
+      workspaceId,
+      joinCodeName: newData.joinCodeName,
+      endedDate: newData.endedDate,
+    });
+    
+    // 성공 시 모달에 결과 전달 (모달은 닫히지 않음)
+    newlyCreatedCode.value = response.identifyValue;
+    
+  } catch (e) {
+    alert('코드 생성 중 오류가 발생했습니다.');
+  }
+};
+
+const closeCreateModal = () => {
+  isCreateModalOpen.value = false;
+  newlyCreatedCode.value = null; // 초기화
+};
 
 /**
  * 관리자 대시보드용 요약 통계 데이터
@@ -39,7 +73,14 @@ const adminStats = [
   <div class="min-h-screen bg-[#F8FAFC] px-6 lg:px-10 pt-4 pb-10 space-y-6">
 
     <section>
-      <InviteBanner />
+      <InviteBanner @generate="isCreateModalOpen = true" />
+      <!-- 생성 모달 -->
+      <CreateCodeModal 
+        v-if="isCreateModalOpen" 
+        :createdCode="newlyCreatedCode"
+        @close="closeCreateModal" 
+        @create="onCreateCode" 
+      />
     </section>
 
     <section>

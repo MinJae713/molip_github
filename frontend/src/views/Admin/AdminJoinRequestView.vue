@@ -1,5 +1,5 @@
 <template>
-  <div class="p-8 font-sans text-slate-900 bg-slate-50/30 min-h-screen">
+  <div class="p-8 text-slate-900 bg-slate-50/30 min-h-screen">
     <div class="flex justify-between items-start mb-8">
       <div>
         <h1 class="text-2xl font-bold mb-1">가입 신청 관리</h1>

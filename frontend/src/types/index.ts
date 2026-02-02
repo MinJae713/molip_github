@@ -190,3 +190,12 @@ export interface QuizItem {
   isEditing?: boolean;
   isCorrect?: boolean;                 // [추가] 채점 결과
 }
+
+export interface CodeItem {
+  joinCodeId: number;
+  joinCodeName: string;
+  identifyValue: string;
+  endedDate: string;
+  createdAt?: string; // undefined 허용
+  status: '활성' | '만료임박' | '만료';
+}
