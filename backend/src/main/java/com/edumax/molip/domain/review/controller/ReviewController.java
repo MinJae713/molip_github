@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/review")
+@RequestMapping("/api/review")
 @RequiredArgsConstructor
 public class ReviewController {
   private final QuizService quizService;
