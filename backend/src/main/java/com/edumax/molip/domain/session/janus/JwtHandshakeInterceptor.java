@@ -70,7 +70,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
         // [수정] 3. Redis 데이터 추가 및 만료 시간(TTL) 설정
         // 리스트에 데이터를 넣고, 해당 키가 무한히 증식하지 않도록 만료 시간을 설정합니다. (예: 24시간)
-        redisTemplate.opsForList().rightPush(joinKey, joinValue);
+        redisTemplate.opsForSet().add(joinKey, joinValue);
         redisTemplate.expire(joinKey, Duration.ofHours(24));
       }
 

@@ -9,23 +9,19 @@ import com.edumax.molip.domain.quiz.repository.ExitQuizAnswerRepository;
 import com.edumax.molip.domain.quiz.repository.ExitQuizRepository;
 import com.edumax.molip.domain.session.dto.request.SessionCreateRequest;
 import com.edumax.molip.domain.session.dto.request.SessionCreateRequest.QuizDto;
-import com.edumax.molip.domain.session.dto.response.AnalysisSignalMessage;
 import com.edumax.molip.domain.session.dto.response.SessionDetailResponse;
 import com.edumax.molip.domain.session.dto.response.SessionSimpleResponse;
 import com.edumax.molip.domain.session.dto.response.SessionStartResponse;
 import com.edumax.molip.domain.session.entity.Session;
-import com.edumax.molip.domain.session.handler.EmotionManager;
-import com.edumax.molip.domain.session.handler.EmotionManagerRegistry;
-import com.edumax.molip.domain.session.handler.EmotionSaveListener;
+import com.edumax.molip.domain.session.handler.AnalysisManager;
+import com.edumax.molip.domain.session.handler.AnalysisManagerRegistry;
 import com.edumax.molip.domain.session.janus.SessionJanusService;
 import com.edumax.molip.domain.session.repository.SessionRepository;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,15 +29,15 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class SessionServiceImpl implements SessionService {
-  private final SimpMessagingTemplate messagingTemplate;
   private final StringRedisTemplate redisTemplate;
-  private final EmotionManagerRegistry emotionManagerRegistry;
-  private final EmotionSaveListener emotionSaveListener;
+
+  private final AnalysisManagerRegistry analysisManagerRegistry;
   private final SessionRepository sessionRepository;
   private final CourseRepository courseRepository;
   private final ExitQuizRepository exitQuizRepository;
   private final ExitQuizAnswerRepository exitQuizAnswerRepository;
   private final CourseApplyRepository courseApplyRepository;
+
   private final SessionJanusService sessionJanusService;
 
   String SESSION_JOIN_FORMAT = "session:join:session-id:%s";
@@ -59,47 +55,6 @@ public class SessionServiceImpl implements SessionService {
   public void endSession(String sessionId) {
     String joinKey = getJoinKey(sessionId);
     redisTemplate.delete(joinKey);
-  }
-
-  @Override
-  public void startAnalysis(String sessionId) {
-    emotionSaveListener.startLecture(sessionId);
-    EmotionManager emotionManager = emotionManagerRegistry.getManager(sessionId);
-    emotionManager.startScheduling(0, sessionId);
-
-    // 모든 참여자에게 분석 시작 시간 보내기
-    String joinKey = getJoinKey(sessionId);
-    List<String> memberList = redisTemplate.opsForList().range(joinKey, 0, -1);
-    List<String> memberIdList = new ArrayList<>();
-    if (memberList != null) {
-      for (String member : memberList) {
-        String[] parts = member.split("|", 2);
-        if (parts.length == 2) {
-          memberIdList.add(parts[0]);
-        }
-      }
-    }
-    sendAnalysisMessage(memberIdList, sessionId);
-  }
-
-  private void sendAnalysisMessage(List<String> memberIdList, String sessionId) {
-    AnalysisSignalMessage analysisSignalMessage =
-        new AnalysisSignalMessage(LocalDateTime.now().toString());
-    for (String memberId : memberIdList) {
-      messagingTemplate.convertAndSend(
-          "/topic/analysis/" + sessionId + "/" + memberId, analysisSignalMessage);
-    }
-  }
-
-  @Override
-  public void endAnalysis(String sessionId) {
-    emotionSaveListener.stopLecture(sessionId);
-    emotionManagerRegistry.removeManager(sessionId);
-  }
-
-  public void processConcentration(String sessionId, Long memberId) {
-    //    EmotionManager emotionManager = emotionManagerRegistry.getManager(sessionId);
-    //    emotionManager.recordConcentration(memberId, sendMessage.getConcentration());
   }
 
   @Override
@@ -438,5 +393,55 @@ public class SessionServiceImpl implements SessionService {
                     .isActive(session.getJanusRoomId() != null) // 활성 여부 플래그
                     .build())
         .collect(java.util.stream.Collectors.toList());
+  }
+
+  @Override
+  public boolean initializeOrNot(String sessionId, Long memberId, int timeline) {
+    AnalysisManager analysisManager = analysisManagerRegistry.getManager(sessionId);
+
+    // 자리비움 패널티인지
+    boolean isEmpty = analysisManager.insertEmpty(sessionId, memberId, timeline);
+
+    if (isEmpty) {
+      analysisManager.insertConcentrate(sessionId, memberId, timeline, true, 0);
+    }
+
+    return isEmpty;
+  }
+
+  @Override
+  public float changeConcentrate(String sessionId, Long memberId, int timeline, float diff) {
+    AnalysisManager analysisManager = analysisManagerRegistry.getManager(sessionId);
+    return analysisManager.insertConcentrate(sessionId, memberId, timeline, false, diff);
+  }
+
+  @Override
+  public boolean handleFeverState(String sessionId, Long memberId, int timeline) {
+    AnalysisManager analysisManager = analysisManagerRegistry.getManager(sessionId);
+    return analysisManager.insertFeverState(sessionId, memberId, timeline);
+  }
+
+  @Override
+  public float getConcentrateDiff(boolean empty, boolean focusOn, boolean movement) {
+    if (empty) {
+      return 0;
+    } else if (focusOn && !movement) {
+      return 0.25f;
+    } else if (focusOn && movement) {
+      return 0.125f;
+    } else if (!focusOn && !movement) {
+      return -0.125f;
+    } else {
+      return -0.25f;
+    }
+  }
+
+  @Override
+  public boolean isFeverState(boolean empty, boolean focusOn, boolean movement) {
+    if (empty) {
+      return false;
+    } else {
+      return focusOn && !movement;
+    }
   }
 }

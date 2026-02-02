@@ -17,7 +17,6 @@ public class EmotionWebSocketInterceptor extends HttpSessionHandshakeInterceptor
       Map<String, Object> attributes)
       throws Exception {
 
-    // URL 예: ws://localhost:8080/voice/room/123
     String path = request.getURI().getPath();
     String sessionId = path.substring(path.lastIndexOf('/') + 1);
     attributes.put("sessionId", sessionId);

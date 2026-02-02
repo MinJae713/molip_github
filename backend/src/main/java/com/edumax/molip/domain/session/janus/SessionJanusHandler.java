@@ -252,6 +252,46 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
   private void handleJanusMessage(WebSocketSession clientSession, TextMessage message)
       throws Exception {
     String payload = message.getPayload();
+
+    try {
+      // 메시지가 JSON이고 publishers 목록이 있는지 확인하여 필터링
+      if (clientSession.isOpen() && payload.contains("publishers")) {
+        Map<String, Object> json = objectMapper.readValue(payload, new TypeReference<>() {});
+
+        // Janus 이벤트 구조: { "janus": "event", "plugindata": { "data": { ... } } }
+        if (json.containsKey("plugindata")) {
+          Map<String, Object> plugindata = (Map<String, Object>) json.get("plugindata");
+          if (plugindata != null && plugindata.containsKey("data")) {
+            Map<String, Object> data = (Map<String, Object>) plugindata.get("data");
+
+            if (data != null && data.containsKey("publishers")) {
+              Object roleObj = clientSession.getAttributes().get("role");
+              if ("STUDENT".equals(roleObj)) {
+                List<Map<String, Object>> publishers =
+                    (List<Map<String, Object>>) data.get("publishers");
+                if (publishers != null) {
+                  // [선생] 태그가 있는 퍼블리셔만 남기고 필터링
+                  publishers.removeIf(
+                      p -> {
+                        String display = (String) p.get("display");
+                        return display == null || !display.contains("[선생]");
+                      });
+
+                  // 필터링된 데이터로 페이로드 업데이트
+                  payload = objectMapper.writeValueAsString(json);
+                  log.info(
+                      "[Backend Filter] Filtered publishers for STUDENT: {}", publishers.size());
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (Exception e) {
+      log.error("Error filtering janus message", e);
+      // 에러 발생하더라도 원본 페이로드는 전송해야 함
+    }
+
     if (clientSession.isOpen()) {
       clientSession.sendMessage(new TextMessage(payload));
     }

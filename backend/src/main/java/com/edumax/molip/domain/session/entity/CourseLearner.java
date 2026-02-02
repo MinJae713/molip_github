@@ -55,4 +55,21 @@ public class CourseLearner {
   @OneToMany(mappedBy = "courseLearner")
   @Builder.Default
   private List<CourseLearnerSession> courseLearnerSessions = new ArrayList<>();
+
+  // 출석한 세션 수
+  public Long getAttandancedSessionCount() {
+    return courseLearnerSessions.stream().filter(CourseLearnerSession::getIsAttendance).count();
+  }
+
+  // 세션 출석률
+  public double getSessionAttandanceRate() {
+    double sessionCount = courseLearnerSessions.size();
+    double divided = (double) getAttandancedSessionCount() / sessionCount;
+    return (double) Math.round(divided * 100) / 100;
+  }
+
+  // 강의 수료 여부
+  public Boolean isCertificated() {
+    return course.getAttendance() <= getSessionAttandanceRate() * 100;
+  }
 }

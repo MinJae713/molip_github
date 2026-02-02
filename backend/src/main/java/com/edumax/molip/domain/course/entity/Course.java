@@ -109,4 +109,50 @@ public class Course {
   @ManyToOne
   @JoinColumn(name = "workspace_id", nullable = false)
   private Workspace workspace;
+
+  @OneToMany(
+      mappedBy = "course",
+      fetch = FetchType.LAZY,
+      cascade = CascadeType.ALL,
+      orphanRemoval = true)
+  private List<CourseLearnerAnalysis> learnerAnalysis = new ArrayList<>();
+
+  @Column(name = "avg_attendance")
+  private Float avgAttendance; // NULL 허용
+
+  @Column(name = "avg_concentrate")
+  private Float avgConcentrate; // NULL 허용
+
+  @Column(name = "avg_quiz_correct")
+  private Float avgQuizCorrect; // NULL 허용
+
+  @Column(name = "learner_count", nullable = false)
+  private Integer learnerCount = 0; // DEFAULT 0
+
+  @Column(name = "session_count", nullable = false)
+  private Integer sessionCount = 0; // DEFAULT 0
+
+  @Column(name = "end_session_count", nullable = false)
+  private Integer endSessionCount = 0; // DEFAULT 0
+
+  @Column(name = "score_top3", nullable = false, length = 127)
+  private String scoreTop3; // JSON 데이터
+
+  public Integer getSessionCount() {
+    // 세션 총 개수
+    return sessions.size();
+  }
+
+  public Integer getCourseLearnerCount() {
+    // 수강생 총 수
+    return courseLearners.size();
+  }
+
+  public Double getCourseLearnerAttandanceRate() {
+    // 수강생 평균 참석률
+    return courseLearners.stream()
+        .mapToDouble(CourseLearner::getSessionAttandanceRate)
+        .average()
+        .orElse(-9999);
+  }
 }

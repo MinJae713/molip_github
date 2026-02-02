@@ -20,13 +20,12 @@ import org.hibernate.annotations.OnDeleteAction;
 public class LearnerAnalysis {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "session_id", nullable = false)
   private Long sessionId;
 
   /** PK = FK */
   @MapsId
-  @OneToOne
+  @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "session_id", nullable = false)
   @OnDelete(action = OnDeleteAction.CASCADE)
   private Session session;
@@ -37,6 +36,24 @@ public class LearnerAnalysis {
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
+
+  @Column(name = "total_learner", nullable = false)
+  private Integer totalLearner;
+
+  @Column(name = "total_analysis_time", nullable = false)
+  private Integer totalAnalysisTime;
+
+  @Column(name = "avg_attendance", nullable = false)
+  private Float avgAttendance;
+
+  @Column(name = "avg_quiz_correct", nullable = false)
+  private Float avgQuizCorrect;
+
+  @Column(name = "avg_concentrate", nullable = false)
+  private Float avgConcentrate;
+
+  @Column(name = "avg_emotion", nullable = false, length = 127)
+  private String avgEmotion;
 
   /** AI 데드존 퀴즈 */
   @OneToMany(mappedBy = "learnerAnalysis")
@@ -50,9 +67,9 @@ public class LearnerAnalysis {
   @OneToMany(mappedBy = "learnerAnalysis")
   private List<EmotionGraph> emotionGraph;
 
-  /** AI 분석 타임라인 */
-  @OneToMany(mappedBy = "learnerAnalysis")
-  private List<AiAnalysisTimeline> aiAnalysisTimelines;
+  //  /** AI 분석 타임라인 */ -> MongoDB로 이전
+  //  @OneToMany(mappedBy = "learnerAnalysis")
+  //  private List<AiAnalysisTimeline> aiAnalysisTimelines;
 
   /** 복습 채팅방 */
   @OneToMany(mappedBy = "learnerAnalysis")

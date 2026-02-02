@@ -82,7 +82,7 @@ public class WorkspaceMember {
 
   @OneToMany(mappedBy = "leaner")
   @Builder.Default
-  private List<Course> courses = new ArrayList<>();
+  private List<Course> courses = new ArrayList<>(); // 강사인 경우만 지정됨 - 본인의 강의들
 
   @OneToMany(mappedBy = "workspaceMember")
   @Builder.Default
@@ -122,5 +122,5 @@ public class WorkspaceMember {
 
   @OneToMany(mappedBy = "workspaceMember")
   @Builder.Default
-  private List<CourseCertificated> courseCertificates = new ArrayList<>();
+  private List<CourseCertificated> courseCertificateds = new ArrayList<>();
 }

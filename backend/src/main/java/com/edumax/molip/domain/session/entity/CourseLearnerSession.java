@@ -48,13 +48,19 @@ public class CourseLearnerSession {
   @Column(name = "attendance_time", nullable = false)
   private Integer attendanceTime = 0;
 
+  @Column(name = "avg_concentrate", nullable = false)
+  private Float avgConcentrate = 0f;
+
   /** 강의 수강생 (CourseLearner) FK: course_learner_id */
   @ManyToOne
-  @JoinColumn(name = "course_learner_id", nullable = false)
+  @JoinColumn(name = "course_learner_id", nullable = true)
   private CourseLearner courseLearner;
 
   /** 강의 세션 FK: session_id */
   @ManyToOne
   @JoinColumn(name = "session_id", nullable = false)
   private Session session;
+
+  @Column(name = "member_id", nullable = false)
+  private Long memberId;
 }

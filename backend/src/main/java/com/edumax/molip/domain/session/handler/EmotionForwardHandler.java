@@ -26,7 +26,7 @@ public class EmotionForwardHandler extends BinaryWebSocketHandler {
   private final SimpMessagingTemplate messagingTemplate;
   private final ApplicationEventPublisher eventPublisher;
   private final EmotionServiceGrpc.EmotionServiceStub emotionServiceStub;
-  private final EmotionManagerRegistry emotionManagerRegistry; // 1. 필드 추가
+  private final AnalysisManagerRegistry analysisManagerRegistry; // 1. 필드 추가
 
   private final Map<String, StreamObserver<EmotionRequest>> grpcStreamMap =
       new ConcurrentHashMap<>();
@@ -36,11 +36,11 @@ public class EmotionForwardHandler extends BinaryWebSocketHandler {
       @Lazy SimpMessagingTemplate messagingTemplate,
       ApplicationEventPublisher eventPublisher,
       EmotionServiceGrpc.EmotionServiceStub emotionServiceStub,
-      @Lazy EmotionManagerRegistry emotionManagerRegistry) { // 주입
+      @Lazy AnalysisManagerRegistry analysisManagerRegistry) { // 주입
     this.messagingTemplate = messagingTemplate;
     this.eventPublisher = eventPublisher;
     this.emotionServiceStub = emotionServiceStub;
-    this.emotionManagerRegistry = emotionManagerRegistry;
+    this.analysisManagerRegistry = analysisManagerRegistry;
   }
 
   // 연결할때 호출
@@ -86,14 +86,14 @@ public class EmotionForwardHandler extends BinaryWebSocketHandler {
                     response.getConfidence3());
 
             float[] emotionValueList = new float[7];
-            emotionValueList[EmotionManager.getEmotionIndex(response.getEmotion1())] =
+            emotionValueList[AnalysisManager.getEmotionIndex(response.getEmotion1())] =
                 response.getConfidence1();
-            emotionValueList[EmotionManager.getEmotionIndex(response.getEmotion2())] =
+            emotionValueList[AnalysisManager.getEmotionIndex(response.getEmotion2())] =
                 response.getConfidence2();
-            emotionValueList[EmotionManager.getEmotionIndex(response.getEmotion3())] =
+            emotionValueList[AnalysisManager.getEmotionIndex(response.getEmotion3())] =
                 response.getConfidence3();
 
-            emotionManagerRegistry.getManager(sessionId).insertEmotion(timeline, emotionValueList);
+            analysisManagerRegistry.getManager(sessionId).insertEmotion(timeline, emotionValueList);
 
             messagingTemplate.convertAndSend(
                 "/topic/analysis/" + sessionId + "/" + memberId, message);

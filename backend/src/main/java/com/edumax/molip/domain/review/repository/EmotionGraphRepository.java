@@ -1,3 +1,6 @@
 package com.edumax.molip.domain.review.repository;
 
-public interface EmotionGraphRepository {}
+import com.edumax.molip.domain.review.entity.EmotionGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface EmotionGraphRepository extends JpaRepository<EmotionGraph, Long> {}
