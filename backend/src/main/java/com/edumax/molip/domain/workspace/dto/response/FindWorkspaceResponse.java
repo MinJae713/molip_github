@@ -19,4 +19,5 @@ public class FindWorkspaceResponse {
   private Integer courseCount;
   private String myStatus;
   private WorkspaceMemberRole myRole;
+  private Long workspaceMemberId;
 }

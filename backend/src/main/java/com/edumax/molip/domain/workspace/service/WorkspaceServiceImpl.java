@@ -106,6 +106,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     String logoUrl = workspace.getLogoUrl();
     List<WorkspaceMember> workspaceMembers = workspace.getWorkspaceMembers();
     List<Course> courses = workspace.getCourses();
+    Long workspaceMemberId = null;
 
     WorkspaceRegister workspaceRegister =
         workspaceRegisterRepository.findByMemberAndWorkspace(member, workspace).orElse(null);
@@ -124,6 +125,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 .findByMemberAndWorkspace(member, workspace)
                 .orElseThrow(NoWorkspaceMemberException::new);
         myRole = workspaceMember.getRole();
+        workspaceMemberId = workspaceMember.getWorkspaceMemberId();
       }
     }
 
@@ -136,6 +138,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         .courseCount(courses.size())
         .myStatus(myStatus)
         .myRole(myRole)
+        .workspaceMemberId(workspaceMemberId)
         .build();
   }
 
