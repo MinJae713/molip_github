@@ -43,21 +43,36 @@ export interface TrainerCourse {
   title: string;
   workspaceId: number;
 }
+
 export interface LearnerCourse {
-  // 2026-01-30 확인된 내용, 수강생용 코스정보
-  courseId: string | number; // Course.course_id
-  workspaceId?: number; //
+  // 기본 정보
+  courseId: number | string;
+  workspaceId: number;
   title: string;
   description: string;
   category: string;
   subCategory?: string;
-  currentLessons: number;
-  totalLessons: number;
+
+  // 상태 및 강사 정보 (명세서 기준 추가)
+  status: 'PREPARING' | 'PROCEED' | 'FINISH' | 'INVITE';
+  ownerName: string;
+  isOwner: boolean;
+
+  // 강의 상세 지표 (명세서 2번 기준 추가)
+  attendance?: number;      // 출석률
+  engagement?: number;      // 집중도
+  exitQuiz?: number;        // 종료 퀴즈 점수
+  maxLearner?: number;
+  period?: number;
+  isEngageCheck?: boolean;
+  isSentimentAnalysis?: boolean;
+
+  // 프론트엔드 UI용 커스텀 필드 (기존 유지)
+  currentLessons?: number;
+  totalLessons?: number;
   isLiked?: boolean;
   dDay?: string;
-  // 삭제 enrollmentStatus?: boolean;
-  applyStatus: string;
-  status?: string;
+  applyStatus?: string; // 수강 신청 상태 (필요 시 유지)
 }
 
 export interface User {
@@ -227,10 +242,10 @@ export interface JoinRequest {
   approvedAt?: string; // 승인일
   rejectReason?: string; // 반려 사유
   rejectType?:
-    | "AFFLIATION_MISMATCH"
-    | "INVITE_CODE_USE_MISS"
-    | "OVER_CAPACITY"
-    | "ETC"; // 반려 유형
+  | "AFFLIATION_MISMATCH"
+  | "INVITE_CODE_USE_MISS"
+  | "OVER_CAPACITY"
+  | "ETC"; // 반려 유형
 }
 
 /** 3. 워크스페이스 멤버 (Member) */

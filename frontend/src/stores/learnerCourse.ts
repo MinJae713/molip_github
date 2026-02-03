@@ -50,7 +50,7 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
   // [R] 내가 수강 중인 강의 목록
   async function fetchMyEnrolledCourses(workspaceId: string | number) {
     if (!workspaceId) return; // workspaceId가 없으면 호출 안 함
-    
+
     isLoading.value = true;
     try {
       // 1. 엔드포인트 형식에 맞춰 쿼리 파라미터(params) 전달
@@ -60,7 +60,7 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
 
       // 2. 응답 데이터 저장 (데이터가 배열인지 확인하는 방어 코드 포함)
       myEnrolledCourses.value = Array.isArray(response.data) ? response.data : [];
-      
+
       console.log("[Learner] 내 수강 강의 로드 성공:", myEnrolledCourses.value);
     } catch (error) {
       console.error("[Learner] 내 수강 강의 로드 실패:", error);
@@ -120,23 +120,27 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
   }
 
   // [C] 강의 수강 신청
-  async function enrollCourse(
-    courseId: string | number,
-    memberId: string | number,
-  ) {
+  async function enrollCourse(courseId: string | number, workspaceId: string | number) {
+    isLoading.value = true;
     try {
-      const payload = {
-        courseId: String(courseId),
-        memberId: String(memberId),
-        status: 1,
-        applied_at: new Date().toISOString(),
-      };
-      // RESTful: POST /enrollments
-      await api.post("/enrollments", payload);
+      // 1. 수강 신청 API 호출
+      const response = await api.post(`/courses/${courseId}/apply`);
+      console.log("[Learner] 수강 신청 완료:", response.data);
+
+      // 2. 신청 성공 시 내 수강 목록 API를 다시 호출하여 상태 동기화
+      if (workspaceId) {
+        // 1. 내가 수강 중인 목록 갱신 (수강생 탭 등에서 활용)
+        await fetchMyEnrolledCourses(workspaceId);
+        // 2. 현재 워크스페이스 전체 목록 갱신 (현재 대시보드 화면 반영)
+        await fetchCoursesByWorkspace(workspaceId, true); // forceRefresh=true
+      }
+      
       return true;
     } catch (error) {
-      console.error("수강 신청 실패:", error);
+      console.error("[Learner] 수강 신청 실패:", error);
       return false;
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -168,16 +172,17 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
   const fetchCourseInfo = async (courseId: string | number) => {
     try {
       const response = await api.get(`/courses/${courseId}`);
-      const mapped = [response.data];
-      courseInfo.value = mapped[0] || null;
-      return mapped[0] || null;
+
+      const data = response.data;
+      courseInfo.value = data || null;
+
+      return data || null;
     } catch (error) {
       console.error("강의 상세 정보 로드 실패:", error);
       courseInfo.value = null;
       return null;
     }
   };
-
   // [R] 강의 세션 목록 조회 (수강생용)
   // 강사는 별도의 세션 관리 API를 사용할 수 있음
   const fetchCourseSessions = async (courseId: string | number) => {
