@@ -48,20 +48,23 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
   }
 
   // [R] 내가 수강 중인 강의 목록
-  async function fetchMyEnrolledCourses(
-    workspaceId?: string | number,
-    userId?: string | number,
-    role = "LEARNER",
-  ) {
+  async function fetchMyEnrolledCourses(workspaceId: string | number) {
+    if (!workspaceId) return; // workspaceId가 없으면 호출 안 함
+    
     isLoading.value = true;
     try {
-      let response;
-      if (workspaceId) {
-        response = await api.get(`/courses/me`);
-        myEnrolledCourses.value = response.data;
-      }
+      // 1. 엔드포인트 형식에 맞춰 쿼리 파라미터(params) 전달
+      const response = await api.get(`/courses/me`, {
+        params: { workspaceId }
+      });
+
+      // 2. 응답 데이터 저장 (데이터가 배열인지 확인하는 방어 코드 포함)
+      myEnrolledCourses.value = Array.isArray(response.data) ? response.data : [];
+      
+      console.log("[Learner] 내 수강 강의 로드 성공:", myEnrolledCourses.value);
     } catch (error) {
       console.error("[Learner] 내 수강 강의 로드 실패:", error);
+      myEnrolledCourses.value = []; // 에러 시 빈 배열 처리
     } finally {
       isLoading.value = false;
     }

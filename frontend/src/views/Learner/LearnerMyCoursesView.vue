@@ -89,19 +89,20 @@ const homeRoute = computed(() => {
     };
 });
 
-// Store에서 가져온 데이터를 상태별로 필터링
-// progress_rate로 학습 진행 상태를 구분 (0-99: 진행중/대기중, 100: 완료)
+// 1. 운영 중인 과정: 현재 수업 중인(PROCEED) 상태
 const ongoingCourses = computed(() =>
     myEnrolledCourses.value.filter(course =>
-        course.enrollmentStatus === "active"
+        course.status === "PROCEED"
     )
 );
 
+// 2. 종료된 과정: 이미 강의가 끝난(FINISH) 상태
 const completedCourses = computed(() =>
     myEnrolledCourses.value.filter(course =>
-        course.progressRate === 100
+        course.status === "FINISH"
     )
 );
+
 const likedCoursesCount = computed(() => likedCourses.value.length);
 const likedCourses = computed(() => myLikedCourses.value);
 
@@ -116,10 +117,7 @@ onMounted(async () => {
     // 내 강의 목록과 이번달 출석률 불러오기
     const wsId = Array.isArray(workspaceId.value) ? workspaceId.value[0] : workspaceId.value;
     if (wsId) {
-        await courseStore.fetchMyEnrolledCourses(
-            wsId,
-            'TRAINER'
-        );
+        await courseStore.fetchMyEnrolledCourses(wsId);
     }
 });
 const displayedCourses = computed(() => {

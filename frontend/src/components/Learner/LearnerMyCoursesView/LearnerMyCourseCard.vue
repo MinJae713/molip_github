@@ -66,25 +66,25 @@
                     </div>
                 </div>
                 <!-- 상태별 버튼 -->
-                <button v-if="displayCourse('enrollmentStatus') === 'pending_approval'"
-                    class="w-full py-2.5 text-sm font-bold rounded-lg bg-gray-200 text-gray-900 border border-gray-300 cursor-not-allowed flex items-center justify-center gap-2"
-                    disabled>
-                    승인 대기중
-                    <span class="material-symbols-outlined text-[18px]">hourglass_empty</span>
-                </button>
-
-                <button v-else-if="displayCourse('enrollmentStatus') === 'recruiting'"
-                    class="w-full py-2.5 text-sm font-bold rounded-lg bg-emerald-600 text-white border border-emerald-500 hover:bg-emerald-700 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                    @click.prevent="$emit('enroll-course', displayCourse('courseId'))">
-                    수강신청하기
-                    <span class="material-symbols-outlined text-[18px]">add_circle</span>
-                </button>
-
-                <button v-else-if="displayCourse('enrollmentStatus') === 'active'"
+                <button v-if="displayCourse('status') === 'PROCEED' || displayCourse('status') === 'INVITE'"
                     class="w-full py-2.5 text-sm font-bold rounded-lg bg-indigo-600 text-white border border-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
                     @click.prevent="$emit('enter-course', displayCourse('courseId'))">
                     강의실 입장
                     <span class="material-symbols-outlined text-[18px]">login</span>
+                </button>
+
+                <button v-else-if="displayCourse('status') === 'FINISH'"
+                    class="w-full py-2.5 text-sm font-bold rounded-lg bg-slate-700 text-white border border-slate-800 hover:bg-slate-900 transition-all flex items-center justify-center gap-2"
+                    @click.prevent="$emit('enter-course', displayCourse('courseId'))">
+                    복습하기
+                    <span class="material-symbols-outlined text-[18px]">history</span>
+                </button>
+
+                <button v-else
+                    class="w-full py-2.5 text-sm font-bold rounded-lg bg-gray-100 text-gray-500 border border-gray-200 cursor-not-allowed flex items-center justify-center gap-2"
+                    disabled>
+                    강의 준비 중
+                    <span class="material-symbols-outlined text-[18px]">pending</span>
                 </button>
             </div>
         </div>
