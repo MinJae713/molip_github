@@ -76,6 +76,7 @@ public class SecurityConfig {
                         "/api/members/refresh",
                         "/api/members/login",
                         "/api/members/register",
+                        "/api/members/register/admin",
                         "/api/members/logout")
                     .permitAll()
                     .requestMatchers(

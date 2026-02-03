@@ -94,6 +94,8 @@ public class Session {
   @OnDelete(action = OnDeleteAction.CASCADE)
   private Course course;
 
+  @Column private Long trainerId;
+
   /* =======================
    * 1 : N
    * ======================= */
