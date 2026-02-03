@@ -99,7 +99,6 @@ const handleEndSession = async () => {
             </Transition>
           </div>
         </div>
-
         <!-- 하단 섹션: 학생 모니터링 (동적) & 조작 패널 -->
         <div class="flex flex-col shrink-0">
           <!-- 학생 클릭 시에만 부드럽게 나타나는 모니터링 창 -->
