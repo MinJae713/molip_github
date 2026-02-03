@@ -39,7 +39,7 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
   private final CourseApplyRepository courseApplyRepository;
   private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
-  private static final String SESSION_JOIN_FORMAT = "session:join:session-id:%s";
+  private final String SESSION_JOIN_FORMAT = "session:join:session-id:%s";
 
   private final Map<String, WebSocketSession> clientToJanusMap = new ConcurrentHashMap<>();
   private final Map<String, WebSocketSession> janusToClientMap = new ConcurrentHashMap<>();
@@ -257,53 +257,46 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
     String payload = message.getPayload();
 
     try {
-      // 메시지가 JSON이고 publishers 목록이 있는지 확인하여 필터링
+      // 메시지가 JSON인지 확인 및 파싱
       if (clientSession.isOpen()) {
         Map<String, Object> json = objectMapper.readValue(payload, new TypeReference<>() {});
 
-        // 1. Participant Joined Event Handling (Redis Update)
-        if (json.containsKey("videoroom")
-            && "joined".equals(json.get("videoroom"))
-            && json.containsKey("id")) {
+        // Janus 이벤트 구조: { "janus": "event", "plugindata": { "data": { ... } } }
+        if (json.containsKey("plugindata")) {
+          Map<String, Object> plugindata = (Map<String, Object>) json.get("plugindata");
+          if (plugindata != null && plugindata.containsKey("data")) {
+            Map<String, Object> data = (Map<String, Object>) plugindata.get("data");
 
-          Long feedId = ((Number) json.get("id")).longValue();
-          Long sessionId = (Long) clientSession.getAttributes().get("sessionId");
-          Long memberId = (Long) clientSession.getAttributes().get("memberId");
-          String memberName = (String) clientSession.getAttributes().get("memberName");
+            if (data != null) {
+              // 1. Participant Joined Event Handling (Redis Update)
+              // "videoroom": "joined", "id": <feedId>
+              if ("joined".equals(data.get("videoroom")) && data.containsKey("id")) {
+                Long feedId = ((Number) data.get("id")).longValue();
+                Long sessionId = (Long) clientSession.getAttributes().get("sessionId");
+                Long memberId = (Long) clientSession.getAttributes().get("memberId");
+                String memberName = (String) clientSession.getAttributes().get("memberName");
 
-          if (sessionId != null && memberId != null) {
-            String key = String.format(SESSION_JOIN_FORMAT, sessionId);
-            // Old value (added by Interceptor)
-            String oldVal = memberId + "|" + memberName;
-            // New value (with feedId)
-            String newVal = memberId + "|" + memberName + "|" + feedId;
+                if (sessionId != null && memberId != null) {
+                  String key = String.format(SESSION_JOIN_FORMAT, sessionId);
+                  String oldVal = memberId + "|" + memberName;
+                  String newVal = memberId + "|" + memberName + "|" + feedId;
 
-            // Atomic-like replacement (Remove old -> Add new)
-            redisTemplate.opsForSet().remove(key, oldVal);
-            redisTemplate.opsForSet().add(key, newVal);
-            // Refresh TTL (optional, keeping it alive)
-            redisTemplate.expire(key, java.time.Duration.ofHours(24));
+                  redisTemplate.opsForSet().remove(key, oldVal);
+                  redisTemplate.opsForSet().add(key, newVal);
+                  redisTemplate.expire(key, java.time.Duration.ofHours(24));
 
-            // Store feedId in session for cleanup
-            clientSession.getAttributes().put("feedId", feedId);
+                  clientSession.getAttributes().put("feedId", feedId);
 
-            log.info(
-                "[Redis] Updated participant info: {} -> {} (Session: {})",
-                oldVal,
-                newVal,
-                sessionId);
-          }
-        }
+                  log.info(
+                      "[Redis] Updated participant info: {} -> {} (Session: {})",
+                      oldVal,
+                      newVal,
+                      sessionId);
+                }
+              }
 
-        // 2. Publisher Filtering for Students
-        if (payload.contains("publishers")) {
-          // Janus 이벤트 구조: { "janus": "event", "plugindata": { "data": { ... } } }
-          if (json.containsKey("plugindata")) {
-            Map<String, Object> plugindata = (Map<String, Object>) json.get("plugindata");
-            if (plugindata != null && plugindata.containsKey("data")) {
-              Map<String, Object> data = (Map<String, Object>) plugindata.get("data");
-
-              if (data != null && data.containsKey("publishers")) {
+              // 2. Publisher Filtering for Students
+              if (data.containsKey("publishers")) {
                 Object roleObj = clientSession.getAttributes().get("role");
                 if ("STUDENT".equals(roleObj)) {
                   List<Map<String, Object>> publishers =
@@ -316,7 +309,7 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
                           return display == null || !display.contains("[선생]");
                         });
 
-                    // 필터링된 데이터로 페이로드 업데이트
+                    // 필터링된 데이터로 페이로드 업데이트 (원본 json 객체를 수정했으므로 다시 직렬화)
                     payload = objectMapper.writeValueAsString(json);
                     log.info(
                         "[Backend Filter] Filtered publishers for STUDENT: {}", publishers.size());
