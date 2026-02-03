@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, nextTick } from 'vue';
 
 const props = defineProps<{
     focusStatus: string;
@@ -80,9 +80,14 @@ const pipVideoRef = ref<HTMLVideoElement | null>(null);
 // Main Stream Binding
 watch(
     () => props.mainStream,
-    (newStream) => {
+    async (newStream) => {
+        await nextTick();
+        console.log("[LiveVideoArea] MainStream Watcher Triggered. Stream:", newStream?.id, "VideoRef:", !!mainVideoRef.value);
         if (mainVideoRef.value) {
             mainVideoRef.value.srcObject = newStream;
+            if (newStream) console.log("[LiveVideoArea] Assigned mainStream to video element");
+        } else {
+            console.warn("[LiveVideoArea] Video element ref is missing!");
         }
     },
     { immediate: true }
@@ -92,7 +97,8 @@ watch(
 // PIP Stream Binding (LocalStream 우선)
 watch(
     () => [props.pipStream, props.localStream],
-    ([newPip, newLocal]) => {
+    async ([newPip, newLocal]) => {
+        await nextTick();
         if (pipVideoRef.value) {
             // 로컬 스트림이 있으면 우선 표시 (Self-View)
             if (newLocal) {

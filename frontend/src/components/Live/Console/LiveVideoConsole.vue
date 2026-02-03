@@ -1,133 +1,70 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
-import { useLiveStore } from '@/stores/live';
-import LocalVideoView from '../Monitor/LocalVideoView.vue';
+import { useTrainerLiveStore } from '@/stores/trainerlive';
 import MediaButton from '../Monitor/MediaButton.vue';
 
-const liveStore = useLiveStore();
-const screenVideoRef = ref<HTMLVideoElement | null>(null);
-
-// 🔥 개선: 화면 공유 스트림을 reactive하게 감지
-watch(() => liveStore.screenStream, (stream) => {
-  if (screenVideoRef.value) {
-    screenVideoRef.value.srcObject = stream;
-  }
-}, { immediate: true });
-
-// 🔥 추가: 현재 표시할 스트림이 있는지 체크
-const hasActiveStream = computed(() => {
-  return liveStore.isScreenSharing ? !!liveStore.screenStream : !!liveStore.myStream && liveStore.isCamOn;
-});
+const trainerLiveStore = useTrainerLiveStore();
 </script>
 
 <template>
   <div class="flex flex-col bg-slate-950 rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white shrink-0">
-    
+
     <div class="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
-      
-      <!-- 화면공유 모드 -->
-      <template v-if="liveStore.isScreenSharing">
-        <video 
-          ref="screenVideoRef"
-          autoplay 
-          playsinline
-          class="w-full h-full object-contain"
-        ></video>
-      </template>
-      
-      <!-- 카메라 모드 -->
-      <template v-else>
-        <!-- 🔥 개선: v-if 조건을 명확하게 -->
-        <LocalVideoView 
-          v-if="liveStore.myStream && liveStore.isCamOn"
-          :stream="liveStore.myStream" 
-          :is-muted="true" 
-          :show-label="true"
-          :compact="false"
-          class="w-full h-full object-cover mirror"
-        />
-        <div v-else class="flex flex-col items-center text-slate-700">
-          <span class="material-symbols-outlined text-6xl mb-3">videocam_off</span>
-          <p class="font-bold text-slate-500 uppercase tracking-widest text-[10px]">Camera Offline</p>
-        </div>
+
+      <template v-if="trainerLiveStore.isAnalysisStarted && trainerLiveStore.screenStream">
+        <video :srcObject="trainerLiveStore.screenStream" autoplay class="w-full h-full object-contain"></video>
       </template>
 
-      <!-- PiP: 화면공유 중일 때 카메라 작게 표시 -->
-      <Transition name="fade">
-        <div 
-          v-if="liveStore.isScreenSharing && liveStore.myStream && liveStore.isCamOn"
-          class="absolute top-6 right-6 z-20 w-64 aspect-video bg-slate-900 rounded-3xl border-2 border-white/20 shadow-2xl overflow-hidden"
-        >
-          <!-- 🔥 개선: compact 모드 사용 -->
-          <LocalVideoView 
-            :stream="liveStore.myStream" 
-            :is-muted="true" 
-            :show-label="false"
-            :compact="true"
-            class="w-full h-full"
-          />
-          <div class="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-lg backdrop-blur-md">
-            <span class="size-1.5 bg-indigo-500 rounded-full animate-pulse"></span>
-            <span class="text-[9px] text-white font-black tracking-tighter uppercase">Instructor (Live)</span>
-          </div>
-        </div>
-      </Transition>
+      <div v-else class="flex flex-col items-center text-slate-700">
+        <span class="material-symbols-outlined text-6xl mb-3">present_to_all</span>
+        <p class="font-bold text-slate-500 uppercase tracking-widest text-[10px]">수업 시작 전 (화면 공유 대기)</p>
+      </div>
     </div>
 
-    <!-- 컨트롤 패널 -->
     <div class="bg-slate-900 px-8 py-4 border-t border-slate-800 flex items-center justify-between">
-      
+
       <div class="flex items-center gap-4">
-        <MediaButton 
-          :active="liveStore.isMicOn" 
-          active-icon="mic" 
-          inactive-icon="mic_off"
-          @toggle="liveStore.toggleMic"
-        />
-        <MediaButton 
-          :active="liveStore.isCamOn" 
-          active-icon="videocam" 
-          inactive-icon="videocam_off"
-          @toggle="liveStore.toggleCamera"
-        />
-        
-        <div class="w-px h-8 bg-slate-800 mx-2"></div>
-        
-        <button 
-          @click="liveStore.toggleScreenShare"
+        <!-- 카메라/마이크 제어 버튼은 현재 사용 안함 (추후 필요시 복구) -->
+
+        <button v-if="trainerLiveStore.isAnalysisStarted" @click="trainerLiveStore.changeScreenShare()"
+          class="flex items-center gap-2 px-6 py-2.5 bg-slate-700 text-white rounded-full font-bold text-sm hover:bg-slate-600 transition-all border border-slate-600">
+          <span class="material-symbols-outlined text-[20px]">switch_video</span>
+          화면 변경
+        </button>
+
+        <button
+          @click="trainerLiveStore.isAnalysisStarted ? trainerLiveStore.stopClass() : trainerLiveStore.startClass()"
           :class="[
             'flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-sm transition-all',
-            liveStore.isScreenSharing ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'bg-white/10 text-white hover:bg-white/20'
-          ]"
-        >
+            trainerLiveStore.isAnalysisStarted ? 'bg-red-600 text-white shadow-lg shadow-red-900/20' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+          ]">
           <span class="material-symbols-outlined text-[20px]">
-            {{ liveStore.isScreenSharing ? 'stop_screen_share' : 'present_to_all' }}
+            {{ trainerLiveStore.isAnalysisStarted ? 'stop_circle' : 'play_circle' }}
           </span>
-          {{ liveStore.isScreenSharing ? '공유 중지' : '화면 공유' }}
+          {{ trainerLiveStore.isAnalysisStarted ? '수업 종료' : '수업 시작 (화면공유)' }}
         </button>
       </div>
 
       <div class="flex items-center gap-3 px-6 py-2.5 bg-black/30 rounded-full border border-white/5">
         <span class="text-indigo-400 material-symbols-outlined text-[20px]">psychology</span>
-        <span class="text-slate-300 text-sm font-medium italic">AI 분석 연동 중...</span>
+        <span class="text-slate-300 text-sm font-medium italic">
+          {{ trainerLiveStore.isAnalysisStarted ? 'AI 실시간 분석 중...' : 'AI 분석 대기' }}
+        </span>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* 강사 본인 화면은 거울 모드 적용 */
-.mirror { 
-  transform: scaleX(-1); 
+/* 강사 본인 화면은 거울 모드 적용 X (화면 공유이므로) */
+/* PIP 나타날 때 부드러운 페이드 효과 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
 }
 
-/* PIP 나타날 때 부드러운 페이드 효과 */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-.fade-enter-from, .fade-leave-to {
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
-  transform: translateY(10px) scale(0.9);
 }
 
 video {

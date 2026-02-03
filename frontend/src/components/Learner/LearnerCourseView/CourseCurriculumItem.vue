@@ -72,7 +72,7 @@
 
         <!-- Action Buttons Group -->
         <div class="flex flex-col gap-2 min-w-[140px] sm:self-center items-stretch">
-            <button v-if="session.isActive === false" @click="enterSession"
+            <button v-if="session.janusRoomId !== null" @click="enterSession"
                 class="w-full px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow-md transition-all flex items-center justify-center gap-2 group">
                 <span class="material-symbols-outlined text-[18px]">login</span> 입장하기
                 <span
@@ -102,10 +102,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import api from '@/api';
 // 강의자료 다운로드 모달
 import { ref } from 'vue';
 import MaterialDownloadModal from '@/components/Learner/LearnerCourseView/MaterialDownloadModal.vue';
-import type { Course, Session } from '@/types';
+import type { LearnerCourse, Session } from '@/types';
 
 const props = defineProps<{
     session: any;
@@ -135,12 +136,23 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 
 // 라이브 세션 입장
-const enterSession = () => {
-    const route = router.resolve({
-        name: 'learnerLiveSession',
-        params: { sessionId: props.session.sessionId }
-    });
-    window.open(route.href, '_blank', 'noopener,noreferrer');
+const enterSession = async () => {
+    try {
+        const sessionId = props.session.sessionId;
+        const response = await api.get(`/session/${sessionId}/connection`);
+        if (response.data && response.data.janusRoomId) {
+            const route = router.resolve({
+                name: 'learnerLiveSession',
+                params: { sessionId: sessionId }
+            });
+            window.open(route.href, '_blank', 'noopener,noreferrer');
+        } else {
+            alert("현재 라이브 강의가 진행 중이지 않습니다.");
+        }
+    } catch (error) {
+        console.error("세션 연결 정보 조회 실패:", error);
+        alert("강의에 입장할 수 없습니다. (연결 정보 조회 실패)");
+    }
 }
 
 const enterReview = () => {

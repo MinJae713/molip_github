@@ -95,6 +95,9 @@ export interface Session {
   courseId: number;
   janusRoomId?: number;
   pin?: string;
+  state?: "live" | "ended" | "upcoming";
+  isCompleted?: boolean;
+  duration?: number;
 }
 
 export interface Material {

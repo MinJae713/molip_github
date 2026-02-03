@@ -1,7 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed, onBeforeUnmount } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { useLiveStore } from '@/stores/live';
+import { useVideoRoomStore } from '@/stores/videoRoom'; // Unified Store
+
+// 스토어
+import { useTrainerCourseStore } from '@/stores/trainerCourse';
+import { useTrainerSessionStore } from '@/stores/trainerSession';
+import { useWorkspaceStore } from '@/stores/workspace'; // workspace 추가
+
+const videoRoomStore = useVideoRoomStore();
+const courseStore = useTrainerCourseStore();
+const sessionStore = useTrainerSessionStore();
+const workspaceStore = useWorkspaceStore();
 
 // [컴포넌트 임포트]
 import LiveHeader from '@/components/Live/Console/LiveHeader.vue';
@@ -18,120 +28,107 @@ import SessionEmotionAnalysis from '@/components/Live/AI/SessionEmotionAnalysis.
 // 사이드바 컴포넌트
 import SidebarStats from '@/components/Live/Sidebar/SidebarStats.vue';
 import SidebarTabs from '@/components/Live/Sidebar/SidebarTabs.vue';
-import TrainerLiveChatContainer from '@/components/Live/Sidebar/TrainerLiveChatContainer.vue';
+import TrainerLiveChatContainer from '@/components/Live/Sidebar/TrainerLiveChatContainer.vue'; // Chat
 
 const router = useRouter();
 const route = useRoute();
-const liveStore = useLiveStore();
+
+// --- UI 상태 관리 ---
+const isEndModalOpen = ref(false); // 수업 종료 확인 모달
+const activeTab = ref<'status' | 'chat' | 'qna'>('status'); // 사이드바 활성 탭 (기본: 상태)
+
+// --- 통계 (Computed) ---
+const focusCount = computed(() => videoRoomStore.participants.filter(p => p.status === 'focus').length);
+const warningCount = computed(() => videoRoomStore.participants.filter(p => p.status === 'distracted').length);
+const absentCount = computed(() => videoRoomStore.participants.filter(p => p.status === 'away').length);
 
 // --- 초기화 로직 ---
 onMounted(async () => {
-  console.log('🔵 [DEBUG] onMounted 시작');
-  console.log('🔵 [DEBUG] route.params:', route.params);
+  const sessionId = route.params.sessionId;
+  const courseId = route.params.courseId;
 
-  // route.params의 값은 항상 string이므로 명시적으로 변환이 필요합니다.
-  const courseId = Number(route.params.courseId);
-  const sessionId = Number(route.params.sessionId);
+  if (sessionId && courseId) {
+    try {
+      await Promise.all([
+        sessionStore.fetchSessionDetail(Number(sessionId)),
+        courseStore.setManagedCourse(Number(courseId)),
+      ]);
 
-  console.log('🔵 [DEBUG] courseId:', courseId, typeof courseId);
-  console.log('🔵 [DEBUG] sessionId:', sessionId, typeof sessionId);
-  console.log('🔵 [DEBUG] isNaN(courseId):', isNaN(courseId));
-  console.log('🔵 [DEBUG] isNaN(sessionId):', isNaN(sessionId));
+      // 워크스페이스 role 설정을 위해 현재 워크스페이스 정보가 필요함
+      // (워크스페이스 진입 시 이미 setting 되었겠지만, 새로고침 시 날아갈 수 있음)
+      // 임시: userStore/workspaceStore 연동이 완벽하지 않다면, 강제로 TRAINER 모드로 인식하도록 videoRoomStore를 수정하거나,
+      // 여기서 workspaceStore를 재초기화 해야 함. 
+      videoRoomStore.setRole('TRAINER');
+      // 일단 단순히 initJanus 호출. (videoRoomStore.userRole이 computed로 되어있음 확인 필요)
 
-  try {
-    if (!isNaN(courseId) && !isNaN(sessionId)) {
-      console.log('🟢 [DEBUG] ID 검증 통과, initLiveRoom 호출');
-      console.log('🟢 [DEBUG] liveStore:', liveStore);
-      console.log('🟢 [DEBUG] liveStore.initLiveRoom:', liveStore.initLiveRoom);
-
-      // 🔥 함수가 존재하는지 체크
-      if (typeof liveStore.initLiveRoom === 'function') {
-        const queryJanusRoomId = route.query.janus_room_id as string;
-        const queryPin = route.query.pin as string;
-
-        console.log('🟢 [DEBUG] initLiveRoom 함수 존재 확인, 파라미터:', { queryJanusRoomId, queryPin });
-        await liveStore.initLiveRoom(courseId, sessionId, queryJanusRoomId, queryPin);
-        console.log('🟢 [DEBUG] initLiveRoom 완료');
-      } else {
-        console.error('🔴 [ERROR] initLiveRoom이 함수가 아닙니다!');
-        console.error('🔴 [ERROR] liveStore의 모든 속성:', Object.keys(liveStore));
-      }
-    } else {
-      console.error('🔴 [ERROR] 유효하지 않은 ID 값입니다.');
-      console.error('🔴 [ERROR] courseId:', courseId, 'sessionId:', sessionId);
+      await videoRoomStore.initJanus(String(sessionId));
+    } catch (e) {
+      console.error("초기화 실패", e);
     }
-  } catch (error: any) {
-    console.error('🔴 [ERROR] 라이브 입장 실패:', error);
-    console.error('🔴 [ERROR] 에러 상세:', {
-      message: error.message,
-      stack: error.stack,
-      response: error.response?.data
-    });
-
-    // 🔥 사용자에게 알림
-    alert(`라이브 입장 실패: ${error.message || '알 수 없는 오류'}`);
   }
 });
 
-// --- UI 상태 관리 ---
-const isEndModalOpen = ref(false);
-const activeTab = ref<'status' | 'chat' | 'qna'>('status');
+// --- 클린업 로직 ---
+onBeforeUnmount(() => {
+  // Clean up streams/connections if needed, or rely on store's internal cleanup
+  // videoRoomStore.cleanup(); // Example cleanup call
+});
 
 // --- 수업 종료 로직 ---
 const handleEndSession = async () => {
-  await liveStore.endLiveSession();
+  const sessionId = route.params.sessionId;
+  await videoRoomStore.stopClass(String(sessionId)); // 방송 중단
   isEndModalOpen.value = false;
-  router.push('/trainer/dashboard'); //고쳐야함
+  router.push('/workspace/trainer/dashboard'); // Corrected path assumption
 };
 
 /** 학생 클릭 시 모니터링 시작 핸들러 */
 const handleStudentClick = (student: any) => {
-  liveStore.startMonitoring(Number(student.id));
+  videoRoomStore.selectStudent(student.id);
 };
 </script>
 
 <template>
   <div class="h-screen bg-slate-50 flex flex-col overflow-hidden text-slate-900">
+    <!-- 상태 표시 Overlay -->
     <div class="fixed top-4 right-4 bg-black/80 text-white p-4 rounded-lg z-[200] text-xs font-mono">
-      <div>연결 상태: {{ liveStore.isConnecting ? '연결 중...' : liveStore.isLiveStarted ? '✅ 연결됨' : '❌ 대기' }}</div>
-      <div>에러: {{ liveStore.error || '없음' }}</div>
-      <div>방 ID: {{ liveStore.janusRoomId || 'N/A' }}</div>
-      <div>PIN: {{ liveStore.pin || 'N/A' }}</div>
+      <div>Status: {{ videoRoomStore.connStatus }}</div>
+      <div>Room: {{ videoRoomStore.roomInfo?.janusRoomId }}</div>
+      <div>Analysis: {{ videoRoomStore.isAnalysisStarted ? 'ON' : 'OFF' }}</div>
     </div>
 
     <LiveHeader @end-class="isEndModalOpen = true" />
 
     <div class="flex-1 flex overflow-hidden">
+      <!-- 메인 강의 영역 -->
       <main class="flex-1 flex flex-col p-6 gap-6 overflow-y-auto bg-slate-50 custom-scrollbar">
         <LiveVideoConsole />
-
-        <div class="grid grid-cols-12 gap-6 min-h-[280px]">
+        <div class="grid grid-cols-12 gap-6 min-h-70">
           <AIActionRecommendation class="col-span-4" />
           <GlobalEngagementCard class="col-span-3" />
           <SessionEmotionAnalysis class="col-span-5" />
         </div>
       </main>
 
+      <!-- 사이드바 패널 -->
       <aside class="w-96 bg-white border-l border-slate-200 flex flex-col shadow-sm shrink-0 overflow-hidden">
         <div class="p-7 pb-0 space-y-6 shrink-0">
           <div class="flex items-center justify-between px-1">
             <h2 class="text-xl font-bold text-slate-800">
-              참여자 목록
-              <span class="text-indigo-600 ml-1 text-base">{{ liveStore.participants?.length || 0 }}</span>
+              참여자 목록 <span class="text-indigo-600 ml-1 text-base">{{ videoRoomStore.participants.length }}</span>
             </h2>
             <button class="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-500">
               <span class="material-symbols-outlined text-xl">tune</span>
             </button>
           </div>
-
-          <SidebarStats />
+          <SidebarStats :focus-count="focusCount" :warning-count="warningCount" :absent-count="absentCount" />
           <SidebarTabs v-model="activeTab" />
         </div>
 
         <div class="flex-1 overflow-hidden flex flex-col bg-white">
           <div v-show="activeTab === 'status'" class="flex-1 overflow-y-auto p-7 pt-4 space-y-2 custom-scrollbar">
-            <div v-if="liveStore.participants?.length > 0" class="flex flex-col gap-2">
-              <ParticipantItem v-for="p in liveStore.participants" :key="p.id" :participant="p"
+            <div v-if="videoRoomStore.participants.length > 0" class="flex flex-col gap-2">
+              <ParticipantItem v-for="p in videoRoomStore.participants" :key="p.id" :participant="p"
                 @click="handleStudentClick(p)"
                 class="cursor-pointer hover:ring-2 hover:ring-indigo-100 transition-all rounded-2xl active:scale-[0.98]" />
             </div>
@@ -149,12 +146,11 @@ const handleStudentClick = (student: any) => {
 
         <div class="flex flex-col shrink-0">
           <Transition name="slide-up">
-            <div v-if="liveStore.monitoringStudentId"
+            <div v-if="videoRoomStore.selectedStudentId"
               class="px-6 pb-6 pt-2 border-t border-slate-50 bg-white/50 backdrop-blur-sm">
               <StudentMonitor />
             </div>
           </Transition>
-
           <LiveControlPanel />
         </div>
       </aside>

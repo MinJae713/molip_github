@@ -2,8 +2,10 @@
     <div class="max-w-7xl mx-auto space-y-6">
         <!-- 헤더 (타이틀 및 버튼) -->
         <TrainerCourseDetailHeader title="데이터 기반 고객 경험 최적화 전략" />
+
         <!-- 통계 요약 (기간, 수강생, 상태) -->
         <TrainerCourseStats />
+
         <!-- 탭 네비게이션 -->
         <div class="border-b border-slate-200">
             <div class="flex space-x-8">
@@ -14,6 +16,7 @@
                 </button>
             </div>
         </div>
+
         <!-- 탭 내용 영역 -->
         <div>
             <!-- 세션 일정 관리 -->
@@ -81,38 +84,30 @@ interface LiveSessionData {
 
 const handleStartLive = async (session: any) => {
     try {
-        const courseId = route.params.courseId;
-        const sessionId = session.sessionId;
-        console.log(`🚀 [DEBUG] 라이브 시작 시도 - 코스: ${courseId}, 세션: ${sessionId}`);
-        // 1. 백엔드 세션 연결 API 호출 (실제 세션 ID 사용)
-        const response = await api.post(`/session/${sessionId}/start`);
-        const { janusRoomId, pin, sessionId: sessionIdReturn } = response.data;
-
+        const response = await api.post(`https://i14a309.p.ssafy.io/api/session/${session.sessionId}/start`);
+        const { janusRoomId, pin, sessionId } = response.data;
         const liveData: LiveSessionData = {
             janusRoomId,
             pin,
-            sessionId: sessionIdReturn,
+            sessionId,
             updatedAt: Date.now()
         };
         localStorage.setItem('live_session_info', JSON.stringify(liveData));
-        console.log("✅ [DEBUG] 세션 시작 성공:", liveData);
-
-        // 2. 라이브 세션 입장 (새 창 열기, 파라미터 전달)
-        const targetRoute = router.resolve({
+        console.log("성공 응답 및 로컬스토리지 저장 완료:", liveData);
+        alert("라이브가 성공적으로 시작되었습니다.");
+        // 라이브 세션 입장
+        const resolvedRoute = router.resolve({
             name: 'trainerLiveSession',
             params: {
-                courseId: courseId,
-                sessionId: sessionIdReturn
-            },
-            query: {
-                janus_room_id: janusRoomId,
-                pin: pin
+                courseId: route.params.courseId,
+                sessionId: sessionId
             }
         });
-        window.open(targetRoute.href, '_blank', 'noopener,noreferrer');
+        window.open(resolvedRoute.href, '_blank', 'noopener,noreferrer');
+
     } catch (error: any) {
-        console.error("❌ [DEBUG] 라이브 시작 실패:", error.response?.data || error.message);
-        alert(`라이브 시작 에러: ${error.response?.status} - ${error.response?.data?.message || error.message}`);
+        console.error("프론트 에러 로그:", error.response?.data || error.message);
+        alert(`에러 발생: ${error.response?.status} - 서버 메시지를 확인하세요.`);
     }
 };
 </script>
