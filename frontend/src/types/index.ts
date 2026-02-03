@@ -9,44 +9,55 @@ export interface Workspace {
   myRole: string | null;
 }
 
-export interface Course {
+export interface CreateCourse {
+  workspaceId: number;
+  title: string;
+  description: string;
+  subCategory: string;
+  category: string;
+  maxLearner: number;
+  period: number;
+  isEngageCheck: boolean;
+  isSentimentAnalysis: boolean;
+  attendance: number;
+  engagement: number;
+  exitQuiz: number;
+}
+
+export interface TrainerCourse {
+  // 2026-01-30 확인된 내용, 강사용 코스정보
+  courseId: number;
+  attendance: number;
+  category: string;
+  description: string;
+  engagement: number;
+  exitQuiz: number;
+  isEngageCheck: boolean;
+  isOwner: boolean;
+  isSentimentAnalysis: boolean;
+  maxLearner: number;
+  ownerName: string;
+  period: number;
+  status: string;
+  subCategory: string;
+  title: string;
+  workspaceId: number;
+}
+export interface LearnerCourse {
+  // 2026-01-30 확인된 내용, 수강생용 코스정보
   courseId: string | number; // Course.course_id
   workspaceId?: number; //
   title: string;
   description: string;
-  subCategory?: string;
   category: string;
-  progressRate: number;
+  subCategory?: string;
   currentLessons: number;
   totalLessons: number;
-
-  // Frontend specific or projected
-  isMandatory?: boolean;
-  dDay?: number;
   isLiked?: boolean;
-  duration?: string;
-  enrollmentStatus?: "recruiting" | "pending_approval" | "active";
-  courseStatus?:
-    | "PREPARING"
-    | "INVITE"
-    | "PROCEED"
-    | "FINISH"
-    | "active"
-    | "recruiting"
-    | "ended"; // 프론트 임시 상태값 호환용 추가
-  requestDate?: string;
-  tag?: string;
-  status?: any;
-
-  // New fields for Course Wizard
-  period?: string;
-  aiEngagementCheck?: boolean;
-  aiSentimentAnalysis?: boolean;
-  completionAttendanceRate?: number;
-  useEngagementCriteria?: boolean;
-  completionEngagementScore?: number;
-  useQuizCriteria?: boolean;
-  completionQuizScore?: number;
+  dDay?: string;
+  // 삭제 enrollmentStatus?: boolean;
+  applyStatus: string;
+  status?: string;
 }
 
 export interface User {
@@ -96,23 +107,18 @@ export interface WorkspaceStats {
 export interface Session {
   // ERD 기본 항목
   sessionId: number; // changed from id
-  courseId: number;
   title: string;
   description: string;
-  startAt?: string;
   date?: string;
+  startAt?: string;
   endAt?: string;
-  attendanceTime?: Float16Array;
-  createdAt?: string;
-  updatedAt?: string;
+  useFocus?: boolean;
+  useEmotion?: boolean;
+  useQuiz?: boolean;
+  quizCount?: number;
+  courseId: number;
   janusRoomId?: number;
   pin?: string;
-
-  // 커스텀 영역
-
-  duration?: string;
-  isCompleted?: boolean;
-  state: "live" | "ended" | "upcoming";
 }
 
 export interface Material {
@@ -180,13 +186,13 @@ export interface LearnerSessionReport {
 
 export interface QuizItem {
   id: number;
-  type: 'single' | 'multiple' | 'subjective';
+  type: "single" | "multiple" | "subjective";
   question: string;
-  options?: string[]; 
+  options?: string[];
   correctAnswer: (number | string)[]; // 강사가 설정한 정답
-  userAnswer?: (number | string)[];    // [추가] 수강생이 입력한 정답
+  userAnswer?: (number | string)[]; // [추가] 수강생이 입력한 정답
   timeRange?: string;
   reason?: string;
   isEditing?: boolean;
-  isCorrect?: boolean;                 // [추가] 채점 결과
+  isCorrect?: boolean; // [추가] 채점 결과
 }

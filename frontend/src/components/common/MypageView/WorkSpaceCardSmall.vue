@@ -3,7 +3,7 @@
         class="cursor-pointer flex items-center gap-3 px-3 py-3 bg-indigo-50/50 rounded-xl border border-indigo-100 mb-6">
         <div
             class="size-10 bg-white rounded-lg border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden">
-            <img v-if="workspace.logo_url" :src="workspace.logo_url" :alt="workspace.name"
+            <img v-if="workspace.logoUrl" :src="workspace.logoUrl" :alt="workspace.name"
                 class="w-full h-full object-contain" />
             <span v-else class="material-symbols-outlined text-indigo-600">domain</span>
         </div>
@@ -12,12 +12,12 @@
                 {{ workspace.name }}
             </div>
 
-            <span v-if="workspace.my_role === 'ADMIN'"
+            <span v-if="workspace.myRole === 'ADMIN'"
                 class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-white whitespace-nowrap leading-none">
                 관리자
             </span>
 
-            <span v-else-if="workspace.my_role === 'TRAINER'"
+            <span v-else-if="workspace.myRole === 'TRAINER'"
                 class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 border border-indigo-200 whitespace-nowrap leading-none">
                 강사
             </span>

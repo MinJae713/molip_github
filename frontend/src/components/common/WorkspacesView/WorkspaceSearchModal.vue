@@ -17,7 +17,12 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: 'close'): void;
+    (e: 'enter', id: string | number, role: 'LEARNER' | 'TRAINER' | undefined): void;
 }>();
+const handleEnter = (id: string | number, role: 'LEARNER' | 'TRAINER' | undefined) => {
+    emit('enter', id, role);
+};
+
 
 const workspaceStore = useWorkspaceStore();
 const userStore = useUserStore();
@@ -36,7 +41,7 @@ const step = ref(1);
 const selectedWorkspace = ref<Workspace | null>(null);
 const selectedRole = ref<'LEARNER' | 'TRAINER'>('LEARNER');
 
-// [상태 리셋 함수]
+// 상태 리셋 함수
 const resetModalState = () => {
     step.value = 1;
     searchQuery.value = '';
@@ -51,13 +56,10 @@ const resetModalState = () => {
 const handleSearch = async () => {
     const query = searchQuery.value.trim();
     if (!query) return;
-
     isLoading.value = true;
     hasSearched.value = true;
     errorMessage.value = '';
-
     try {
-        // 서버에서 가입되지 않은 워크스페이스만 검색 결과로 반환한다고 가정
         const results = await workspaceStore.searchWorkspaces(query);
         searchResults.value = results;
     } catch (error) {
@@ -72,7 +74,6 @@ const handleSearch = async () => {
 const handleApply = (id: string | number) => {
     const target = searchResults.value.find(ws => String(ws.workspaceId) === String(id));
     if (!target) return;
-
     selectedWorkspace.value = target;
     selectedRole.value = 'LEARNER';
     step.value = 2;
@@ -81,9 +82,7 @@ const handleApply = (id: string | number) => {
 // [최종 신청 완료]
 const confirmApplication = async () => {
     if (!selectedWorkspace.value || !user.value) return;
-
     if (!confirm(`${selectedRole.value === 'LEARNER' ? '수강생' : '강사'} 권한으로 신청하시겠습니까?`)) return;
-
     isLoading.value = true;
     try {
         const success = await workspaceStore.joinWorkspace(
@@ -93,7 +92,6 @@ const confirmApplication = async () => {
             "PENDING",
             new Date().toISOString()
         );
-
         if (success) {
             alert('참여 신청이 완료되었습니다.\n관리자 승인 후 입장 가능합니다.');
             handleClose();
@@ -110,7 +108,6 @@ const confirmApplication = async () => {
 
 const handleClose = async () => {
     emit('close');
-    // 다시 검색
     await workspaceStore.fetchMyWorkspaces(true);
 };
 
@@ -131,9 +128,7 @@ watch(() => props.isOpen, (newVal) => {
 <template>
     <div v-if="isOpen"
         class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-
         <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-
             <!-- Header -->
             <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between shrink-0">
                 <h2 class="text-xl font-bold text-slate-900">
@@ -144,10 +139,8 @@ watch(() => props.isOpen, (newVal) => {
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-
             <!-- Content Area -->
             <div class="flex-1 overflow-y-auto custom-scrollbar">
-
                 <!-- Step 1: Search -->
                 <div v-if="step === 1" class="p-6">
                     <div class="relative mb-8">
@@ -177,11 +170,10 @@ watch(() => props.isOpen, (newVal) => {
                             <span class="material-symbols-outlined text-4xl text-slate-300">search_off</span>
                             <p>검색 결과가 없습니다.</p>
                         </div>
-
                         <div v-else class="space-y-4">
-                            <!-- WorkspaceCard에 status=0(Guest)을 강제하여 신청 버튼이 나오도록 유도 -->
-                            <WorkspaceCard v-for="item in searchResults" :key="item.workspaceId"
-                                :workspace="{ ...item, myStatus: 0 }" @apply="handleApply" />
+                            <div v-for="item in searchResults" :key="item.workspaceId">
+                                <WorkspaceCard :workspace="item" @apply="handleApply" @enter="handleEnter" />
+                            </div>
                         </div>
                     </div>
                 </div>

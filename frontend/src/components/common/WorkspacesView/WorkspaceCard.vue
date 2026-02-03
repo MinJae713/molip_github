@@ -29,7 +29,7 @@
                 <span class="material-symbols-outlined text-lg">group</span>
                 <span>멤버 {{ (workspace.memberCount || 0).toLocaleString() }}명</span>
             </div>
-
+            <!-- 입장하기/가입하기 버튼-->
             <button @click="handleAction" :disabled="workspace.myStatus === 1" :class="[
                 buttonConfig.colorClass,
                 'text-white text-sm font-bold py-2.5 px-5 rounded-lg transition-all duration-200 shadow-md flex items-center gap-2 group-hover:shadow-lg disabled:opacity-70'
@@ -50,7 +50,7 @@ interface Props {
 }
 const props = defineProps<Props>();
 const emit = defineEmits<{
-    (e: 'enter' | 'apply', id: string | number, role?: string): void;
+    (e: 'enter' | 'apply', id: string | number, role: 'LEARNER' | 'TRAINER' | undefined): void;
 }>();
 
 // 2. 버튼 설정 최적화 및 아이콘 동적 할당
@@ -95,8 +95,14 @@ const statusText = computed(() => {
 
 // 4. 클릭 핸들러 (대기 상태일 때 로직 방지)
 const handleAction = () => {
-    if (props.workspace.myStatus === 1) return; // 대기 중일 때는 무시
-    emit(buttonConfig.value.action, props.workspace.workspaceId, props.workspace.myRole || undefined);
+    if (props.workspace.myStatus === 1) {
+        alert('승인 대기중입니다.');
+        return;
+    } else if (props.workspace.myStatus === 0) {
+        emit(buttonConfig.value.action, props.workspace.workspaceId, (props.workspace.myRole as 'LEARNER' | 'TRAINER' | null) || undefined);
+    } else {
+        emit(buttonConfig.value.action, props.workspace.workspaceId, (props.workspace.myRole as 'LEARNER' | 'TRAINER' | null) || undefined);
+    }
 };
 
 // 테마 색상 맵

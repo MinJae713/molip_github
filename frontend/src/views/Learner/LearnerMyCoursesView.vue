@@ -17,7 +17,7 @@
             <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">내 강의실</h1>
             <!-- 통계 카드 -->
             <LearnerMyCoursesStats :ongoingCount="ongoingCourses.length" :completedCount="completedCourses.length"
-                :attendanceRate="myCoursesAttendanceRate || 0" />
+                :attendanceRate=0 />
         </div>
         <!-- 탭 네비게이션 -->
         <div class="border-b border-slate-200">
@@ -44,7 +44,7 @@
         <!-- 강의 목록 -->
         <div v-if="displayedCourses.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             <LearnerMyCourseCard v-for="course in displayedCourses" :key="course.courseId" :course="course"
-                @enter-course="handleEnterCourse" @enroll-course="handleEnrollCourse" />
+                @enter-course="handleEnterCourse" />
         </div>
 
         <!-- 데이터 없음 안내 -->
@@ -77,11 +77,9 @@ const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
 const activeTab = ref('ongoing');
-
-const { myEnrolledCourses, myCoursesAttendanceRate, myLikedCourses } = storeToRefs(courseStore);
+const { workspaceCourses, myEnrolledCourses, myLikedCourses } = storeToRefs(courseStore);
 const { user } = storeToRefs(userStore);
 const workspaceId = computed(() => route.params.id);
-
 // 현재 route에 따라 home 경로 결정
 const homeRoute = computed(() => {
     const isTrainer = route.name?.toString().includes('Trainer');
@@ -95,7 +93,7 @@ const homeRoute = computed(() => {
 // progress_rate로 학습 진행 상태를 구분 (0-99: 진행중/대기중, 100: 완료)
 const ongoingCourses = computed(() =>
     myEnrolledCourses.value.filter(course =>
-        course.progressRate < 100
+        course.enrollmentStatus === "active"
     )
 );
 
@@ -109,29 +107,25 @@ const likedCourses = computed(() => myLikedCourses.value);
 
 // 탭별 동적 카운트
 const tabs = computed(() => [
-    { id: 'ongoing', label: '학습 중인 과정', count: ongoingCourses.value.length },
+    { id: 'ongoing', label: '운영 중인 과정', count: ongoingCourses.value.length },
     { id: 'liked', label: '찜한 과정', count: likedCoursesCount },
-    { id: 'completed', label: '수료한 과정', count: completedCourses.value.length }
+    { id: 'completed', label: '종료된 과정', count: completedCourses.value.length }
 ]);
 
 onMounted(async () => {
-    // 사용자 정보 로드 (memberId 확보용)
     // 내 강의 목록과 이번달 출석률 불러오기
     const wsId = Array.isArray(workspaceId.value) ? workspaceId.value[0] : workspaceId.value;
     if (wsId) {
         await courseStore.fetchMyEnrolledCourses(
             wsId,
-            userStore.user.memberId,
-            'LEARNER'
+            'TRAINER'
         );
     }
-    await courseStore.fetchMyCoursesAttendanceRate();
-    await courseStore.fetchLikeCourses();
 });
 const displayedCourses = computed(() => {
     switch (activeTab.value) {
         case 'ongoing': return ongoingCourses.value;
-        case 'liked': return likedCourses.value;
+        // case 'liked': return likedCourses.value;
         case 'completed': return completedCourses.value;
         default: return [];
     }
@@ -146,6 +140,7 @@ const handleEnterCourse = (courseId: string | number) => {
         }
     });
 };
+
 const handleEnrollCourse = async (courseId: string | number) => {
     if (confirm('이 과정을 수항신청하시겠습니까?')) {
         const success = await courseStore.enrollCourse(courseId, user.value.memberId);

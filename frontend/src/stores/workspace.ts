@@ -101,6 +101,13 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     appliedAt: string,
   ) {
     try {
+      console.log("가입 신청 페이로드:", {
+        workspaceId,
+        role,
+        memberId,
+        status,
+        appliedAt,
+      });
       const payload = {
         workspaceId,
         role,

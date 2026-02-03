@@ -85,19 +85,19 @@ const workspaceId = computed(() => {
 // 활성화 된 코스 필터링
 const trainerOngoingCourses = computed(() =>
     managedCourses.value.filter(course =>
-        !course.courseStatus || course.courseStatus === 'active'
+        !course.status || course.status === 'PROCEED'
     )
 );
 // 모집중 코스 필터링
 const recruitingCourses = computed(() =>
     managedCourses.value.filter(course =>
-        course.courseStatus === 'recruiting'
+        course.status === 'RECRUIT'
     )
 );
 // 종료된 코스 필터링
 const completedCourses = computed(() =>
     managedCourses.value.filter(course =>
-        course.courseStatus === 'ended' || course.progressRate === 100
+        course.status === 'END'
     )
 );
 
@@ -143,12 +143,7 @@ const handleEnrollCourse = async (courseId: string | number) => {
 };
 const handleAddCourse = () => {
     console.log('새 과정 신청');
-    // TODO: 과정 검색 모달 열기 (기존) -> 새 과정 개설 모달 열기
     isCreateModalOpen.value = true;
-};
-const handleViewRecommendation = () => {
-    console.log('추천 과정 보기');
-    // TODO: 추천 과정 페이지로 이동
 };
 
 const handleCourseCreated = () => {

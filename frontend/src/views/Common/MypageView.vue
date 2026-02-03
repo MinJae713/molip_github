@@ -10,7 +10,6 @@
                 <span class="material-symbols-outlined text-indigo-brand">badge</span>
                 <h2 class="text-xl font-bold text-slate-900">내 정보</h2>
             </div>
-
             <UserInfoUpdateCard :user="userStore.user" @update-image="handleProfileImageUpdate" />
         </section>
         <!-- 내가 참가한 워크스페이스 -->
@@ -61,10 +60,11 @@ const workspaceStore = useWorkspaceStore();
 const courseStore = useLearnerCourseStore();
 
 onMounted(() => {
+    userStore.fetchUserInfo();
     courseStore.fetchMyEnrolledCourses();
+    workspaceStore.fetchMyWorkspaces();
 });
 
-// 참여 중(2)인 워크스페이스만 필터링
 const activeWorkspaces = computed(() => {
     return workspaceStore.myWorkspaces.filter(ws => ws.myStatus === 2);
 });
@@ -83,7 +83,6 @@ const goToWorkspace = (id: number | string) => {
     // Find the workspace to get its role
     const workspace = workspaceStore.myWorkspaces.find(ws => ws.workspaceId === id);
     const role = workspace?.myRole || 'LEARNER';
-
     if (role === 'TRAINER') {
         router.push({ name: 'workspaceTrainer', params: { id } });
     } else if (role === 'LEARNER') {
@@ -94,7 +93,6 @@ const goToWorkspace = (id: number | string) => {
 };
 
 const openSearchModal = () => {
-    // 워크스페이스 찾기 모달 오픈 로직 또는 페이지 이동
     router.push({ name: 'workspaces' });
 };
 </script>

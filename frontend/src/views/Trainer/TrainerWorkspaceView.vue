@@ -54,17 +54,16 @@
                 </div>
             </div>
             <!-- 코스(강의 영역) -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" v-if="workspaceAllCourses.length > 0">
-                <TrainerDashboardCourseCard v-for="course in workspaceAllCourses" :key="course.courseId"
-                    :course="course"
-                    @open-curriculum="(courseId) => currentWorkspaceId && openCurriculumModal(currentWorkspaceId, courseId)" />
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" v-if="workspaceCourses.length > 0">
+                <TrainerDashboardCourseCard v-for="course in workspaceCourses" :key="course.courseId" :course="course"
+                    @open-curriculum="openCurriculumModal" /> />
             </div>
             <div v-else class="text-center py-20 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                 <p class="text-slate-500">등록된 강의가 없습니다.</p>
             </div>
         </section>
         <!-- Course Curriculum Modal -->
-        <TrainerCourseCurriculumModal :isOpen="isModalOpen" :course="selectedCourse" :sessions="mockSessions"
+        <TrainerCourseCurriculumModal :isOpen="isModalOpen" :course="selectedCourse" :sessions="selectedCourseSessions"
             @close="closeModal" @register="handleRegister" />
     </div>
 </template>
@@ -73,58 +72,52 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
-// 스토어 할당
+// 워크스페이스 스토어
 import { useWorkspaceStore } from '@/stores/workspace';
-import { useTrainerCourseStore } from '@/stores/trainerCourse';
-import { useTrainerSessionStore } from '@/stores/trainerSession';
-
 const workspaceStore = useWorkspaceStore();
-const trainerCourseStore = useTrainerCourseStore();
-const trainerSessionStore = useTrainerSessionStore();
-
 const { workspaceStats } = storeToRefs(workspaceStore);
-const { workspaceAllCourses } = storeToRefs(trainerCourseStore);
-const { managedSessions } = storeToRefs(trainerSessionStore);
+// 학생 코스 스토어(워크스페이스 모달용)
+import { useLearnerCourseStore } from '@/stores/learnerCourse';
+const learnerCourseStore = useLearnerCourseStore();
+const { workspaceCourses } = storeToRefs(learnerCourseStore);
+
 
 import { storeToRefs } from 'pinia';
-import type { Course, Session } from '@/types';
+import type { LearnerCourse, Session } from '@/types';
 import TrainerStatCard from '@/components/Trainer/TrainerWorkspace/TrainerStatCard.vue';
 import TrainerDashboardCourseCard from '@/components/Trainer/TrainerWorkspace/TrainerDashboardCourseCard.vue';
 import TrainerCourseCurriculumModal from '@/components/Trainer/TrainerWorkspace/TrainerCourseCurriculumModal.vue';
 
 const route = useRoute();
-// 스토어 할당
-
+// 현재 워크스페이스 아이디 획득
 const currentWorkspaceId = computed(() => {
     const id = route.params.id;
     return Array.isArray(id) ? id[0] : id;
 });
 
+// 검색어
 const searchQuery = ref('');
+// 정렬 옵션
 const sortOption = ref<'newest' | 'deadline' | 'oldest'>('newest');
 
 // 모달 상태관리
 const isModalOpen = ref(false);
-const selectedCourse = ref<Course>({} as Course);
+const selectedCourse = ref<LearnerCourse>({} as LearnerCourse);
 const mockSessions = ref<Session[]>([]);
 
 // 커리큘럼 확인 모달 열기
-const openCurriculumModal = async (workspaceId: string | number, courseId: string | number) => {
-    const course = workspaceAllCourses.value.find(c => String(c.courseId) === String(courseId));
+const selectedCourseSessions = ref<Session[]>([]);
+const openCurriculumModal = async (courseId: string | number) => {
+    const course = workspaceCourses.value.find(c => String(c.courseId) === String(courseId));
     if (course) {
         selectedCourse.value = course;
-        try {
-            // Fetch sessions using store
-            await trainerSessionStore.fetchManagedSessions(workspaceId, courseId);
-            mockSessions.value = managedSessions.value;
-        } catch (e) {
-            console.error('세션 목록 로드 실패', e);
-            mockSessions.value = [];
-        }
+        console.log("코스정보", course)
+        const sessions = await learnerCourseStore.fetchCourseSessions(courseId);
+        console.log(sessions)
+        selectedCourseSessions.value = sessions;
         isModalOpen.value = true;
     }
 };
-
 const closeModal = () => {
     isModalOpen.value = false;
 };
@@ -153,19 +146,16 @@ const initDashboard = async () => {
         const id = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
         if (!id) return;
         await workspaceStore.setCurrentWorkspaceById(id);
-        await trainerCourseStore.fetchWorkspaceAllCourses(id); // 강사: 관리 코스 목록 조회
+        await learnerCourseStore.fetchCoursesByWorkspace(id); // 강사: 관리 코스 목록 조회
     }
 };
-
 onMounted(() => {
     initDashboard();
 });
-
 watch(() => route.params.id, () => {
     initDashboard();
 });
 </script>
-
 <style scoped>
 .text-indigo-brand {
     color: #4F46E5;

@@ -21,7 +21,7 @@
         <div>
             <!-- 세션 일정 관리 -->
             <div v-if="activeTab === 'session'">
-                <TrainerSessionList @start-live="handleStartLive" />
+                <TrainerSessionList :sessions="sessionList" @start-live="handleStartLive" />
             </div>
             <!-- 다른 탭 placeholder -->
             <div v-else class="py-20 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
@@ -32,18 +32,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import type { Session } from '@/types';
+// 컴포넌트
 import TrainerCourseDetailHeader from '@/components/Trainer/TrainerCourseView/TrainerCourseDetailHeader.vue';
 import TrainerCourseStats from '@/components/Trainer/TrainerCourseView/TrainerCourseStats.vue';
 import TrainerSessionList from '@/components/Trainer/TrainerCourseView/TrainerSessionList.vue';
 const router = useRouter();
-// 테스트용 임시 코드
-import api from "@/api";
-import { useTrainerLiveStore } from '@/stores/trainerlive';
-const trainerLiveStore = useTrainerLiveStore();
+const route = useRoute();
 
+import { useTrainerCourseStore } from '@/stores/trainerCourse';
+const trainerCourseStore = useTrainerCourseStore();
 
+const sessionList = ref<Session[]>([]);
 const activeTab = ref('session');
 const tabs = [
     { id: 'session', label: '세션 일정 관리' },
@@ -51,6 +53,27 @@ const tabs = [
     { id: 'material', label: '자료실' },
     { id: 'stats', label: '교육통계' }
 ];
+
+onMounted(async () => {
+    const courseId = route.params.courseId;
+    console.log("courseId", courseId);
+    if (courseId) {
+        sessionList.value = await trainerCourseStore.fetchCourseSessions(Number(courseId));
+        console.log("sessionList", sessionList.value);
+    }
+});
+
+
+
+
+
+
+
+// 테스트용 임시 코드
+import api from "@/api";
+import { useTrainerLiveStore } from '@/stores/trainerlive';
+const trainerLiveStore = useTrainerLiveStore();
+
 
 interface LiveSessionData {
     janusRoomId: number;

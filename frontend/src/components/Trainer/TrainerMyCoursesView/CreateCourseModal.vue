@@ -26,7 +26,6 @@
                 <div class="flex-1 overflow-y-auto bg-slate-50/50">
                     <!-- Step Indicator -->
                     <CreateCourseStepIndicator :currentStep="currentStep" :steps="steps" />
-
                     <!-- Step Content -->
                     <div class="px-8 pb-8">
                         <KeepAlive>
@@ -34,14 +33,9 @@
                         </KeepAlive>
                     </div>
                 </div>
-
                 <!-- Footer (Sticky) -->
                 <div
                     class="px-8 py-5 border-t border-slate-100 bg-slate-50 flex items-center justify-between sticky bottom-0 z-10 shrink-0">
-                    <button
-                        class="px-5 py-2.5 border border-slate-300 bg-white text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors">
-                        임시 저장
-                    </button>
                     <div class="flex items-center gap-3">
                         <button v-if="currentStep > 1" @click="prevStep"
                             class="px-5 py-2.5 text-slate-600 text-sm font-bold hover:text-slate-800 transition-colors">
@@ -52,7 +46,6 @@
                             class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-md shadow-indigo-200 transition-colors">
                             다음 단계
                         </button>
-
                         <button v-else @click="handleSubmit" :disabled="isSubmitting"
                             class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-md shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
                             <span v-if="isSubmitting"
@@ -70,7 +63,7 @@
 <script setup lang="ts">
 import { ref, computed, reactive, watch } from 'vue';
 import { useTrainerCourseStore } from '@/stores/trainerCourse';
-import type { Course } from '@/types';
+import type { CreateCourse } from '@/types';
 
 import CreateCourseStepIndicator from './CreateCourseStepIndicator.vue';
 import Step1BasicInfo from './steps/CreateCourseStep1BasicInfo.vue';
@@ -91,12 +84,13 @@ const emit = defineEmits<{
 
 const trainerCourseStore = useTrainerCourseStore();
 
-// Wizard State
+// 상태 관리 변수들
 const currentStep = ref(1);
 const steps = ['기본 정보', '운영 일정', 'AI 분석', '수료 기준'];
 const totalSteps = steps.length;
 const isSubmitting = ref(false);
 
+//모달 이동 제어
 const currentStepComponent = computed(() => {
     switch (currentStep.value) {
         case 1: return Step1BasicInfo;
@@ -107,29 +101,21 @@ const currentStepComponent = computed(() => {
     }
 });
 
-// Form Data (Extended with new fields)
+// 폼 데이터
 const form = reactive({
+    // workspaceId는 별도로 props로 받음
     title: '',
     description: '',
     category: '',
-    sub_category: '', // New field
-    tag: '',
-
+    subCategory: '',
+    maxLearner: 0,
     // Schedule
-    period: '',    // New field
-    duration: '',  // New field
-    total_lessons: 0,
-
-    // AI Analysis (New fields)
-    ai_engagement_check: true,
-    ai_sentiment_analysis: false,
-
-    // Completion Criteria (New fields)
-    completion_attendance_rate: 80,
-    use_engagement_criteria: true,
-    completion_engagement_score: 70,
-    use_quiz_criteria: false,
-    completion_quiz_score: 60,
+    period: '',
+    isEngageCheck: false,
+    isSentimentAnalysis: false,
+    attendance: 0,
+    engagement: 0,
+    exitQuiz: 0,
 });
 
 // Reset form when modal opens
@@ -159,17 +145,13 @@ const prevStep = () => {
 
 const handleSubmit = async () => {
     isSubmitting.value = true;
+    console.log(form);
     try {
         const payload = {
             ...form,
-            workspace_id: String(props.workspaceId) as any,
-            current_lessons: 0,
-            progress_rate: 0,
-            is_liked: false,
-            course_status: 'recruiting' as const, // Default status
+            workspaceId: String(props.workspaceId) as any,
         };
-
-        const success = await trainerCourseStore.createCourse(payload, props.workspaceId);
+        const success = await trainerCourseStore.createCourse(payload);
         if (success) {
             emit('created');
             emit('close');

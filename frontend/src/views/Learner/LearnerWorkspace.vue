@@ -34,7 +34,6 @@
                             class="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-48 md:w-64 transition-all"
                             placeholder="강의 검색..." type="text" />
                     </div>
-
                     <!-- Sort Dropdown -->
                     <div class="relative group">
                         <button
@@ -58,7 +57,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Course Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" v-if="filteredCourses.length > 0">
                 <DashboardCourseCard v-for="course in filteredCourses" :key="course.courseId" :course="course"
@@ -69,9 +67,8 @@
                 <p class="text-slate-500">등록된 강의가 없습니다.</p>
             </div>
         </section>
-
-        <!-- Course Curriculum Modal -->
-        <CourseCurriculumModal :isOpen="isModalOpen" :course="selectedCourse" :sessions="mockSessions"
+        <!-- 커리큘럼 확인(세션)모달 -->
+        <CourseCurriculumModal :isOpen="isModalOpen" :course="selectedCourse" :sessions="selectedCourseSessions"
             @close="closeModal" @register="handleRegister" />
     </div>
 </template>
@@ -82,7 +79,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { useLearnerCourseStore } from '@/stores/learnerCourse';
 import { storeToRefs } from 'pinia';
-import type { Course, Session } from '@/types';
+import type { LearnerCourse, Session } from '@/types';
 import StatCard from '@/components/Learner/LearnerWorkspace/StatCard.vue';
 import DashboardCourseCard from '@/components/Learner/LearnerWorkspace/DashboardCourseCard.vue';
 import CourseCurriculumModal from '@/components/Learner/LearnerWorkspace/CourseCurriculumModal.vue';
@@ -90,32 +87,31 @@ import CourseCurriculumModal from '@/components/Learner/LearnerWorkspace/CourseC
 const route = useRoute();
 const router = useRouter();
 const workspaceStore = useWorkspaceStore();
-const courseStore = useLearnerCourseStore();
+const learnerCourseStore = useLearnerCourseStore();
 
 const { workspaceStats } = storeToRefs(workspaceStore);
-const { workspaceCourses } = storeToRefs(courseStore);
+const { workspaceCourses } = storeToRefs(learnerCourseStore);
 
 const searchQuery = ref('');
 const sortOption = ref<'newest' | 'deadline' | 'oldest'>('newest');
 
-// Date Filter State
+// 날짜 기준 필터
 const filterStartDate = ref('');
 const filterEndDate = ref('');
 
-// Modal State
+// 모달 상태
 const isModalOpen = ref(false);
-const selectedCourse = ref<Course>({} as Course);
-const mockSessions = ref<Session[]>([]);
+const selectedCourse = ref<LearnerCourse>({} as LearnerCourse);
 
+const selectedCourseSessions = ref<Session[]>([]);
 const openCurriculumModal = async (courseId: string | number) => {
     const course = workspaceCourses.value.find(c => String(c.courseId) === String(courseId));
     if (course) {
         selectedCourse.value = course;
-
-        // Fetch sessions from API
-        const sessions = await courseStore.fetchCourseSessions(courseId);
-        mockSessions.value = sessions;
-
+        console.log("코스정보", course)
+        const sessions = await learnerCourseStore.fetchCourseSessions(courseId);
+        console.log(sessions)
+        selectedCourseSessions.value = sessions;
         isModalOpen.value = true;
     }
 };
@@ -130,22 +126,22 @@ const handleEnrollCourse = async (courseId: string | number) => {
 
     if (!confirm(`"${course.title}" 강의를 수강 신청하시겠습니까?`)) return;
 
-    const success = await courseStore.enrollCourse(courseId, '1'); // userId는 실제로는 userStore에서 가져와야 함
+    const success = await learnerCourseStore.enrollCourse(courseId, '1'); // userId는 실제로는 userStore에서 가져와야 함
 
     if (success) {
-        alert('✅ 수강 신청이 완료되었습니다!\n관리자 승인 후 수강이 가능합니다.');
+        alert('수강 신청이 완료되었습니다!\n관리자 승인 후 수강이 가능합니다.');
         // TODO: 강의 목록 갱신하여 상태를 pending_approval로 변경
         // 목록 새로고침
         const workspaceId = route.params.id;
         const normalizedId = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
         if (normalizedId) {
-            await courseStore.fetchCoursesByWorkspace(normalizedId);
+            await learnerCourseStore.fetchCoursesByWorkspace(normalizedId);
         }
     } else {
         alert('❌ 수강 신청 중 오류가 발생했습니다.\n다시 시도해주세요.');
     }
 };
-
+// 강의실 입장
 const handleEnterCourse = (courseId: string | number) => {
     const currentWorkspaceId = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id;
     console.log(currentWorkspaceId);
@@ -219,10 +215,9 @@ const filteredCourses = computed(() => {
             result.sort((a, b) => Number(a.courseId) - Number(b.courseId));
             break;
         case 'deadline':
-            result.sort((a, b) => (a.dDay || 999) - (b.dDay || 999));
+            result.sort((a, b) => Number(a.dDay || 999) - Number(b.dDay || 999));
             break;
     }
-
     return result;
 });
 
@@ -244,11 +239,9 @@ const initDashboard = async () => {
     const workspaceId = route.params.id;
     if (workspaceId) {
         const id = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
-
         if (!id) return;
-
         await workspaceStore.setCurrentWorkspaceById(id);
-        await courseStore.fetchCoursesByWorkspace(id);
+        await learnerCourseStore.fetchCoursesByWorkspace(id);
     }
 };
 

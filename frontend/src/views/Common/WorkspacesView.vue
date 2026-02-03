@@ -31,14 +31,14 @@
             <p class="text-slate-500 text-lg font-medium">참여 중인 워크스페이스가 없습니다.</p>
             <p class="text-slate-400 text-sm mt-1">위 검색창을 통해 새로운 워크스페이스를 찾아보세요.</p>
         </div>
-
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <WorkspaceCard v-for="workspace in workspaceStore.myWorkspaces" :key="workspace.workspaceId"
                 :workspace="workspace" @enter="handleEnter" />
         </div>
 
         <!-- 검색 모달 -->
-        <WorkspaceSearchModal :is-open="isSearchModalOpen" :initial-query="searchQuery" @close="closeSearchModal" />
+        <WorkspaceSearchModal :is-open="isSearchModalOpen" :initial-query="searchQuery" @close="closeSearchModal"
+            @enter="handleEnter" />
     </main>
 </template>
 
@@ -83,9 +83,8 @@ const closeSearchModal = () => {
     fetchMyWorkspaces();
 };
 
-const handleEnter = (id: string | number, role?: string) => {
+const handleEnter = (id: string | number, role?: "TRAINER" | "LEARNER" | undefined) => {
     const userRole = role || 'LEARNER'; // Fallback to 'LEARNER' if role is undefined
-
     if (userRole === 'TRAINER') {
         router.push({ name: 'workspaceTrainer', params: { id } });
     } else if (userRole === 'LEARNER') {

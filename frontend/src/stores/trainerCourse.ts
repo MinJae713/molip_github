@@ -1,34 +1,32 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import api from "@/api";
-import type { Course } from "@/types";
+import type { LearnerCourse, TrainerCourse, CreateCourse } from "@/types";
 
 export const useTrainerCourseStore = defineStore("trainerCourse", () => {
-  const workspaceAllCourses = ref<Course[]>([]); // 현재 워크스페이스의 모든 코스 목록
-  const managedCourses = ref<Course[]>([]); // 강사가 관리하는 전체 코스 목록
-  const currentManagedCourse = ref<Course | null>(null); // 현재 선택/관리 중인 코스 상세
+  const workspaceAllCourses = ref<TrainerCourse[]>([]); // 현재 워크스페이스의 모든 코스 목록
+  const managedCourses = ref<TrainerCourse[]>([]); // 강사가 관리하는 전체 코스 목록
+  const currentManagedCourse = ref<TrainerCourse | null>(null); // 현재 선택/관리 중인 코스 상세
   const isLoading = ref(false);
 
   // Helper: API -> Frontend (CamelCase)
-  const mapTrainerCourse = (data: any): Course => ({
-    courseId: data.course_id || data.courseId || data.id,
-    workspaceId: data.workspace_id || data.workspaceId,
-    title: data.title,
-    description: data.description || "",
-    tag: data.tag,
-    subCategory: data.sub_category || data.subCategory,
+  const mapTrainerCourse = (data: any): TrainerCourse => ({
+    attendance: data.attendance,
     category: data.category,
-    enrollmentStatus:
-      data.enrollment_status ?? data.status ?? data.enrollmentStatus,
-    courseStatus: data.course_status ?? data.status ?? data.courseStatus,
-    progressRate: data.progress_rate ?? data.progress ?? data.progressRate ?? 0,
-    currentLessons: data.current_lessons ?? data.currentLessons ?? 0,
-    totalLessons: data.total_lessons ?? data.totalLessons ?? 0,
-    isMandatory: data.is_mandatory ?? data.isMandatory,
-    dDay: data.d_day ?? data.dDay,
-    isLiked: data.is_liked ?? data.isLiked,
-    duration: data.duration,
-    requestDate: data.request_date ?? data.requestDate,
+    courseId: data.course_id || data.courseId || data.id,
+    description: data.description || "",
+    engagement: data.engagement,
+    exitQuiz: data.exitQuiz,
+    isEngageCheck: data.isEngageCheck,
+    isOwner: data.isOwner,
+    isSentimentAnalysis: data.isSentimentAnalysis,
+    maxLearner: data.maxLearner,
+    ownerName: data.ownerName,
+    period: data.period,
+    status: data.status,
+    subCategory: data.subCategory,
+    title: data.title,
+    workspaceId: data.workspaceId,
   });
 
   // 워크스페이스의 모든 코스 목록 가져오기
@@ -36,7 +34,6 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
     isLoading.value = true;
     try {
       const response = await api.get(`/workspaces/${workspaceId}/courses`);
-
       workspaceAllCourses.value = Array.isArray(response.data)
         ? response.data.map(mapTrainerCourse)
         : [];
@@ -54,10 +51,9 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
     isLoading.value = true;
     console.log(`[API Request] workspaceId: ${workspaceId}, role: ${role}`);
     try {
-      const response = await api.get(`/courses/me`);
+      const response = await api.get(`/courses/me?role=${role}`);
       // json-server 필터링 결과가 정상적으로 배열로 오는지 확인
       console.log("[API Success] 응답 데이터:", response.data);
-
       // 데이터가 존재할 때만 할당
       managedCourses.value = Array.isArray(response.data)
         ? response.data.map(mapTrainerCourse)
@@ -102,7 +98,7 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
 
   // 새 코스 생성
   async function createCourse(
-    payload: Partial<Course>,
+    payload: Partial<CreateCourse>,
     workspace_id: string | number,
   ) {
     isLoading.value = true;
@@ -119,6 +115,16 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
       isLoading.value = false;
     }
   }
+  // 강의 세션 목록 조회
+  const fetchCourseSessions = async (courseId: string | number) => {
+    try {
+      const response = await api.get(`/session?courseId=${courseId}`);
+      return response.data;
+    } catch (error) {
+      console.error("세션 목록 로드 실패:", error);
+      return [];
+    }
+  };
 
   return {
     workspaceAllCourses,
@@ -129,5 +135,6 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
     fetchMyCourses,
     setManagedCourse,
     createCourse,
+    fetchCourseSessions,
   };
 });

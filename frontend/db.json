@@ -2,31 +2,31 @@
   "members": [
     {
       "id": "1",
-      "member_id": 1,
+      "memberId": 1,
       "name": "나학생",
       "email": "나학생.kim@techcorp.com",
-      "profile_image_url": "https://image.utoimage.com/preview/cp902650/2022/02/202202012904_500.jpg"
+      "profileImageUrl": "https://image.utoimage.com/preview/cp902650/2022/02/202202012904_500.jpg"
     },
     {
       "id": "me",
-      "member_id": 1,
+      "memberId": 1,
       "name": "나학생",
       "email": "나학생.kim@techcorp.com",
-      "profile_image_url": "https://image.utoimage.com/preview/cp902650/2022/02/202202012904_500.jpg"
+      "profileImageUrl": "https://image.utoimage.com/preview/cp902650/2022/02/202202012904_500.jpg"
     },
     {
       "id": "2",
-      "member_id": 2,
+      "memberId": 2,
       "name": "나강사",
       "email": "나강사.kim@techcorp.com",
-      "profile_image_url": "https://png.pngtree.com/png-clipart/20190905/original/pngtree-lecturer-flat-illustration-png-image_4535762.jpg"
+      "profileImageUrl": "https://png.pngtree.com/png-clipart/20190905/original/pngtree-lecturer-flat-illustration-png-image_4535762.jpg"
     },
     {
       "id": "3",
-      "member_id": 3,
+      "memberId": 3,
       "name": "나관리자",
       "email": "나관리자.kim@techcorp.com",
-      "profile_image_url": "https://cdn-icons-png.flaticon.com/512/2304/2304226.png"
+      "profileImageUrl": "https://cdn-icons-png.flaticon.com/512/2304/2304226.png"
     }
   ],
   "workspaces": [
@@ -1202,21 +1202,9 @@
       "user_id": 1,
       "workspace_id": 1,
       "course_id": "all",
-      "labels": [
-        "월간 평균",
-        "주간 평균",
-        "최근 세션"
-      ],
-      "my_scores": [
-        85,
-        88,
-        92
-      ],
-      "avg_scores": [
-        80,
-        82,
-        85
-      ],
+      "labels": ["월간 평균", "주간 평균", "최근 세션"],
+      "my_scores": [85, 88, 92],
+      "avg_scores": [80, 82, 85],
       "current_focus": 88
     },
     {
@@ -1224,27 +1212,9 @@
       "user_id": 1,
       "workspace_id": 1,
       "course_id": "1",
-      "labels": [
-        "1회차",
-        "2회차",
-        "3회차",
-        "4회차",
-        "5회차"
-      ],
-      "my_scores": [
-        100,
-        20,
-        40,
-        20,
-        20
-      ],
-      "avg_scores": [
-        80,
-        90,
-        60,
-        70,
-        70
-      ],
+      "labels": ["1회차", "2회차", "3회차", "4회차", "5회차"],
+      "my_scores": [100, 20, 40, 20, 20],
+      "avg_scores": [80, 90, 60, 70, 70],
       "current_focus": 92
     },
     {
@@ -1252,21 +1222,9 @@
       "user_id": 1,
       "workspace_id": 1,
       "course_id": "2",
-      "labels": [
-        "1회차",
-        "2회차",
-        "3회차"
-      ],
-      "my_scores": [
-        50,
-        60,
-        55
-      ],
-      "avg_scores": [
-        70,
-        75,
-        72
-      ],
+      "labels": ["1회차", "2회차", "3회차"],
+      "my_scores": [50, 60, 55],
+      "avg_scores": [70, 75, 72],
       "current_focus": 55
     },
     {
