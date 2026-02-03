@@ -121,26 +121,30 @@ const closeModal = () => {
 };
 
 const handleEnrollCourse = async (courseId: string | number) => {
+    // 1. URL에서 워크스페이스 ID 추출 및 규격화(Normalization)
+    const rawId = route.params.id;
+    const workspaceId = Array.isArray(rawId) ? rawId[0] : rawId;
+    
+    if (!workspaceId) return;
+
+    // 2. 신청할 강의 정보 확인
     const course = workspaceCourses.value.find(c => String(c.courseId) === String(courseId));
     if (!course) return;
 
     if (!confirm(`"${course.title}" 강의를 수강 신청하시겠습니까?`)) return;
 
-    const success = await learnerCourseStore.enrollCourse(courseId, '1'); // userId는 실제로는 userStore에서 가져와야 함
+    // 3. 수강 신청 실행
+    const success = await learnerCourseStore.enrollCourse(courseId, workspaceId);
 
     if (success) {
         alert('수강 신청이 완료되었습니다!\n관리자 승인 후 수강이 가능합니다.');
-        // TODO: 강의 목록 갱신하여 상태를 pending_approval로 변경
-        // 목록 새로고침
-        const workspaceId = route.params.id;
-        const normalizedId = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
-        if (normalizedId) {
-            await learnerCourseStore.fetchCoursesByWorkspace(normalizedId);
-        }
+        // 스토어 내부에서 fetchCoursesByWorkspace를 재호출하므로 
+        // workspaceCourses가 바뀌며 화면이 자동으로 업데이트됩니다.
     } else {
         alert('❌ 수강 신청 중 오류가 발생했습니다.\n다시 시도해주세요.');
     }
 };
+
 // 강의실 입장
 const handleEnterCourse = (courseId: string | number) => {
     const currentWorkspaceId = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id;

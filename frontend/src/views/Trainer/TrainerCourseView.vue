@@ -63,12 +63,6 @@ onMounted(async () => {
     }
 });
 
-
-
-
-
-
-
 // 테스트용 임시 코드
 import api from "@/api";
 import { useTrainerLiveStore } from '@/stores/trainerlive';
@@ -84,7 +78,7 @@ interface LiveSessionData {
 
 const handleStartLive = async (session: any) => {
     try {
-        const response = await api.post(`https://i14a309.p.ssafy.io/api/session/16/start`);
+        const response = await api.post(`https://i14a309.p.ssafy.io/api/session/${session.sessionId}/start`);
         const { janusRoomId, pin, sessionId } = response.data;
         const liveData: LiveSessionData = {
             janusRoomId,
@@ -96,10 +90,14 @@ const handleStartLive = async (session: any) => {
         console.log("성공 응답 및 로컬스토리지 저장 완료:", liveData);
         alert("라이브가 성공적으로 시작되었습니다.");
         // 라이브 세션 입장
-        const route = router.resolve({
+        const resolvedRoute = router.resolve({
             name: 'trainerLiveSession',
+            params: {
+                courseId: route.params.courseId,
+                sessionId: sessionId
+            }
         });
-        window.open(route.href, '_blank', 'noopener,noreferrer');
+        window.open(resolvedRoute.href, '_blank', 'noopener,noreferrer');
 
     } catch (error: any) {
         console.error("프론트 에러 로그:", error.response?.data || error.message);

@@ -161,6 +161,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
         ? response.data[0]
         : response.data;
       workspaceStats.value = data || null;
+      console.log("통계 호출 성공!", workspaceStats.value);
     } catch (error) {
       console.error("통계 로드 실패:", error);
       workspaceStats.value = null;
@@ -225,5 +226,6 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     joinWorkspace,
     setCurrentWorkspaceById,
     isAccessible,
+    fetchWorkspaceStats,
   };
 });

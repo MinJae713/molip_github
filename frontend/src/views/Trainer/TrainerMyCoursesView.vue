@@ -5,7 +5,8 @@
             <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">내 강의실</h1>
             <!-- 통계 카드 -->
             <TrainerMyCoursesStats :ongoingCount="trainerOngoingCourses.length"
-                :completedCount="completedCourses.length" :attendanceRate="0" />
+                :completedCount="completedCourses.length" :attendanceRate="0" ongoingLabel="운영 중인 강의"
+                completedLabel="종료된 강의" attendanceLabel="전체 강의 진척도" />
         </div>
         <div class="border-b border-slate-200 flex items-center justify-between">
             <nav aria-label="Tabs" class="flex gap-8">
@@ -112,7 +113,7 @@ onMounted(async () => {
     await userStore.fetchUserInfo();
     if (workspaceId.value) {
         // [수정] 강사 본인의 강의 목록 조회 (RESTful API)
-        await trainerCourseStore.fetchMyCourses(workspaceId.value, 'TRAINER');
+        await trainerCourseStore.fetchMyCourses(workspaceId.value);
     }
 });
 

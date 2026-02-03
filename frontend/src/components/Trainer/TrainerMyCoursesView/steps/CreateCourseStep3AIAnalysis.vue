@@ -23,7 +23,7 @@
                         </div>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer ml-3">
-                        <input :checked="modelValue.ai_engagement_check"
+                        <input :checked="modelValue.isEngageCheck"
                             @change="updateField('isEngageCheck', ($event.target as HTMLInputElement).checked)"
                             class="sr-only peer" type="checkbox" />
                         <div

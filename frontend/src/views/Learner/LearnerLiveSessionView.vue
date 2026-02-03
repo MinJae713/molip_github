@@ -23,7 +23,8 @@
                 <EngagementStats :engagementScore="engagementScore" :currentEmotion="currentEmotion"
                     :focusStatus="focusStatus" />
                 <!-- 채팅/질문 -->
-                <LiveChatContainer />
+                <!-- 채팅/질문 -->
+                <LiveChatContainer :roomId="(route.params.sessionId as string)" />
             </LiveSidebar>
         </main>
     </div>
@@ -71,14 +72,20 @@ const currentEmotion = ref({
 let timerInterval: number | null = null;
 const isSetupComplete = ref(false);
 
-const handleJoinSession = () => {
+const handleJoinSession = async () => {
     isSetupComplete.value = true;
     startSessionTimer();
-    // 방 입장 로직 (학생 시나리오)
+
+    // 방 입장 로직: videoStore의 initJanus가 방 조회, 연결, 플러그인 부착 및 입장을 모두 수행합니다.
     const sessionId = route.params.sessionId;
-    // videoStore.joinRoom(...); // 추후 구현
-    // 일단 카메라 자동 송출 (videoRoom store에서 localStream 있으면 활용됨)
-    videoStore.publishCamera();
+    if (sessionId) {
+        try {
+            await videoStore.initJanus(sessionId as string);
+        } catch (e) {
+            console.error("Session Entry Failed", e);
+            // TODO: User notification UI
+        }
+    }
 };
 
 const startSessionTimer = () => {

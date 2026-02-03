@@ -1,60 +1,49 @@
 <template>
-    <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex items-start justify-between">
-        <div>
-            <p class="text-sm font-medium text-slate-500 mb-1">{{ title }}</p>
-            <h3 class="text-3xl font-bold text-slate-900">{{ value }}</h3>
-
-            <div v-if="trend"
-                :class="['flex items-center gap-1 mt-2 text-xs font-medium px-2 py-0.5 rounded-full w-fit', trendClass]">
-                <span class="material-symbols-outlined text-[14px]">{{ trendIcon }}</span>
-                <span>{{ trend }}</span>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <!-- 학습 중인 과정 -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+            <div class="size-12 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center flex-none">
+                <span class="material-symbols-outlined text-2xl">play_circle</span>
             </div>
-
-            <p v-else-if="subText" class="text-xs text-slate-400 mt-2">
-                {{ subText }}
-            </p>
+            <div>
+                <div class="text-sm font-medium text-slate-500">학습 중인 과정</div>
+                <div class="text-2xl font-bold text-slate-900">
+                    {{ ongoingCount }} <span class="text-sm font-normal text-slate-400">개</span>
+                </div>
+            </div>
         </div>
-
-        <div :class="['size-12 rounded-xl flex items-center justify-center', colorClass]">
-            <span class="material-symbols-outlined text-2xl">{{ icon }}</span>
+        <!-- 수료 완료 -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+            <div class="size-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-none">
+                <span class="material-symbols-outlined text-2xl">verified</span>
+            </div>
+            <div>
+                <div class="text-sm font-medium text-slate-500">수료 완료</div>
+                <div class="text-2xl font-bold text-slate-900">
+                    {{ completedCount }} <span class="text-sm font-normal text-slate-400">개</span>
+                </div>
+            </div>
+        </div>
+        <!-- 평균 출석률 -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+            <div class="size-12 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center flex-none">
+                <span class="material-symbols-outlined text-2xl">trending_up</span>
+            </div>
+            <div>
+                <div class="text-sm font-medium text-slate-500">이번 달 평균 출석률</div>
+                <div class="text-2xl font-bold text-slate-900">
+                    {{ attendanceRate }} <span class="text-sm font-normal text-slate-400">%</span>
+                </div>
+            </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-
 interface Props {
-    title: string;
-    value: string | number;
-    icon: string;
-    color?: 'indigo' | 'blue' | 'orange' | 'emerald';
-    trend?: string;
-    trendIcon?: string;
-    trendType?: 'up' | 'down' | 'info';
-    subText?: string;
+    ongoingCount: number;
+    completedCount: number;
+    attendanceRate: number;
 }
-
-const props = withDefaults(defineProps<Props>(), {
-    color: 'indigo',
-    trendType: 'info'
-});
-
-// 테마 색상 매핑
-const colorClass = computed(() => {
-    const mapping = {
-        indigo: 'bg-indigo-50 text-indigo-600',
-        blue: 'bg-blue-50 text-blue-600',
-        orange: 'bg-orange-50 text-orange-600',
-        emerald: 'bg-emerald-50 text-emerald-600'
-    };
-    return mapping[props.color];
-});
-
-// 트렌드 색상 매핑
-const trendClass = computed(() => {
-    if (props.trendType === 'up') return 'text-emerald-600 bg-emerald-50';
-    if (props.trendType === 'down') return 'text-red-600 bg-red-50';
-    return 'text-indigo-600 bg-indigo-50';
-});
+const props = defineProps<Props>();
 </script>

@@ -16,19 +16,18 @@ export const useLiveStore = defineStore("live", () => {
 
   // --- [1] 접속 정보 (백엔드 응답 데이터 저장) ---
   const janusRoomId = ref<number>(0);
-  const pin = ref<number>(0);  // 🔥 string → number로 수정
+  const pin = ref<number>(0); // 🔥 string → number로 수정
   const sessionId = ref<number>(0);
   const isPublished = ref(false);
 
-
   // --- [2] Janus 객체 상태 ---
   const janus = ref<any>(null);
-  const sfutest = ref<any>(null);  // 메인 핸들 (카메라용)
-  const screenHandle = ref<any>(null);  // 🔥 화면공유 전용 핸들
-  const monitoringHandle = ref<any>(null); 
+  const sfutest = ref<any>(null); // 메인 핸들 (카메라용)
+  const screenHandle = ref<any>(null); // 🔥 화면공유 전용 핸들
+  const monitoringHandle = ref<any>(null);
   const opaqueId = ref(`videoroom-${Janus.randomString(12)}`);
   const myid = ref<number | null>(null);
-  const screenPublisherId = ref<number | null>(null);  // 🔥 화면공유 publisher ID
+  const screenPublisherId = ref<number | null>(null); // 🔥 화면공유 publisher ID
 
   // --- [3] 미디어 및 UI 상태 ---
   const myStream = ref<MediaStream | null>(null);
@@ -36,11 +35,11 @@ export const useLiveStore = defineStore("live", () => {
   const isCamOn = ref(false);
   const isMicOn = ref(false);
   const isScreenSharing = ref(false);
-  
+
   const isLiveStarted = ref(false);
   const isConnecting = ref(false);
   const error = ref<string | null>(null);
-  const isBreakTime = ref(false);  // 🔥 추가: 쉬는 시간 상태
+  const isBreakTime = ref(false); // 🔥 추가: 쉬는 시간 상태
 
   const monitoringStream = ref<MediaStream | null>(null);
   const monitoringStudentId = ref<number | null>(null);
@@ -49,12 +48,21 @@ export const useLiveStore = defineStore("live", () => {
 
   let syncInterval: number | null = null;
 
-  const liveTitle = computed(() => courseStore.currentManagedCourse?.title || "강의 제목 없음");
-  const currentSessionTitle = computed(() => sessionStore.currentManagedSession?.title || "세션 정보 없음");
+  const liveTitle = computed(
+    () => courseStore.currentManagedCourse?.title || "강의 제목 없음",
+  );
+  const currentSessionTitle = computed(
+    () => sessionStore.currentManagedSession?.title || "세션 정보 없음",
+  );
 
   // --- [4] 초기화 및 연결 로직 ---
 
-  async function initLiveRoom(cId: string | number, sId: string | number) {
+  async function initLiveRoom(
+    cId: string | number,
+    sId: string | number,
+    providedJanusRoomId?: number | string,
+    providedPin?: number | string,
+  ) {
     await userStore.fetchUserInfo();
 
     if (!userStore.token) {
@@ -64,17 +72,25 @@ export const useLiveStore = defineStore("live", () => {
 
     if (isConnecting.value) return;
     try {
-      
       isConnecting.value = true;
       error.value = null;
 
-      // 1. 백엔드 세션 시작 API 호출
-      // POST /session/{session_id}/start
-      const sessionResponse = await api.post(`/session/${sId}/start`);
-      
-      janusRoomId.value = sessionResponse.data.janusRoomId;
-      pin.value = sessionResponse.data.pin;
-      sessionId.value = sessionResponse.data.sessionId;
+      // 1. 백엔드 세션 시작 API 호출 (사전 제공된 정보가 없을 경우에만)
+      if (providedJanusRoomId && providedPin) {
+        console.log("💡 [DEBUG] 제공된 Janus 정보 사용:", {
+          providedJanusRoomId,
+          providedPin,
+        });
+        janusRoomId.value = Number(providedJanusRoomId);
+        pin.value = Number(providedPin);
+        sessionId.value = Number(sId);
+      } else {
+        console.log("💡 [DEBUG] 백엔드 API 호출하여 Janus 정보 획득");
+        const sessionResponse = await api.post(`/session/${sId}/start`);
+        janusRoomId.value = sessionResponse.data.janusRoomId;
+        pin.value = sessionResponse.data.pin;
+        sessionId.value = sessionResponse.data.sessionId;
+      }
 
       // 2. 기초 데이터 로드
       await Promise.all([
@@ -93,7 +109,7 @@ export const useLiveStore = defineStore("live", () => {
             return;
           }
           createJanusInstance();
-        }
+        },
       });
     } catch (e: any) {
       error.value = e.response?.data?.message || "연결 실패 (404/500)";
@@ -117,41 +133,47 @@ export const useLiveStore = defineStore("live", () => {
             joinRoom(); // ✅ 여기서 메인 publisher join
           },
 
-          onmessage: handleJanusMessage
-
+          onmessage: handleJanusMessage,
         });
       },
       error: (err: any) => {
         console.error("Janus 서버 연결 실패:", err);
         error.value = "서버 연결 실패";
         isConnecting.value = false;
-      }
+      },
     });
   }
 
   function handleJanusMessage(msg: any, jsep: any) {
     const event = msg["videoroom"];
-    
+
     if (event === "joined") {
       myid.value = msg["id"];
       isLiveStarted.value = true;
       isConnecting.value = false;
-      
+
       if (msg["publishers"]) {
         activePublishers.value = msg["publishers"];
       }
     } else if (event === "event") {
       if (msg["publishers"]) {
-        activePublishers.value = [...activePublishers.value, ...msg["publishers"]];
+        activePublishers.value = [
+          ...activePublishers.value,
+          ...msg["publishers"],
+        ];
       } else if (msg["leaving"] || msg["unpublished"]) {
         const leftId = Number(msg["leaving"] || msg["unpublished"]);
         if (monitoringStudentId.value === leftId) stopMonitoring();
-        activePublishers.value = activePublishers.value.filter(p => p.id !== leftId);
+        activePublishers.value = activePublishers.value.filter(
+          (p) => p.id !== leftId,
+        );
       }
     } else if (event === "participants") {
-      activePublishers.value = msg["participants"].filter((p: any) => p.publisher);
+      activePublishers.value = msg["participants"].filter(
+        (p: any) => p.publisher,
+      );
     }
-    
+
     if (jsep) {
       sfutest.value?.handleRemoteJsep({ jsep });
     }
@@ -164,8 +186,8 @@ export const useLiveStore = defineStore("live", () => {
         room: janusRoomId.value,
         ptype: "publisher",
         display: `[선생] ${courseStore.currentManagedCourse?.title || "강사"}`,
-        pin: pin.value
-      }
+        pin: pin.value,
+      },
     });
   }
 
@@ -178,19 +200,19 @@ export const useLiveStore = defineStore("live", () => {
         audioRecv: false,
         videoRecv: false,
         audioSend: isMicOn.value,
-        videoSend: isCamOn.value
+        videoSend: isCamOn.value,
       },
       success: (jsep: any) => {
         sfutest.value?.send({
           message: {
             request: "publish",
             audio: isMicOn.value,
-            video: isCamOn.value
+            video: isCamOn.value,
           },
-          jsep
+          jsep,
         });
         isPublished.value = true;
-      }
+      },
     });
   }
 
@@ -206,13 +228,13 @@ export const useLiveStore = defineStore("live", () => {
         publishStream(); // 최초 1회
       } else {
         sfutest.value?.send({
-          message: { request: "configure", audio: true }
+          message: { request: "configure", audio: true },
         });
       }
     } else {
       // 🔥 마이크 끄기
       sfutest.value?.send({
-        message: { request: "configure", audio: false }
+        message: { request: "configure", audio: false },
       });
 
       if (myStream.value) {
@@ -224,7 +246,6 @@ export const useLiveStore = defineStore("live", () => {
     }
   }
 
-
   async function toggleCamera() {
     if (!isCamOn.value) {
       // 🔥 카메라 켜기
@@ -235,13 +256,13 @@ export const useLiveStore = defineStore("live", () => {
         publishStream(); // 최초 1회 publish
       } else {
         sfutest.value?.send({
-          message: { request: "configure", video: true }
+          message: { request: "configure", video: true },
         });
       }
     } else {
       // 🔥 카메라 끄기
       sfutest.value?.send({
-        message: { request: "configure", video: false }
+        message: { request: "configure", video: false },
       });
 
       if (myStream.value) {
@@ -266,7 +287,7 @@ export const useLiveStore = defineStore("live", () => {
       if (!myStream.value) {
         myStream.value = newStream;
       } else {
-        newStream.getTracks().forEach(track => {
+        newStream.getTracks().forEach((track) => {
           myStream.value!.addTrack(track);
         });
       }
@@ -286,7 +307,6 @@ export const useLiveStore = defineStore("live", () => {
           isCamOn.value = true;
         }
       }
-
     } catch (e) {
       console.error("미디어 권한 오류:", e);
       alert("카메라/마이크 권한을 허용해주세요.");
@@ -299,7 +319,7 @@ export const useLiveStore = defineStore("live", () => {
       screenHandle.value?.detach();
       screenHandle.value = null;
 
-      screenStream.value?.getTracks().forEach(t => t.stop());
+      screenStream.value?.getTracks().forEach((t) => t.stop());
       screenStream.value = null;
 
       isScreenSharing.value = false;
@@ -308,7 +328,9 @@ export const useLiveStore = defineStore("live", () => {
     }
 
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+      });
       screenStream.value = stream;
 
       janus.value?.attach({
@@ -324,8 +346,8 @@ export const useLiveStore = defineStore("live", () => {
               room: janusRoomId.value,
               ptype: "publisher",
               display: `[선생-화면] ${courseStore.currentManagedCourse?.title || "강사"}`,
-              pin: pin.value
-            }
+              pin: pin.value,
+            },
           });
         },
 
@@ -334,27 +356,27 @@ export const useLiveStore = defineStore("live", () => {
             screenPublisherId.value = msg.id;
 
             screenHandle.value?.createOffer({
-              stream: screenStream.value,   // 🔥 핵심
+              stream: screenStream.value, // 🔥 핵심
               media: {
                 audioSend: false,
                 videoSend: true,
                 audioRecv: false,
-                videoRecv: false
+                videoRecv: false,
               },
               success: (jsep: any) => {
                 screenHandle.value?.send({
                   message: { request: "publish", video: true, audio: false },
-                  jsep
+                  jsep,
                 });
                 isScreenSharing.value = true;
-              }
+              },
             });
           }
 
           if (jsep) {
             screenHandle.value?.handleRemoteJsep({ jsep });
           }
-        }
+        },
       });
 
       stream.getVideoTracks()[0]?.addEventListener("ended", toggleScreenShare);
@@ -368,7 +390,7 @@ export const useLiveStore = defineStore("live", () => {
   function startMonitoring(studentId: number) {
     if (monitoringStudentId.value === studentId) return;
     if (monitoringHandle.value) stopMonitoring();
-    
+
     monitoringStudentId.value = studentId;
 
     janus.value?.attach({
@@ -377,13 +399,13 @@ export const useLiveStore = defineStore("live", () => {
       success: (handle: any) => {
         monitoringHandle.value = handle;
         handle.send({
-          message: { 
-            request: "join", 
-            room: janusRoomId.value, 
-            ptype: "subscriber", 
-            feed: studentId, 
-            pin: pin.value 
-          }
+          message: {
+            request: "join",
+            room: janusRoomId.value,
+            ptype: "subscriber",
+            feed: studentId,
+            pin: pin.value,
+          },
         });
       },
       onmessage: (msg: any, jsep: any) => {
@@ -392,17 +414,17 @@ export const useLiveStore = defineStore("live", () => {
             jsep,
             media: { audioSend: false, videoSend: false },
             success: (answerJsep: any) => {
-              monitoringHandle.value?.send({ 
-                message: { request: "start", room: janusRoomId.value }, 
-                jsep: answerJsep 
+              monitoringHandle.value?.send({
+                message: { request: "start", room: janusRoomId.value },
+                jsep: answerJsep,
               });
-            }
+            },
           });
         }
       },
       onremotestream: (stream: MediaStream) => {
         monitoringStream.value = stream;
-      }
+      },
     });
   }
 
@@ -419,20 +441,20 @@ export const useLiveStore = defineStore("live", () => {
     stopPublisherSync();
     syncInterval = window.setInterval(() => {
       if (sfutest.value && isLiveStarted.value) {
-        sfutest.value.send({ 
-          message: { 
-            request: "listparticipants", 
-            room: janusRoomId.value 
-          } 
+        sfutest.value.send({
+          message: {
+            request: "listparticipants",
+            room: janusRoomId.value,
+          },
         });
       }
     }, 10000);
   }
 
   function stopPublisherSync() {
-    if (syncInterval) { 
-      clearInterval(syncInterval); 
-      syncInterval = null; 
+    if (syncInterval) {
+      clearInterval(syncInterval);
+      syncInterval = null;
     }
   }
 
@@ -440,31 +462,31 @@ export const useLiveStore = defineStore("live", () => {
     try {
       const { data } = await api.get(`/courses/${courseId}/participants`);
       participants.value = data;
-    } catch (e) { 
-      console.error("참가자 목록 로드 실패:", e); 
+    } catch (e) {
+      console.error("참가자 목록 로드 실패:", e);
     }
   }
 
   function endLiveSession() {
     stopPublisherSync();
     stopMonitoring();
-    
+
     // 화면공유 핸들 정리
     if (screenHandle.value) {
       screenHandle.value.send({ message: { request: "unpublish" } });
       screenHandle.value.detach();
       screenHandle.value = null;
     }
-    
+
     // 모든 스트림 정리
-    [myStream, screenStream].forEach(s => {
-      s.value?.getTracks().forEach(t => t.stop());
+    [myStream, screenStream].forEach((s) => {
+      s.value?.getTracks().forEach((t) => t.stop());
       s.value = null;
     });
-    
+
     // Janus 연결 종료
     janus.value?.destroy();
-    
+
     // 상태 초기화
     isLiveStarted.value = false;
     isCamOn.value = false;
@@ -477,39 +499,39 @@ export const useLiveStore = defineStore("live", () => {
 
   return {
     // 접속 정보
-    janusRoomId, 
-    pin, 
+    janusRoomId,
+    pin,
     sessionId,
-    
+
     // 컴포넌트 표시용
-    liveTitle, 
-    currentSessionTitle, 
-    isLiveStarted, 
-    isConnecting, 
+    liveTitle,
+    currentSessionTitle,
+    isLiveStarted,
+    isConnecting,
     error,
-    isBreakTime,  // 🔥 추가
-    
+    isBreakTime, // 🔥 추가
+
     // 미디어 상태
-    myStream, 
-    screenStream, 
-    isCamOn, 
-    isMicOn, 
+    myStream,
+    screenStream,
+    isCamOn,
+    isMicOn,
     isScreenSharing,
-    screenPublisherId,  // 🔥 추가
-    
+    screenPublisherId, // 🔥 추가
+
     // 모니터링
-    activePublishers, 
-    monitoringStream, 
-    monitoringStudentId, 
+    activePublishers,
+    monitoringStream,
+    monitoringStudentId,
     participants,
-    
+
     // 함수
-    initLiveRoom, 
-    endLiveSession, 
-    toggleCamera, 
-    toggleMic, 
-    toggleScreenShare, 
-    startMonitoring, 
-    stopMonitoring
+    initLiveRoom,
+    endLiveSession,
+    toggleCamera,
+    toggleMic,
+    toggleScreenShare,
+    startMonitoring,
+    stopMonitoring,
   };
 });

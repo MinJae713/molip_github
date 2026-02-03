@@ -196,7 +196,7 @@ const props = defineProps<{ roomId?: string | number }>();
 const socketUrl = import.meta.env.VITE_WEBSOCKET_URL;
 
 // --- 상태 관리 ---
-const roomId = props.roomId || '1';
+const roomId = props.roomId;
 const activeTab = ref<'chat' | 'qa'>('chat');
 const inputMessage = ref('');
 const hasNewQa = ref(false);
@@ -233,14 +233,17 @@ const groupedQaList = computed(() => {
 const stompClient = ref<Client | null>(null);
 
 const connect = () => {
+    console.log(`[Learner Chat] Connecting to WebSocket. RoomID: ${roomId}`);
     stompClient.value = new Client({
         webSocketFactory: () => new SockJS(socketUrl),
         connectHeaders: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`
         },
         onConnect: () => {
+            console.log(`[Learner Chat] Connected to Room: ${roomId} ✅`);
             // 단일 주소 구독 (동료분 코드 로직 반영)
             stompClient.value?.subscribe(`/topic/chat-room/${roomId}`, (res) => {
+                console.log(`[Learner Chat] Message Received for Room ${roomId}:`, res.body);
                 const msg: Message = JSON.parse(res.body);
                 console.log(msg)
 

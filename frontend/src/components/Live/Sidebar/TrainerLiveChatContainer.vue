@@ -1,5 +1,6 @@
 <template>
-    <div class="flex-1 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden min-h-0">
+    <div
+        class="flex flex-col gap-4 p-5 bg-white rounded-[32px] border border-slate-100 shadow-sm h-full overflow-hidden">
         <!-- 탭 버튼 제거됨 (부모 컴포넌트에서 제어) -->
 
         <div ref="scrollContainer" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/30">
@@ -113,11 +114,14 @@
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
+import { storeToRefs } from 'pinia';
 import { useUserStore } from '@/stores/user';
+import { useTrainerLiveStore } from '@/stores/trainerlive';
 
 // ... (existing imports)
 
 const userStore = useUserStore();
+const trainerLiveStore = useTrainerLiveStore();
 
 // ... (existing helper functions)
 
@@ -180,22 +184,21 @@ interface GroupedQa extends Message {
     replies: Message[];
 }
 
-const props = defineProps<{ 
+const props = defineProps<{
     roomId?: string | number,
-    viewType: 'chat' | 'qa' 
+    viewType: 'chat' | 'qa'
 }>();
 const socketUrl = import.meta.env.VITE_WEBSOCKET_URL;
 
-// --- 상태 관리 ---
-const roomId = props.roomId || '1';
+const roomId = props.roomId;
 const activeTab = computed(() => props.viewType || 'chat');
 const inputMessage = ref('');
 // const hasNewQa = ref(false); // 관리 방안 필요 (상위로 emit?)
 const scrollContainer = ref<HTMLDivElement | null>(null);
 const selectedQuestionId = ref<number | string | null>(null); // 클릭된 질문의 ID
 
-const chatList = ref<Message[]>([]);
-const qaList = ref<Message[]>([]);
+// Use store refs with storeToRefs to maintain reactivity
+const { chatList, qaList } = storeToRefs(trainerLiveStore);
 
 // --- 핵심 로직: questionId로 그룹화 ---
 const groupedQaList = computed(() => {
@@ -224,20 +227,20 @@ const groupedQaList = computed(() => {
 const stompClient = ref<Client | null>(null);
 
 const connect = () => {
-    console.log(`[Chat] Connecting to WebSocket: ${socketUrl}, RoomID: ${roomId}`);
+    console.log(`[Trainer Chat] Connecting to WebSocket. RoomID: ${roomId}`);
     stompClient.value = new Client({
         webSocketFactory: () => new SockJS(socketUrl),
         connectHeaders: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`
         },
         debug: (str) => {
-            console.log('[Chat Stomp Debug]', str);
+            console.log('[Trainer Chat Stomp Debug]', str);
         },
         onConnect: () => {
-            console.log('[Chat] Connected ✅');
+            console.log(`[Trainer Chat] Connected to Room: ${roomId} ✅`);
             // 단일 주소 구독 (동료분 코드 로직 반영)
             stompClient.value?.subscribe(`/topic/chat-room/${roomId}`, (res) => {
-                console.log('[Chat] Message Received 📩:', res.body);
+                console.log(`[Trainer Chat] Message Received for Room ${roomId}:`, res.body);
                 const msg: Message = JSON.parse(res.body);
                 console.log(msg)
 
@@ -257,7 +260,7 @@ const connect = () => {
             console.error('[Chat] Additional details: ' + frame.body);
         },
         onWebSocketClose: () => {
-             console.log('[Chat] Connection Closed ❌');
+            console.log('[Chat] Connection Closed ❌');
         }
     });
     stompClient.value.activate();
