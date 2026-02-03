@@ -13,7 +13,6 @@ import com.edumax.molip.domain.workspace.dto.response.DeleteJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.DeleteWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindMyStatsResponse;
-import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceCoursesByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegisterResponse;
@@ -21,6 +20,7 @@ import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdResponse;
 import java.util.List;
 
 public interface WorkspaceService {

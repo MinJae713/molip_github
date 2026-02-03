@@ -8,7 +8,8 @@ def get_vectorstore(collection_name: str = "s14p11a309_rag"):
     
     embedding_function = OpenAIEmbeddings(
         model="text-embedding-3-small",
-        openai_api_key=settings.OPENAI_API_KEY
+        openai_api_key=settings.OPENAI_API_KEY,
+        openai_api_base=settings.GPT_BASE_URL
     )
 
     vectorstore = Chroma(

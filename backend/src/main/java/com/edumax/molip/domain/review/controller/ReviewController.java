@@ -31,28 +31,13 @@ public class ReviewController {
   public ResponseEntity<?> testEndpoint() {
     List<TimelineElement> testMergedList =
         List.of(
-            new TimelineElement(
-                1000, // timeline (ms)
-                false, // empty
-                0.85f, // concentrateValue
-                false, // fever
-                new float[] {0.7f, 0.0f, 0.0f, 0.1f, 0.0f, 0.0f, 0.2f} // emotionValueList
-                ),
-            new TimelineElement(
-                2000,
-                true, // 자리를 비운 상태
-                0.0f,
-                false,
-                new float[] {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}),
-            new TimelineElement(
-                3000, false, 0.62f, false, new float[] {0.1f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.9f}),
-            new TimelineElement(
-                4000,
-                false,
-                0.98f, // 매우 높은 집중
-                true, // Fever 상태 (몰입 절정)
-                new float[] {0.4f, 0.0f, 0.0f, 0.6f, 0.0f, 0.0f, 0.0f}));
-    storageService.saveTimelineAnalysis(1L, 1L, testMergedList);
+            new TimelineElement(0, false, 0.85f, false, 0, "happy"), // 1초: 집중 중, 기쁨
+            new TimelineElement(1, true, 0.00f, false, 0, "happy"), // 2초: 자리비움, 평온
+            new TimelineElement(2, false, 0.65f, false, 6, "neutral"), // 3초: 다시 시작, 평온
+            new TimelineElement(3, false, 0.95f, true, 6, "neutral") // 4초: 초집중(Fever), 놀람
+            );
+
+    // storageService.saveTimelineAnalysis(1L, 1L, testMergedList);
     List<TimelineElement> retrievedList = storageService.getTimelineAnalysis(1L, 1L);
 
     return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", retrievedList));

@@ -3,23 +3,26 @@ package com.edumax.molip.common.config;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration;
 
 @Configuration
-public class MongoConfig {
-
+public class MongoConfig extends AbstractMongoClientConfiguration {
   @Value("${spring.data.mongodb.uri}")
   private String mongoUri;
 
-  @Bean
+  @Override
+  protected String getDatabaseName() {
+    return "S14P13A309";
+  }
+
+  @Override
   public MongoClient mongoClient() {
     return MongoClients.create(mongoUri);
   }
 
-  @Bean
-  public MongoTemplate mongoTemplate() {
-    return new MongoTemplate(mongoClient(), "S14P13A309"); // 데이터베이스명 입력
+  @Override
+  protected boolean autoIndexCreation() {
+    return true; // 이 메서드를 오버라이드하면 끝!
   }
 }

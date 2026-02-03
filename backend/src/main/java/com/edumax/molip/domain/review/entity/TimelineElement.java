@@ -14,5 +14,6 @@ public class TimelineElement {
   boolean empty;
   float concentrateValue;
   boolean fever;
-  float[] emotionValueList;
+  int emotionIndex;
+  String emotionName;
 }

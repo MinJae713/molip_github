@@ -8,7 +8,10 @@ class ModelLoader:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(ModelLoader, cls).__new__(cls)
-            cls._instance.openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+            cls._instance.openai_client = AsyncOpenAI(
+                api_key=settings.OPENAI_API_KEY,
+                base_url=settings.GPT_BASE_URL
+            )
             
         return cls._instance
 
@@ -16,7 +19,8 @@ class ModelLoader:
         return ChatOpenAI(
             model=model_name,
             temperature=temperature,
-            openai_api_key=settings.OPENAI_API_KEY
+            openai_api_key=settings.OPENAI_API_KEY,
+            base_url=settings.GPT_BASE_URL
         )
 
     def get_openai_client(self) -> AsyncOpenAI:

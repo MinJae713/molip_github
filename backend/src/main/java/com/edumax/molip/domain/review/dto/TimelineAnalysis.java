@@ -13,7 +13,10 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "timeline_analysis")
-@CompoundIndex(name = "session_member_idx", def = "{'sessionId': 1, 'memberId': 1}") // 추가
+@CompoundIndex(
+    name = "session_member_idx",
+    def = "{'sessionId': 1, 'memberId': 1}",
+    unique = true) // 추가
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

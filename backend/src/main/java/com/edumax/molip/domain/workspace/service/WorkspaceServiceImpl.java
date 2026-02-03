@@ -11,7 +11,10 @@ import com.edumax.molip.domain.member.exception.NoAdminException;
 import com.edumax.molip.domain.member.exception.NoMemberException;
 import com.edumax.molip.domain.member.repository.MemberRepository;
 import com.edumax.molip.domain.review.repository.LearnerAnalysisRepository;
+import com.edumax.molip.domain.session.entity.CourseLearner;
+import com.edumax.molip.domain.session.entity.CourseLearnerSession;
 import com.edumax.molip.domain.session.entity.Session;
+import com.edumax.molip.domain.session.repository.CourseLearnerRepository;
 import com.edumax.molip.domain.workspace.dto.request.ChangeWorkspaceMemberRoleRequest;
 import com.edumax.molip.domain.workspace.dto.request.CreateJoinCodeRequest;
 import com.edumax.molip.domain.workspace.dto.request.CreateWorkspaceRequest;
@@ -25,14 +28,17 @@ import com.edumax.molip.domain.workspace.dto.response.DeleteJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.DeleteWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindMyStatsResponse;
-import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceCoursesByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdResponse;
+import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdResponse.FindWorkspaceMemberByIdCourse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegisterResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdLearnerResponse;
+import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdResponse;
+import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdTrainerResponse;
 import com.edumax.molip.domain.workspace.entity.InviteCode;
 import com.edumax.molip.domain.workspace.entity.Workspace;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
@@ -54,6 +60,7 @@ import com.edumax.molip.domain.workspace.types.CourseApplyStatus;
 import com.edumax.molip.domain.workspace.types.WorkspaceMemberRole;
 import com.edumax.molip.domain.workspace.types.WorkspaceMemberStatus;
 import com.edumax.molip.domain.workspace.types.WorkspaceRegisterStatus;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -76,6 +83,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   private final LearnerAnalysisRepository learnerAnalysisRepository;
   private final ZzimRepository zzimRepository;
   private final CourseApplyRepository courseApplyRepository;
+  private final CourseLearnerRepository courseLearnerRepository;
 
   @Override
   public List<FindWorkspaceResponse> findWorkspaces(Long memberId) {
@@ -101,6 +109,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     String logoUrl = workspace.getLogoUrl();
     List<WorkspaceMember> workspaceMembers = workspace.getWorkspaceMembers();
     List<Course> courses = workspace.getCourses();
+    Long workspaceMemberId = null;
 
     WorkspaceRegister workspaceRegister =
         workspaceRegisterRepository.findByMemberAndWorkspace(member, workspace).orElse(null);
@@ -119,6 +128,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 .findByMemberAndWorkspace(member, workspace)
                 .orElseThrow(NoWorkspaceMemberException::new);
         myRole = workspaceMember.getRole();
+        workspaceMemberId = workspaceMember.getWorkspaceMemberId();
       }
     }
 
@@ -131,6 +141,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         .courseCount(courses.size())
         .myStatus(myStatus)
         .myRole(myRole)
+        .workspaceMemberId(workspaceMemberId)
         .build();
   }
 
@@ -240,58 +251,135 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         workspaceMemberRepository
             .findByMemberAndWorkspace(member, workspace)
             .orElseThrow(NoWorkspaceMemberException::new);
+    return workspaceMember.getRole() == WorkspaceMemberRole.LEARNER
+        ? findWorkspaceCoursesByIdLearner(workspaceMember, workspace)
+        : findWorkspaceCoursesByIdTrainer(workspaceMember, workspace);
     // 위에서 예외 나오는 경우? -> 현재 사용자가 입력 받은 워스 멤버가 아니라면 에러남?
     // 프론트에서 그런 경우가 있나?
+  }
+
+  private List<FindWorkspaceCoursesByIdResponse> findWorkspaceCoursesByIdLearner(
+      WorkspaceMember workspaceMember, Workspace workspace) {
     List<Course> courses = workspace.getCourses();
     List<FindWorkspaceCoursesByIdResponse> result = new ArrayList<>();
-    courses.forEach(
-        course -> {
-          Long courseId = course.getCourseId();
-          String title = course.getTitle();
-          String description = course.getDescription();
-          CourseCategory category = course.getCategory();
-          String subCategory = course.getSubCategory();
-          List<Session> sessions = course.getSessions();
-          Integer totalLessons = sessions.size();
-          int currentLessons = 0;
-          for (Session session : sessions) {
-            currentLessons +=
-                learnerAnalysisRepository.findById(session.getSessionId()).isPresent() ? 1 : 0;
-          }
-          Boolean isLiked =
-              zzimRepository.findByWorkspaceMemberAndCourse(workspaceMember, course).isPresent();
-          System.out.println(
-              courseId + ", " + isLiked + ", " + workspaceMember.getWorkspaceMemberId());
-          LocalDateTime dDay = course.getCreatedAt();
-          CourseStatus status = course.getStatus();
-          CourseApplyStatus applyStatus = null;
-          Optional<CourseApply> courseApply =
-              courseApplyRepository.findByWorkspaceMemberAndCourse(workspaceMember, course);
-          if (courseApply.isPresent()) {
-            applyStatus =
-                courseApply.orElse(null).getIsApplied()
-                    ? CourseApplyStatus.APPROVE
-                    : CourseApplyStatus.PENDING;
-          } else {
-            applyStatus = CourseApplyStatus.NONE;
-          }
+    courses.stream()
+        .map(
+            course -> {
+              // learner/trainer 공통
+              Long courseId = course.getCourseId();
+              String title = course.getTitle();
+              String description = course.getDescription();
+              CourseCategory category = course.getCategory();
+              String subCategory = course.getSubCategory();
+              List<Session> sessions = course.getSessions();
+              int currentLessons = 0;
+              for (Session session : sessions) {
+                currentLessons +=
+                    learnerAnalysisRepository.findById(session.getSessionId()).isPresent() ? 1 : 0;
+              }
+              Integer totalLessons = sessions.size();
+              LocalDateTime dDay = course.getCreatedAt();
+              CourseStatus status = course.getStatus();
+              // learner 고유
+              Boolean isLiked =
+                  zzimRepository
+                      .findByWorkspaceMemberAndCourse(workspaceMember, course)
+                      .isPresent();
 
-          result.add(
-              FindWorkspaceCoursesByIdResponse.builder()
+              CourseApplyStatus applyStatus = null;
+              Optional<CourseApply> courseApply =
+                  courseApplyRepository.findByWorkspaceMemberAndCourse(workspaceMember, course);
+              applyStatus =
+                  courseApply.isPresent()
+                      ? courseApply.orElse(null).getIsApplied()
+                          ? CourseApplyStatus.APPROVE
+                          : CourseApplyStatus.PENDING
+                      : CourseApplyStatus.NONE;
+
+              return FindWorkspaceCoursesByIdLearnerResponse.builder()
                   .courseId(courseId)
-                  .workspaceId(workspaceId)
+                  .workspaceId(workspace.getWorkspaceId())
                   .title(title)
                   .description(description)
                   .category(category)
                   .subCategory(subCategory) // null도 가능
                   .currentLessons(currentLessons)
                   .totalLessons(totalLessons)
-                  .isLiked(isLiked)
                   .dDay(dDay)
                   .status(status)
+                  .isLiked(isLiked)
                   .applyStatus(applyStatus)
-                  .build());
-        });
+                  .build();
+            })
+        .forEach(result::add);
+    return result;
+  }
+
+  private List<FindWorkspaceCoursesByIdResponse> findWorkspaceCoursesByIdTrainer(
+      WorkspaceMember workspaceMember, Workspace workspace) {
+    List<Course> courses = workspace.getCourses();
+    List<FindWorkspaceCoursesByIdResponse> result = new ArrayList<>();
+    courses.stream()
+        .map(
+            course -> {
+              // learner/trainer 공통
+              Long courseId = course.getCourseId();
+              String title = course.getTitle();
+              String description = course.getDescription();
+              CourseCategory category = course.getCategory();
+              String subCategory = course.getSubCategory();
+              List<Session> sessions = course.getSessions();
+              int currentLessons = 0;
+              for (Session session : sessions) {
+                currentLessons +=
+                    learnerAnalysisRepository.findById(session.getSessionId()).isPresent() ? 1 : 0;
+              }
+              Integer totalLessons = sessions.size();
+              LocalDateTime dDay = course.getCreatedAt();
+              CourseStatus status = course.getStatus();
+              // trainer 고유
+              WorkspaceMember learner = course.getLeaner();
+              Boolean isOwn = learner.equals(workspaceMember);
+              String trainerName = learner.getMember().getName();
+
+              long finishedSessionCount =
+                  sessions.stream()
+                      .filter(
+                          session ->
+                              learnerAnalysisRepository
+                                  .findById(session.getSessionId())
+                                  .isPresent())
+                      .count();
+
+              Double progressRate =
+                  switch (status) {
+                    case PREPARING -> null;
+                    case INVITE -> course.getInviteRate();
+                    case PROCEED -> course.getProceedRate(finishedSessionCount);
+                    case FINISH -> course.getCertificatedRate();
+                  };
+              LocalDate startDate = course.getSessionStartDate();
+              Integer learnersCount = course.getCourseLearnerCount();
+
+              return FindWorkspaceCoursesByIdTrainerResponse.builder()
+                  .courseId(courseId)
+                  .workspaceId(workspace.getWorkspaceId())
+                  .title(title)
+                  .description(description)
+                  .category(category)
+                  .subCategory(subCategory) // null도 가능
+                  .currentLessons(currentLessons)
+                  .totalLessons(totalLessons)
+                  .dDay(dDay)
+                  .status(status)
+                  .isOwn(isOwn)
+                  .trainerName(trainerName)
+                  .progressRate(progressRate)
+                  .startDate(startDate)
+                  .learnersCount(learnersCount)
+                  .build();
+            })
+        .forEach(result::add);
     return result;
   }
 
@@ -487,11 +575,57 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   @Override
   public FindWorkspaceMemberByIdResponse findWorkspaceMemberById(
       Long workspaceId, Long workspaceMemberId) {
-    // 얘는 나머지 테스트 이후 개발 예정
-    //    Workspace workspace =
-    //        workspaceRepository.findById(workspaceId).orElseThrow(NoWorkspaceException::new);
+    Workspace workspace =
+        workspaceRepository.findById(workspaceId).orElseThrow(NoWorkspaceException::new);
+    WorkspaceMember workspaceMember =
+        workspaceMemberRepository
+            .findById(workspaceMemberId)
+            .orElseThrow(NoWorkspaceMemberException::new);
+    Member member = workspaceMember.getMember();
+    String profileImageUrl = member.getProfileImageUrl();
+    String name = member.getName();
+    WorkspaceMemberRole role = workspaceMember.getRole();
+    WorkspaceMemberStatus status = workspaceMember.getStatus();
+    List<Course> courses = workspace.getCourses(); // 워크스페이스 강의 목록
+    Integer finishedCourse = workspaceMember.getCourseCertificateds().size();
+    List<FindWorkspaceMemberByIdCourse> coursesResult = new ArrayList<>();
+    courses.stream()
+        .filter(
+            course -> {
+              Optional<CourseLearner> courseLearner =
+                  courseLearnerRepository.findByCourseAndWorkspaceMember(course, workspaceMember);
+              return courseLearner.isPresent(); // 강의 수강생인 경우만 필터링
+            })
+        .map(
+            course -> {
+              String title = course.getTitle();
+              Integer totalCount = course.getSessions().size();
+              CourseLearner courseLearner =
+                  courseLearnerRepository
+                      .findByCourseAndWorkspaceMember(course, workspaceMember)
+                      .orElse(null);
+              List<CourseLearnerSession> courseLearnerSessions =
+                  courseLearner.getCourseLearnerSessions();
+              Integer finishedCount =
+                  courseLearnerSessions == null ? 0 : courseLearnerSessions.size();
+              CourseStatus courseStatus = course.getStatus();
+              return FindWorkspaceMemberByIdCourse.builder()
+                  .title(title)
+                  .totalCount(totalCount)
+                  .finishedCount(finishedCount)
+                  .status(courseStatus)
+                  .build();
+            })
+        .forEach(coursesResult::add);
 
-    return null;
+    return FindWorkspaceMemberByIdResponse.builder()
+        .profileImageUrl(profileImageUrl)
+        .name(name)
+        .role(role)
+        .status(status)
+        .finishedCourse(finishedCourse)
+        .courses(coursesResult)
+        .build();
   }
 
   @Override
