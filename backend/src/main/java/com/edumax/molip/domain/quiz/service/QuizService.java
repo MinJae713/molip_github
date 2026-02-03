@@ -8,10 +8,12 @@ import com.edumax.molip.grpc.quiz.QuizServiceGrpc;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class QuizService {
@@ -75,6 +77,7 @@ public class QuizService {
     QuizRequest request =
         QuizRequest.newBuilder().setSessionId(roomId).setSttText(sb.toString().trim()).build();
 
+    log.info("Quiz STT Text: {}", sb.toString().trim());
     QuizResponse response = quizServiceBlockingStub.createQuiz(request);
 
     return AiQuizMessage.builder()

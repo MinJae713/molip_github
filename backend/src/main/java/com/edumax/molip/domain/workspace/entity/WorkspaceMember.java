@@ -27,7 +27,7 @@ import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
-@Table(name = "WorkspaceMember")
+@Table(name = "workspace_member")
 @Getter
 @Setter
 @NoArgsConstructor

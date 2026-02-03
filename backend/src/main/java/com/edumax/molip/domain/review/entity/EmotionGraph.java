@@ -7,7 +7,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
-@Table(name = "EmotionGraph")
+@Table(name = "emotion_graph")
 @Getter
 @Setter
 @NoArgsConstructor

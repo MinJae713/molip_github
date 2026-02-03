@@ -27,7 +27,7 @@ public interface CourseLearnerAnalysisRepository
     SELECT sum(cla.sumAttendance), sum(cla.sumConcentrate), sum(cla.sumQuizCorrect) FROM CourseLearnerAnalysis cla
     WHERE cla.course.id = :courseId
     """)
-  Object[] findSumByCourseId(@Param("courseId") Long courseId);
+  List<Object[]> findSumByCourseId(@Param("courseId") Long courseId);
 
   Long countByCourseCourseId(Long courseId);
 }

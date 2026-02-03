@@ -84,10 +84,11 @@ public class ConcentrateSaveListener {
         (RedisCallback<?>)
             connection -> {
               for (ConcentrateSaveEvent item : batch) {
-                String genKeyStr = generateGeneralKey(item.sessionId());
+                //                String genKeyStr = generateGeneralKey(item.sessionId());
                 String perKeyStr = generatePersonalKey(item.sessionId(), item.memberId());
 
-                byte[] genKey = redisTemplate.getStringSerializer().serialize(genKeyStr);
+                //                byte[] genKey =
+                // redisTemplate.getStringSerializer().serialize(genKeyStr);
                 byte[] perKey = redisTemplate.getStringSerializer().serialize(perKeyStr);
 
                 // score(timeline)를 제외하고 데이터 포맷 구성
@@ -100,20 +101,22 @@ public class ConcentrateSaveListener {
                         item.concentrateValue(),
                         item.feverTime());
 
-                String genValueStr =
-                    String.format("%d|%.3f", item.timeline(), item.concentrateValue());
+                //                String genValueStr =
+                //                    String.format("%d|%.3f", item.timeline(),
+                // item.concentrateValue());
 
                 byte[] perValue = redisTemplate.getStringSerializer().serialize(perValueStr);
-                byte[] genValue = redisTemplate.getStringSerializer().serialize(genValueStr);
+                //                byte[] genValue =
+                // redisTemplate.getStringSerializer().serialize(genValueStr);
 
                 // [수정] ZAdd 대신 List의 rPush 사용 (오른쪽으로 추가하여 시간순 유지)
-                connection.listCommands().rPush(genKey, genValue);
+                //                connection.listCommands().rPush(genKey, genValue);
                 connection.listCommands().rPush(perKey, perValue);
 
                 // Expire 설정 유지
-                if (processedKeys.add(genKeyStr)) {
-                  connection.keyCommands().expire(genKey, TTL.getSeconds());
-                }
+                //                if (processedKeys.add(genKeyStr)) {
+                //                  connection.keyCommands().expire(genKey, TTL.getSeconds());
+                //                }
                 if (processedKeys.add(perKeyStr)) {
                   connection.keyCommands().expire(perKey, TTL.getSeconds());
                 }
@@ -122,9 +125,9 @@ public class ConcentrateSaveListener {
             });
   }
 
-  private String generateGeneralKey(String sessionId) {
-    return GENERAL_KEY_FORMAT.formatted(sessionId);
-  }
+  //  private String generateGeneralKey(String sessionId) {
+  //    return GENERAL_KEY_FORMAT.formatted(sessionId);
+  //  }
 
   private String generatePersonalKey(String sessionId, Long memberId) {
     return PERSONAL_KEY_FORMAT.formatted(sessionId, memberId);
