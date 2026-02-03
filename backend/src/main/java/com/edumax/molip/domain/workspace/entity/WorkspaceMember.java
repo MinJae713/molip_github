@@ -135,4 +135,8 @@ public class WorkspaceMember {
   public int hashCode() {
     return Objects.hashCode(workspaceMemberId);
   }
+
+  public Integer getCertificatedCount() {
+    return courseCertificateds.size();
+  }
 }

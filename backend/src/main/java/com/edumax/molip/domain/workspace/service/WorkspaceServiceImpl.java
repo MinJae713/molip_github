@@ -39,6 +39,9 @@ import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdLearnerResponse;
 import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdTrainerResponse;
+import com.edumax.molip.domain.workspace.dto.response.workspace_member_stat_box.FindWorkspaceMemberStatBoxLearnerResponse;
+import com.edumax.molip.domain.workspace.dto.response.workspace_member_stat_box.FindWorkspaceMemberStatBoxResponse;
+import com.edumax.molip.domain.workspace.dto.response.workspace_member_stat_box.FindWorkspaceMemberStatBoxTrainerResponse;
 import com.edumax.molip.domain.workspace.entity.InviteCode;
 import com.edumax.molip.domain.workspace.entity.Workspace;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
@@ -634,5 +637,83 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         workspaceRepository.findById(workspaceId).orElseThrow(NoWorkspaceException::new);
     List<WorkspaceRegister> workspaceRegisters = workspace.getWorkspaceRegisters();
     return workspaceRegisters.stream().map(FindWorkspaceRegisterResponse::from).toList();
+  }
+
+  @Override
+  public FindWorkspaceMemberStatBoxResponse findWorkspaceMemberStatBox(
+      Long workspaceId, Long memberId) {
+    Member member = memberRepository.findById(memberId).orElseThrow(NoMemberException::new);
+    Workspace workspace =
+        workspaceRepository
+            .findById(workspaceId)
+            .orElseThrow(NoWorkspaceException::new); // GlobalExceptionHandler
+    WorkspaceMember workspaceMember =
+        workspaceMemberRepository
+            .findByMemberAndWorkspace(member, workspace)
+            .orElseThrow(NoWorkspaceMemberException::new);
+    return workspaceMember.getRole() == WorkspaceMemberRole.TRAINER
+        ? findWorkspaceMemberStatBoxTrainer(workspaceMember)
+        : findWorkspaceMemberStatBoxLearner(workspaceMember);
+  }
+
+  private FindWorkspaceMemberStatBoxResponse findWorkspaceMemberStatBoxTrainer(
+      WorkspaceMember workspaceMember) {
+    // 강사 상단 바
+    Long workspaceMemberId = workspaceMember.getWorkspaceMemberId();
+    Long workspaceId = workspaceMember.getWorkspace().getWorkspaceId();
+    WorkspaceMemberRole role = workspaceMember.getRole();
+    List<Course> courses = workspaceMember.getCourses();
+    int todaySessionCount = 0;
+    Integer activeCourseCount = courses.size();
+    Integer learnersCount = 0;
+    for (Course course : courses) {
+      List<Session> sessions = course.getSessions();
+      for (Session session : sessions) {
+        todaySessionCount += session.isTodaySession() ? 1 : 0;
+      }
+      learnersCount += course.getCourseLearnerCount();
+    }
+
+    return FindWorkspaceMemberStatBoxTrainerResponse.builder()
+        .workspaceMemberId(workspaceMemberId)
+        .workspaceId(workspaceId)
+        .role(role)
+        .todaySessionCount(todaySessionCount)
+        .activeCourseCount(activeCourseCount)
+        .learnersCount(learnersCount)
+        .build();
+  }
+
+  private FindWorkspaceMemberStatBoxResponse findWorkspaceMemberStatBoxLearner(
+      WorkspaceMember workspaceMember) {
+    // 수강생 상단 바
+    Long workspaceMemberId = workspaceMember.getWorkspaceMemberId();
+    Long workspaceId = workspaceMember.getWorkspace().getWorkspaceId();
+    WorkspaceMemberRole role = workspaceMember.getRole();
+
+    List<CourseLearner> courseLearners = workspaceMember.getCourseLearners();
+    int todaySessionCount = 0;
+    Integer learningCourseCount = 0;
+    for (CourseLearner courseLearner : courseLearners) {
+      Course course = courseLearner.getCourse();
+      List<Session> sessions = course.getSessions();
+      for (Session session : sessions) {
+        todaySessionCount += session.isTodaySession() ? 1 : 0;
+      }
+      if (course.getStatus() == CourseStatus.PROCEED) {
+        learningCourseCount++;
+      }
+    }
+
+    Integer certificatedCount = workspaceMember.getCertificatedCount();
+
+    return FindWorkspaceMemberStatBoxLearnerResponse.builder()
+        .workspaceMemberId(workspaceMemberId)
+        .workspaceId(workspaceId)
+        .role(role)
+        .todaySessionCount(todaySessionCount)
+        .learningCourseCount(learningCourseCount)
+        .certificatedCount(certificatedCount)
+        .build();
   }
 }

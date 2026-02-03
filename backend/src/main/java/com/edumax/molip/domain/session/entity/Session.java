@@ -168,4 +168,8 @@ public class Session {
       this.quizCount = quizCount;
     }
   }
+
+  public boolean isTodaySession() { // 오늘 진행되는 세션인지 여부
+    return date.isEqual(LocalDate.now());
+  }
 }
