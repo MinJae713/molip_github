@@ -28,27 +28,29 @@ const liveStore = useLiveStore();
 onMounted(async () => {
   console.log('🔵 [DEBUG] onMounted 시작');
   console.log('🔵 [DEBUG] route.params:', route.params);
-  
+
   // route.params의 값은 항상 string이므로 명시적으로 변환이 필요합니다.
   const courseId = Number(route.params.courseId);
   const sessionId = Number(route.params.sessionId);
-  
+
   console.log('🔵 [DEBUG] courseId:', courseId, typeof courseId);
   console.log('🔵 [DEBUG] sessionId:', sessionId, typeof sessionId);
   console.log('🔵 [DEBUG] isNaN(courseId):', isNaN(courseId));
   console.log('🔵 [DEBUG] isNaN(sessionId):', isNaN(sessionId));
-  
+
   try {
     if (!isNaN(courseId) && !isNaN(sessionId)) {
       console.log('🟢 [DEBUG] ID 검증 통과, initLiveRoom 호출');
       console.log('🟢 [DEBUG] liveStore:', liveStore);
       console.log('🟢 [DEBUG] liveStore.initLiveRoom:', liveStore.initLiveRoom);
-      
+
       // 🔥 함수가 존재하는지 체크
       if (typeof liveStore.initLiveRoom === 'function') {
-        console.log('🟢 [DEBUG] initLiveRoom 함수 존재 확인');
-        // 스토어의 액션에 number 타입을 전달합니다.
-        await liveStore.initLiveRoom(courseId, sessionId);
+        const queryJanusRoomId = route.query.janus_room_id as string;
+        const queryPin = route.query.pin as string;
+
+        console.log('🟢 [DEBUG] initLiveRoom 함수 존재 확인, 파라미터:', { queryJanusRoomId, queryPin });
+        await liveStore.initLiveRoom(courseId, sessionId, queryJanusRoomId, queryPin);
         console.log('🟢 [DEBUG] initLiveRoom 완료');
       } else {
         console.error('🔴 [ERROR] initLiveRoom이 함수가 아닙니다!');
@@ -65,14 +67,14 @@ onMounted(async () => {
       stack: error.stack,
       response: error.response?.data
     });
-    
+
     // 🔥 사용자에게 알림
     alert(`라이브 입장 실패: ${error.message || '알 수 없는 오류'}`);
   }
 });
 
 // --- UI 상태 관리 ---
-const isEndModalOpen = ref(false); 
+const isEndModalOpen = ref(false);
 const activeTab = ref<'status' | 'chat' | 'qna'>('status');
 
 // --- 수업 종료 로직 ---
@@ -96,13 +98,13 @@ const handleStudentClick = (student: any) => {
       <div>방 ID: {{ liveStore.janusRoomId || 'N/A' }}</div>
       <div>PIN: {{ liveStore.pin || 'N/A' }}</div>
     </div>
-    
+
     <LiveHeader @end-class="isEndModalOpen = true" />
-    
+
     <div class="flex-1 flex overflow-hidden">
       <main class="flex-1 flex flex-col p-6 gap-6 overflow-y-auto bg-slate-50 custom-scrollbar">
         <LiveVideoConsole />
-        
+
         <div class="grid grid-cols-12 gap-6 min-h-[280px]">
           <AIActionRecommendation class="col-span-4" />
           <GlobalEngagementCard class="col-span-3" />
@@ -114,7 +116,7 @@ const handleStudentClick = (student: any) => {
         <div class="p-7 pb-0 space-y-6 shrink-0">
           <div class="flex items-center justify-between px-1">
             <h2 class="text-xl font-bold text-slate-800">
-              참여자 목록 
+              참여자 목록
               <span class="text-indigo-600 ml-1 text-base">{{ liveStore.participants?.length || 0 }}</span>
             </h2>
             <button class="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-500">
@@ -129,13 +131,9 @@ const handleStudentClick = (student: any) => {
         <div class="flex-1 overflow-hidden flex flex-col bg-white">
           <div v-show="activeTab === 'status'" class="flex-1 overflow-y-auto p-7 pt-4 space-y-2 custom-scrollbar">
             <div v-if="liveStore.participants?.length > 0" class="flex flex-col gap-2">
-              <ParticipantItem 
-                v-for="p in liveStore.participants" 
-                :key="p.id" 
-                :participant="p"
+              <ParticipantItem v-for="p in liveStore.participants" :key="p.id" :participant="p"
                 @click="handleStudentClick(p)"
-                class="cursor-pointer hover:ring-2 hover:ring-indigo-100 transition-all rounded-2xl active:scale-[0.98]" 
-              />
+                class="cursor-pointer hover:ring-2 hover:ring-indigo-100 transition-all rounded-2xl active:scale-[0.98]" />
             </div>
             <div v-else class="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
               <span class="material-symbols-outlined text-5xl mb-2">group_off</span>
@@ -144,10 +142,8 @@ const handleStudentClick = (student: any) => {
           </div>
 
           <div v-show="activeTab !== 'status'" class="flex-1 flex flex-col min-h-0">
-              <TrainerLiveChatContainer 
-                :room-id="String(route.params.sessionId)" 
-                :view-type="activeTab === 'chat' ? 'chat' : 'qa'" 
-              />
+            <TrainerLiveChatContainer :room-id="String(route.params.sessionId)"
+              :view-type="activeTab === 'chat' ? 'chat' : 'qa'" />
           </div>
         </div>
 
@@ -165,14 +161,16 @@ const handleStudentClick = (student: any) => {
     </div>
 
     <Transition name="fade">
-      <div v-if="isEndModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+      <div v-if="isEndModalOpen"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
         <div class="bg-white p-8 rounded-[40px] shadow-2xl max-w-sm w-full text-center">
           <span class="material-symbols-outlined text-red-500 text-6xl mb-4">cancel</span>
           <h2 class="text-2xl font-bold mb-2">수업을 종료할까요?</h2>
           <p class="text-slate-500 mb-8">종료 후에는 다시 강의실을 생성해야 합니다.</p>
           <div class="flex gap-4">
             <button @click="isEndModalOpen = false" class="flex-1 py-4 bg-slate-100 rounded-2xl font-bold">취소</button>
-            <button @click="handleEndSession" class="flex-1 py-4 bg-red-500 text-white rounded-2xl font-bold">수업 종료</button>
+            <button @click="handleEndSession" class="flex-1 py-4 bg-red-500 text-white rounded-2xl font-bold">수업
+              종료</button>
           </div>
         </div>
       </div>
@@ -182,19 +180,26 @@ const handleStudentClick = (student: any) => {
 
 <style scoped>
 /* 애니메이션 스타일 */
-.slide-up-enter-active, .slide-up-leave-active {
+.slide-up-enter-active,
+.slide-up-leave-active {
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.slide-up-enter-from, .slide-up-leave-to {
+
+.slide-up-enter-from,
+.slide-up-leave-to {
   transform: translateY(20px);
   opacity: 0;
   max-height: 0;
   margin-top: 0;
 }
-.fade-enter-active, .fade-leave-active {
+
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.3s ease;
 }
-.fade-enter-from, .fade-leave-to {
+
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 </style>

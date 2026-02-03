@@ -2,18 +2,10 @@
     <!-- 강사 워크스페이스 -->
     <div class="space-y-8">
         <!-- Stats Section -->
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-6" v-if="workspaceStats">
-            <TrainerStatCard title="운영 중인 교육 과정" :value="`${workspaceStats.progress.value} 과정`" icon="school"
-                color="indigo" />
-            <TrainerStatCard title="참여 수강생 수" :value="`${workspaceStats.sessions.value} 명`" icon="groups"
-                color="blue" />
-            <TrainerStatCard title="오늘 예정된 세션" :value="`${workspaceStats.completed.value} 과정`" icon="schedule"
-                color="orange" />
+        <section>
+            <TrainerMyCoursesStats :ongoingCount="ongoingCount" :completedCount="completedCount" :attendanceRate="0"
+                ongoingLabel="운영 중인 강의" completedLabel="종료된 강의" attendanceLabel="전체 강의 진척도" />
         </section>
-        <!-- Loading State for Stats -->
-        <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="h-32 bg-slate-100 rounded-xl animate-pulse" v-for="n in 3" :key="n"></div>
-        </div>
         <!-- Course List Section -->
         <section>
             <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
@@ -55,8 +47,8 @@
             </div>
             <!-- 코스(강의 영역) -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" v-if="workspaceCourses.length > 0">
-                <TrainerDashboardCourseCard v-for="course in workspaceCourses" :key="course.courseId" :course="course"
-                    @open-curriculum="openCurriculumModal" /> />
+                <TrainerMyCourseCard v-for="course in workspaceCourses" :key="course.courseId" :course="(course as any)"
+                    @enter-course="handleEnterCourse" />
             </div>
             <div v-else class="text-center py-20 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                 <p class="text-slate-500">등록된 강의가 없습니다.</p>
@@ -76,6 +68,13 @@ import { useRoute } from 'vue-router';
 import { useWorkspaceStore } from '@/stores/workspace';
 const workspaceStore = useWorkspaceStore();
 const { workspaceStats } = storeToRefs(workspaceStore);
+// 통계 데이터 직접 가공 (computed)
+const ongoingCount = computed(() =>
+    workspaceCourses.value.filter(c => c.status === 'PROCEED' || !c.status).length
+);
+const completedCount = computed(() =>
+    workspaceCourses.value.filter(c => c.status === 'END').length
+);
 // 학생 코스 스토어(워크스페이스 모달용)
 import { useLearnerCourseStore } from '@/stores/learnerCourse';
 const learnerCourseStore = useLearnerCourseStore();
@@ -84,9 +83,12 @@ const { workspaceCourses } = storeToRefs(learnerCourseStore);
 
 import { storeToRefs } from 'pinia';
 import type { LearnerCourse, Session } from '@/types';
-import TrainerStatCard from '@/components/Trainer/TrainerWorkspace/TrainerStatCard.vue';
-import TrainerDashboardCourseCard from '@/components/Trainer/TrainerWorkspace/TrainerDashboardCourseCard.vue';
+import { useRouter } from 'vue-router';
+import TrainerMyCoursesStats from '@/components/Trainer/TrainerMyCoursesView/TrainerMyCoursesStats.vue';
+import TrainerMyCourseCard from '@/components/Trainer/TrainerMyCoursesView/TrainerMyCourseCard.vue';
 import TrainerCourseCurriculumModal from '@/components/Trainer/TrainerWorkspace/TrainerCourseCurriculumModal.vue';
+
+const router = useRouter();
 
 const route = useRoute();
 // 현재 워크스페이스 아이디 획득
@@ -127,6 +129,17 @@ const handleRegister = () => {
     closeModal();
 };
 
+const handleEnterCourse = (courseId: string | number) => {
+    console.log('과정 관리 페이지 이동:', courseId);
+    router.push({
+        name: 'workspaceTrainerCourseDetail',
+        params: {
+            id: currentWorkspaceId.value,
+            courseId: courseId
+        }
+    });
+};
+
 const sortOptionLabel = computed(() => {
     switch (sortOption.value) {
         case 'newest': return '최신순';
@@ -147,6 +160,7 @@ const initDashboard = async () => {
         if (!id) return;
         await workspaceStore.setCurrentWorkspaceById(id);
         await learnerCourseStore.fetchCoursesByWorkspace(id); // 강사: 관리 코스 목록 조회
+        // await workspaceStore.fetchWorkspaceStats(id); // [Unused] 기존 통계 호출 제거
     }
 };
 onMounted(() => {

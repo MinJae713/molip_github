@@ -77,21 +77,16 @@
                             <td class="px-6 py-4">
                                 <div class="flex justify-center">
                                     <span
-                                        class="border px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1 w-fit"
-                                        :class="{
-                                            'bg-emerald-50 text-emerald-600 border-emerald-100': session.isActive === false,
-                                            'bg-slate-100 text-slate-500 border-slate-200': session.isActive === false
-                                        }">
-                                        <span class="size-1.5 rounded-full"
-                                            :class="session.isActive === false ? 'bg-emerald-500' : 'bg-slate-400'"></span>
-                                        {{ session.isActive }}
+                                        class="border px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1 w-fit bg-slate-100 text-slate-500 border-slate-200">
+                                        <span class="size-1.5 rounded-full bg-slate-400"></span>
+                                        예정
                                     </span>
                                 </div>
                             </td>
                             <!-- 관리 -->
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center gap-2">
-                                    <button v-if="session.status === '예정'" @click="$emit('start-live', session)"
+                                    <button @click="$emit('start-live', session)"
                                         class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1.5">
                                         <span class="material-symbols-outlined text-[16px]">play_arrow</span>
                                     </button>
@@ -108,7 +103,7 @@
             </div>
             <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <div class="text-xs text-slate-500 font-medium">
-                    총 <span class="text-indigo-600 font-bold">{{ session.length }}</span>개의 세션이 등록되어 있습니다.
+                    총 <span class="text-indigo-600 font-bold">{{ sessions.length }}</span>개의 세션이 등록되어 있습니다.
                 </div>
                 <div class="flex items-center gap-2">
                     <button
@@ -129,41 +124,4 @@ const emit = defineEmits(['start-live']);
 const props = defineProps<{
     sessions: Session[];
 }>();
-
-
-// // 임시 데이터
-// const sessions = ref([
-//     {
-//         title: 'Session 01: 데이터 기반 의사결정의 이해',
-//         description: '데이터 리터러시의 중요성과 기본 개념 학습',
-//         type: 'Live 강의',
-//         date: '2023.10.15 (월)',
-//         time: '14:00 - 16:00',
-//         status: '예정'
-//     },
-//     {
-//         title: 'Session 02: 고객 여정 지도(CJM) 실습',
-//         description: '실제 고객 데이터를 활용한 CJM 작성 워크샵',
-//         type: 'Live 강의',
-//         date: '2023.10.17 (수)',
-//         time: '14:00 - 17:00',
-//         status: '예정'
-//     },
-//     {
-//         title: '중간 과제: 고객 페르소나 정의서 제출',
-//         description: '팀별 프로젝트 1차 결과물 제출',
-//         type: '과제 제출',
-//         date: '2023.10.20 (금)',
-//         time: '23:59 까지',
-//         status: '준비중'
-//     },
-//     {
-//         title: 'Session 03: 데이터 시각화 도구 활용',
-//         description: 'Tableau를 활용한 기초 데이터 시각화 실습',
-//         type: 'Live 강의',
-//         date: '2023.10.24 (화)',
-//         time: '14:00 - 17:00',
-//         status: '준비중'
-//     }
-// ]);
 </script>

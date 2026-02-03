@@ -5,28 +5,23 @@ import type { LearnerCourse, TrainerCourse, CreateCourse } from "@/types";
 
 export const useTrainerCourseStore = defineStore("trainerCourse", () => {
   const workspaceAllCourses = ref<TrainerCourse[]>([]); // 현재 워크스페이스의 모든 코스 목록
-  const managedCourses = ref<TrainerCourse[]>([]); // 강사가 관리하는 전체 코스 목록
+  const managedCourses = ref<any[]>([]); // 강사가 관리하는 전체 코스 목록
   const currentManagedCourse = ref<TrainerCourse | null>(null); // 현재 선택/관리 중인 코스 상세
   const isLoading = ref(false);
 
   // Helper: API -> Frontend (CamelCase)
   const mapTrainerCourse = (data: any): TrainerCourse => ({
-    attendance: data.attendance,
-    category: data.category,
     courseId: data.course_id || data.courseId || data.id,
-    description: data.description || "",
-    engagement: data.engagement,
-    exitQuiz: data.exitQuiz,
-    isEngageCheck: data.isEngageCheck,
-    isOwner: data.isOwner,
-    isSentimentAnalysis: data.isSentimentAnalysis,
-    maxLearner: data.maxLearner,
-    ownerName: data.ownerName,
-    period: data.period,
-    status: data.status,
-    subCategory: data.subCategory,
     title: data.title,
-    workspaceId: data.workspaceId,
+    learnerCount: data.learnerCount || 0,
+    totalSessionCount: data.totalSessionCount || 0,
+    averageProgressRate:
+      data.averageProgressRate !== undefined ? data.averageProgressRate : null,
+    courseStatus: data.courseStatus || data.status || "PROCEED",
+    // 기존 필드들 (필요시 선택적 유지)
+    category: data.category,
+    description: data.description,
+    status: data.status,
   });
 
   // 워크스페이스의 모든 코스 목록 가져오기
@@ -47,17 +42,14 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
   }
 
   // 내 코스 가져오기
-  async function fetchMyCourses(workspaceId: string | number, role: string) {
+  async function fetchMyCourses(workspaceId: string | number) {
     isLoading.value = true;
-    console.log(`[API Request] workspaceId: ${workspaceId}, role: ${role}`);
+    console.log(`[API Request] workspaceId: ${workspaceId}`);
     try {
-      const response = await api.get(`/courses/me?role=${role}`);
-      // json-server 필터링 결과가 정상적으로 배열로 오는지 확인
+      const response = await api.get(`/courses/${workspaceId}/trainer`);
+
       console.log("[API Success] 응답 데이터:", response.data);
-      // 데이터가 존재할 때만 할당
-      managedCourses.value = Array.isArray(response.data)
-        ? response.data.map(mapTrainerCourse)
-        : [];
+      managedCourses.value = Array.isArray(response.data) ? response.data : [];
     } catch (error: any) {
       // 상세 에러 로깅
       if (error.response) {
@@ -103,10 +95,11 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
   ) {
     isLoading.value = true;
     try {
+      console.log(payload);
       // post 일 때 워크스페이스 생성
       await api.post("/courses", payload);
       // 목록 갱신
-      await fetchMyCourses(workspace_id, "TRAINER");
+      await fetchMyCourses(workspace_id);
       return true;
     } catch (error) {
       console.error("코스 생성 실패:", error);

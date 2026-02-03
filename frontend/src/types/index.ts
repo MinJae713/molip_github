@@ -25,23 +25,16 @@ export interface CreateCourse {
 }
 
 export interface TrainerCourse {
-  // 2026-01-30 확인된 내용, 강사용 코스정보
   courseId: number;
-  attendance: number;
-  category: string;
-  description: string;
-  engagement: number;
-  exitQuiz: number;
-  isEngageCheck: boolean;
-  isOwner: boolean;
-  isSentimentAnalysis: boolean;
-  maxLearner: number;
-  ownerName: string;
-  period: number;
-  status: string;
-  subCategory: string;
   title: string;
-  workspaceId: number;
+  learnerCount: number;
+  totalSessionCount: number;
+  averageProgressRate: number | null;
+  courseStatus: string;
+  // 기존 필드들 (필요시 선택적 유지)
+  category?: string;
+  description?: string;
+  status?: string;
 }
 export interface LearnerCourse {
   // 2026-01-30 확인된 내용, 수강생용 코스정보

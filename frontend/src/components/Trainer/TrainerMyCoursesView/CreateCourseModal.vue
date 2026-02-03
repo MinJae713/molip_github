@@ -101,20 +101,18 @@ const currentStepComponent = computed(() => {
     }
 });
 
-// 폼 데이터
-const form = reactive({
-    // workspaceId는 별도로 props로 받음
+// 폼 데이터 (v-model 연동을 위해 ref로 변경)
+const form = ref({
     title: '',
     description: '',
     category: '',
     subCategory: '',
     maxLearner: 0,
-    // Schedule
-    period: '',
-    isEngageCheck: false,
+    period: 0,
+    isEngageCheck: true,
     isSentimentAnalysis: false,
-    attendance: 0,
-    engagement: 0,
+    attendance: 80,
+    engagement: 70,
     exitQuiz: 0,
 });
 
@@ -129,7 +127,7 @@ watch(() => props.isOpen, (newVal) => {
 const nextStep = () => {
     if (currentStep.value < totalSteps) {
         // Validation logic can be added here
-        if (currentStep.value === 1 && !form.title) {
+        if (currentStep.value === 1 && !form.value.title) {
             alert('과정명을 입력해주세요.');
             return;
         }
@@ -145,22 +143,30 @@ const prevStep = () => {
 
 const handleSubmit = async () => {
     isSubmitting.value = true;
-    console.log(form);
+    console.log('[DEBUG] Submit Form:', form.value);
     try {
         const payload = {
-            ...form,
-            workspaceId: String(props.workspaceId) as any,
+            ...form.value,
+            workspaceId: Number(props.workspaceId),
+            period: Number(form.value.period),
         };
-        const success = await trainerCourseStore.createCourse(payload);
+        const success = await trainerCourseStore.createCourse(payload, props.workspaceId);
         if (success) {
             emit('created');
             emit('close');
-            // Form reset
-            Object.assign(form, {
-                title: '', description: '', category: '', sub_category: '', tag: '',
-                period: '', duration: '', total_lessons: 0,
-                ai_engagement_check: true, ai_sentiment_analysis: false,
-                completion_attendance_rate: 80, use_engagement_criteria: true, completion_engagement_score: 70, use_quiz_criteria: false, completion_quiz_score: 60
+            // 폼 초기화
+            Object.assign(form.value, {
+                title: '',
+                description: '',
+                category: '',
+                subCategory: '',
+                maxLearner: 0,
+                period: 0,
+                isEngageCheck: true,
+                isSentimentAnalysis: false,
+                attendance: 80,
+                engagement: 70,
+                exitQuiz: 0,
             });
             currentStep.value = 1;
         } else {

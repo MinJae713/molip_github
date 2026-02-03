@@ -56,27 +56,15 @@
                             <p class="text-[11px] text-slate-500 mt-0.5">AI 시선 추적 기반 수업 집중도 평균</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3 justify-between sm:justify-end pl-12 sm:pl-0 w-full sm:w-auto">
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input :checked="modelValue.engagement"
-                                @change="updateField('engagement', ($event.target as HTMLInputElement).checked)"
-                                class="sr-only peer" type="checkbox" />
-                            <div
-                                class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600">
-                            </div>
-                        </label>
-                        <div class="h-8 w-px bg-slate-300 hidden sm:block mx-1"></div>
-                        <div class="flex items-center gap-2"
-                            :class="modelValue.engagement ? '' : 'opacity-50 grayscale pointer-events-none'">
-                            <div class="relative w-24">
-                                <input :value="modelValue.engagement"
-                                    @input="updateField('engagement', Number(($event.target as HTMLInputElement).value))"
-                                    class="w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-slate-800 text-right pr-6 bg-white shadow-sm font-bold border-slate-300 border"
-                                    type="number" :disabled="!modelValue.use_engagement_criteria" />
-                                <span class="absolute right-2 top-2 text-slate-400 font-bold text-xs">%</span>
-                            </div>
-                            <span class="text-xs font-bold text-slate-700 whitespace-nowrap min-w-[2rem]">이상</span>
+                    <div class="flex items-center gap-2 pl-12 sm:pl-0 w-full sm:w-auto justify-end">
+                        <div class="relative w-24">
+                            <input :value="modelValue.engagement"
+                                @input="updateField('engagement', Number(($event.target as HTMLInputElement).value))"
+                                class="w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-slate-800 text-right pr-6 bg-white shadow-sm font-bold border-slate-300 border"
+                                type="number" />
+                            <span class="absolute right-2 top-2 text-slate-400 font-bold text-xs">%</span>
                         </div>
+                        <span class="text-xs font-bold text-slate-700 whitespace-nowrap min-w-[2rem]">이상</span>
                     </div>
                 </div>
 
@@ -97,27 +85,15 @@
                             <p class="text-[11px] text-slate-500 mt-0.5">매 세션 종료 후 진행되는 퀴즈 점수</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3 justify-between sm:justify-end pl-12 sm:pl-0 w-full sm:w-auto">
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input :checked="modelValue.use_quiz_criteria"
-                                @change="updateField('use_quiz_criteria', ($event.target as HTMLInputElement).checked)"
-                                class="sr-only peer" type="checkbox" />
-                            <div
-                                class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600">
-                            </div>
-                        </label>
-                        <div class="h-8 w-px bg-slate-300 hidden sm:block mx-1"></div>
-                        <div class="flex items-center gap-2"
-                            :class="modelValue.use_quiz_criteria ? '' : 'opacity-50 grayscale pointer-events-none'">
-                            <div class="relative w-24">
-                                <input :value="modelValue.completion_quiz_score"
-                                    @input="updateField('completion_quiz_score', Number(($event.target as HTMLInputElement).value))"
-                                    class="w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-slate-800 text-right pr-6 bg-white shadow-sm font-bold border-slate-300 border"
-                                    type="number" :disabled="!modelValue.use_quiz_criteria" />
-                                <span class="absolute right-2 top-2 text-slate-400 font-bold text-xs">점</span>
-                            </div>
-                            <span class="text-xs font-bold text-slate-700 whitespace-nowrap min-w-[2rem]">이상</span>
+                    <div class="flex items-center gap-2 pl-12 sm:pl-0 w-full sm:w-auto justify-end">
+                        <div class="relative w-24">
+                            <input :value="modelValue.exitQuiz"
+                                @input="updateField('exitQuiz', Number(($event.target as HTMLInputElement).value))"
+                                class="w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-slate-800 text-right pr-6 bg-white shadow-sm font-bold border-slate-300 border"
+                                type="number" />
+                            <span class="absolute right-2 top-2 text-slate-400 font-bold text-xs">점</span>
                         </div>
+                        <span class="text-xs font-bold text-slate-700 whitespace-nowrap min-w-[2rem]">이상</span>
                     </div>
                 </div>
             </div>
