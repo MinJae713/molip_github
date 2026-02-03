@@ -29,13 +29,13 @@ public class ReviewController {
 
   @PostMapping("/test")
   public ResponseEntity<?> testEndpoint() {
-    List<TimelineElement> testMergedList =
-        List.of(
-            new TimelineElement(0, false, 0.85f, false, 0, "happy"), // 1초: 집중 중, 기쁨
-            new TimelineElement(1, true, 0.00f, false, 0, "happy"), // 2초: 자리비움, 평온
-            new TimelineElement(2, false, 0.65f, false, 6, "neutral"), // 3초: 다시 시작, 평온
-            new TimelineElement(3, false, 0.95f, true, 6, "neutral") // 4초: 초집중(Fever), 놀람
-            );
+    //    List<TimelineElement> testMergedList =
+    //        List.of(
+    //            new TimelineElement(0, false, 0.85f, false, 0, "happy"), // 1초: 집중 중, 기쁨
+    //            new TimelineElement(1, true, 0.00f, false, 0, "happy"), // 2초: 자리비움, 평온
+    //            new TimelineElement(2, false, 0.65f, false, 6, "neutral"), // 3초: 다시 시작, 평온
+    //            new TimelineElement(3, false, 0.95f, true, 6, "neutral") // 4초: 초집중(Fever), 놀람
+    //            );
 
     // storageService.saveTimelineAnalysis(1L, 1L, testMergedList);
     List<TimelineElement> retrievedList = storageService.getTimelineAnalysis(1L, 1L);
