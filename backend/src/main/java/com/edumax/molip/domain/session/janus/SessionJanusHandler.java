@@ -37,6 +37,9 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final SessionRepository sessionRepository;
   private final CourseApplyRepository courseApplyRepository;
+  private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
+  private final String SESSION_JOIN_FORMAT = "session:join:session-id:%s";
 
   private final Map<String, WebSocketSession> clientToJanusMap = new ConcurrentHashMap<>();
   private final Map<String, WebSocketSession> janusToClientMap = new ConcurrentHashMap<>();
@@ -255,32 +258,66 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
 
     try {
       // 메시지가 JSON이고 publishers 목록이 있는지 확인하여 필터링
-      if (clientSession.isOpen() && payload.contains("publishers")) {
+      if (clientSession.isOpen()) {
         Map<String, Object> json = objectMapper.readValue(payload, new TypeReference<>() {});
 
-        // Janus 이벤트 구조: { "janus": "event", "plugindata": { "data": { ... } } }
-        if (json.containsKey("plugindata")) {
-          Map<String, Object> plugindata = (Map<String, Object>) json.get("plugindata");
-          if (plugindata != null && plugindata.containsKey("data")) {
-            Map<String, Object> data = (Map<String, Object>) plugindata.get("data");
+        // 1. Participant Joined Event Handling (Redis Update)
+        if (json.containsKey("videoroom")
+            && "joined".equals(json.get("videoroom"))
+            && json.containsKey("id")) {
 
-            if (data != null && data.containsKey("publishers")) {
-              Object roleObj = clientSession.getAttributes().get("role");
-              if ("STUDENT".equals(roleObj)) {
-                List<Map<String, Object>> publishers =
-                    (List<Map<String, Object>>) data.get("publishers");
-                if (publishers != null) {
-                  // [선생] 태그가 있는 퍼블리셔만 남기고 필터링
-                  publishers.removeIf(
-                      p -> {
-                        String display = (String) p.get("display");
-                        return display == null || !display.contains("[선생]");
-                      });
+          Long feedId = ((Number) json.get("id")).longValue();
+          Long sessionId = (Long) clientSession.getAttributes().get("sessionId");
+          Long memberId = (Long) clientSession.getAttributes().get("memberId");
+          String memberName = (String) clientSession.getAttributes().get("memberName");
 
-                  // 필터링된 데이터로 페이로드 업데이트
-                  payload = objectMapper.writeValueAsString(json);
-                  log.info(
-                      "[Backend Filter] Filtered publishers for STUDENT: {}", publishers.size());
+          if (sessionId != null && memberId != null) {
+            String key = String.format(SESSION_JOIN_FORMAT, sessionId);
+            // Old value (added by Interceptor)
+            String oldVal = memberId + "|" + memberName;
+            // New value (with feedId)
+            String newVal = memberId + "|" + memberName + "|" + feedId;
+
+            // Atomic-like replacement (Remove old -> Add new)
+            redisTemplate.opsForSet().remove(key, oldVal);
+            redisTemplate.opsForSet().add(key, newVal);
+            // Refresh TTL (optional, keeping it alive)
+            redisTemplate.expire(key, java.time.Duration.ofHours(24));
+
+            // Store feedId in session for cleanup
+            clientSession.getAttributes().put("feedId", feedId);
+
+            log.info(
+                "[Redis] Updated participant info: {} -> {} (Session: {})", oldVal, newVal, sessionId);
+          }
+        }
+
+        // 2. Publisher Filtering for Students
+        if (payload.contains("publishers")) {
+          // Janus 이벤트 구조: { "janus": "event", "plugindata": { "data": { ... } } }
+          if (json.containsKey("plugindata")) {
+            Map<String, Object> plugindata = (Map<String, Object>) json.get("plugindata");
+            if (plugindata != null && plugindata.containsKey("data")) {
+              Map<String, Object> data = (Map<String, Object>) plugindata.get("data");
+
+              if (data != null && data.containsKey("publishers")) {
+                Object roleObj = clientSession.getAttributes().get("role");
+                if ("STUDENT".equals(roleObj)) {
+                  List<Map<String, Object>> publishers =
+                      (List<Map<String, Object>>) data.get("publishers");
+                  if (publishers != null) {
+                    // [선생] 태그가 있는 퍼블리셔만 남기고 필터링
+                    publishers.removeIf(
+                        p -> {
+                          String display = (String) p.get("display");
+                          return display == null || !display.contains("[선생]");
+                        });
+
+                    // 필터링된 데이터로 페이로드 업데이트
+                    payload = objectMapper.writeValueAsString(json);
+                    log.info(
+                        "[Backend Filter] Filtered publishers for STUDENT: {}", publishers.size());
+                  }
                 }
               }
             }
@@ -288,7 +325,7 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
         }
       }
     } catch (Exception e) {
-      log.error("Error filtering janus message", e);
+      log.error("Error processing janus message", e);
       // 에러 발생하더라도 원본 페이로드는 전송해야 함
     }
 
@@ -299,6 +336,28 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
 
   @Override
   public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+    // [Redis Cleanup]
+    try {
+      Long sessionId = (Long) session.getAttributes().get("sessionId");
+      Long memberId = (Long) session.getAttributes().get("memberId");
+      String memberName = (String) session.getAttributes().get("memberName");
+      Long feedId = (Long) session.getAttributes().get("feedId");
+
+      if (sessionId != null && memberId != null) {
+        String key = String.format(SESSION_JOIN_FORMAT, sessionId);
+        String valToRemove;
+        if (feedId != null) {
+          valToRemove = memberId + "|" + memberName + "|" + feedId;
+        } else {
+          valToRemove = memberId + "|" + memberName;
+        }
+        redisTemplate.opsForSet().remove(key, valToRemove);
+        log.info("[Redis] Removed participant: {} (Session: {})", valToRemove, sessionId);
+      }
+    } catch (Exception e) {
+      log.error("Failed to cleanup Redis on close", e);
+    }
+
     // [PMD] 맵에서 제거하고 닫는 절차는 여기서 완결됨
     WebSocketSession janusSession = clientToJanusMap.remove(session.getId()); // NOPMD
 
