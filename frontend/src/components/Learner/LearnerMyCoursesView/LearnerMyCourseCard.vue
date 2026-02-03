@@ -2,7 +2,7 @@
     <div
         class="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-card hover:border-indigo-200 transition-all duration-300 flex flex-col h-full relative overflow-hidden">
         <!-- 상단 강조 바 (모든 코스 공통 그라데이션) -->
-        <div class="h-1.5 w-full bg-gradient-to-r from-indigo-500 to-cyan-400">
+        <div class="h-1.5 w-full bg-linear-to-r from-indigo-500 to-cyan-400">
         </div>
         <div class="p-6 flex-1 flex flex-col">
             <!-- 헤더: 태그 + 더보기 버튼 -->
@@ -34,11 +34,11 @@
                     <div class="flex justify-between items-end mb-2">
                         <span class="text-xs font-bold text-slate-700">진도율</span>
                         <span class="text-lg font-bold text-indigo-600">{{ displayCourse('progressRate') || 0
-                            }}%</span>
+                        }}%</span>
                     </div>
                     <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                         <div class="bg-indigo-600 h-full rounded-full"
-                            :style="{ width: `${displayCourse('progressRate') || 0}%` }">
+                            :style="{ width: `${displayCourse('progressRate') || 0}%` } as any">
                         </div>
                     </div>
                     <div class="flex justify-between mt-2 text-xs text-slate-500">
@@ -91,7 +91,7 @@
     </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import type { LearnerCourse } from '@/types';
 import { useLearnerCourseStore } from '@/stores/learnerCourse';
 
@@ -106,6 +106,11 @@ defineEmits<{
 
 const courseStore = useLearnerCourseStore();
 const nowCouse = ref<any>(null);
+const progressRate = computed(() => {
+    const current = displayCourse('currentLessons') || 0;
+    const total = displayCourse('totalLessons') || 0;
+    return total > 0 ? Math.round((current / total) * 100) : 0;
+});
 
 onMounted(async () => {
     if (props.course.courseId) {
