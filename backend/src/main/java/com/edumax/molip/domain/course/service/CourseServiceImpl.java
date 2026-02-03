@@ -6,6 +6,8 @@ import com.edumax.molip.domain.course.dto.request.ToggleZzimCourseRequest;
 import com.edumax.molip.domain.course.dto.response.CourseDetailResponse;
 import com.edumax.molip.domain.course.dto.response.GetCertificatedCourseResponse;
 import com.edumax.molip.domain.course.dto.response.GetMyCertificationResponse;
+import com.edumax.molip.domain.course.dto.response.GetMyCourseStatsResponse;
+import com.edumax.molip.domain.course.dto.response.GetMyCourseStatsResponse.SessionRecord;
 import com.edumax.molip.domain.course.dto.response.GetTrainerCourseResponse;
 import com.edumax.molip.domain.course.dto.response.GetZzimCourseResponse;
 import com.edumax.molip.domain.course.dto.response.ZzimCourseResponse;
@@ -22,8 +24,12 @@ import com.edumax.molip.domain.course.types.CourseStatus;
 import com.edumax.molip.domain.member.entity.Member;
 import com.edumax.molip.domain.member.exception.NoMemberException;
 import com.edumax.molip.domain.member.repository.MemberRepository;
+import com.edumax.molip.domain.review.entity.LearnerAnalysis;
+import com.edumax.molip.domain.review.repository.LearnerAnalysisRepository;
 import com.edumax.molip.domain.session.entity.CourseLearner;
+import com.edumax.molip.domain.session.entity.CourseLearnerSession;
 import com.edumax.molip.domain.session.entity.Session;
+import com.edumax.molip.domain.session.exception.NoCourseLearnerException;
 import com.edumax.molip.domain.session.repository.CourseLearnerRepository;
 import com.edumax.molip.domain.workspace.entity.Workspace;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
@@ -34,9 +40,12 @@ import com.edumax.molip.domain.workspace.repository.WorkspaceMemberRepository;
 import com.edumax.molip.domain.workspace.repository.WorkspaceRepository;
 import com.edumax.molip.domain.workspace.types.WorkspaceMemberRole;
 import com.edumax.molip.domain.workspace.types.WorkspaceMemberStatus;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,6 +63,7 @@ public class CourseServiceImpl implements CourseService {
 
   private final WorkspaceRepository workspaceRepository;
   private final MemberRepository memberRepository;
+  private final LearnerAnalysisRepository learnerAnalysisRepository;
 
   @Override
   @Transactional
@@ -397,5 +407,76 @@ public class CourseServiceImpl implements CourseService {
   @Override
   public List<GetMyCertificationResponse> getMyCertifications(Long memberId) {
     return List.of();
+  }
+
+  @Override
+  public GetMyCourseStatsResponse getMyCourseStats(Long courseId, Long memberId) {
+    Member member =
+        memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
+    Course course = courseRepository.findById(courseId).orElseThrow(NoCourseException::new);
+    Workspace workspace = course.getWorkspace();
+    WorkspaceMember workspaceMember =
+        workspaceMemberRepository
+            .findByMemberAndWorkspace(member, workspace)
+            .orElseThrow(NoWorkspaceException::new);
+    CourseLearner courseLearner =
+        courseLearnerRepository
+            .findByCourseAndWorkspaceMember(course, workspaceMember)
+            .orElseThrow(NoCourseLearnerException::new);
+
+    Integer totalLearningTime = 0;
+    int exitQuizAverage = 0;
+    int concentrateMyAverage = 0;
+    List<SessionRecord> sessionRecords = new ArrayList<>();
+    List<CourseLearnerSession> courseLearnerSessions = courseLearner.getCourseLearnerSessions();
+    int finishedSessionCount = 0;
+    for (CourseLearnerSession courseLearnerSession : courseLearnerSessions) {
+      Session session = courseLearnerSession.getSession();
+      Long sessionId = session.getSessionId();
+      Integer learningTime = courseLearnerSession.getAttendanceTime();
+      totalLearningTime += learningTime;
+      int concentrate = Math.round(courseLearnerSession.getAvgConcentrate());
+      concentrateMyAverage += concentrate; // 세션별 몰입도
+      Optional<LearnerAnalysis> learnerAnalysis =
+          learnerAnalysisRepository.findById(session.getSessionId());
+
+      int concentrateTotalAverage = 0;
+      boolean isProceed = learnerAnalysis.isPresent();
+      if (isProceed) {
+        concentrateTotalAverage = Math.round(learnerAnalysis.orElse(null).getAvgConcentrate());
+        finishedSessionCount++;
+      }
+
+      String title = session.getTitle();
+      LocalDate date = session.getDate();
+      Boolean isAttendance = courseLearnerSession.getIsAttendance();
+      Integer exitQuiz = courseLearnerSession.getExitTicket();
+      if (exitQuiz == null) {
+        exitQuiz = 0;
+      }
+      exitQuizAverage += exitQuiz; // 세션별 퇴실 퀴즈 점수
+      sessionRecords.add(
+          SessionRecord.builder()
+              .sessionId(sessionId)
+              .learningTime(learningTime)
+              .concentrate(concentrate)
+              .concentrateTotalAverage(concentrateTotalAverage)
+              .title(title)
+              .date(date)
+              .isAttendance(isAttendance)
+              .exitQuiz(exitQuiz)
+              .isProceed(isProceed)
+              .build());
+    }
+    if (finishedSessionCount > 0) {
+      exitQuizAverage /= finishedSessionCount; // 세션별 퇴실 퀴즈 평균
+      concentrateMyAverage /= finishedSessionCount; // 세션별 몰입도 평균
+    }
+    return GetMyCourseStatsResponse.builder()
+        .totalLearningTime(totalLearningTime)
+        .exitQuizAverage(exitQuizAverage)
+        .concentrateMyAverage(concentrateMyAverage)
+        .sessionRecords(sessionRecords)
+        .build();
   }
 }

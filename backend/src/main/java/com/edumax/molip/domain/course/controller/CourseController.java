@@ -7,6 +7,7 @@ import com.edumax.molip.domain.course.dto.request.ToggleZzimCourseRequest;
 import com.edumax.molip.domain.course.dto.response.CourseDetailResponse;
 import com.edumax.molip.domain.course.dto.response.GetCertificatedCourseResponse;
 import com.edumax.molip.domain.course.dto.response.GetMyCertificationResponse;
+import com.edumax.molip.domain.course.dto.response.GetMyCourseStatsResponse;
 import com.edumax.molip.domain.course.dto.response.GetTrainerCourseResponse;
 import com.edumax.molip.domain.course.dto.response.GetZzimCourseResponse;
 import com.edumax.molip.domain.course.dto.response.ZzimCourseResponse;
@@ -141,5 +142,11 @@ public class CourseController {
   public ResponseEntity<List<GetMyCertificationResponse>> getMyCertifications(
       @AuthenticationPrincipal MemberUserDetails memberDetails) {
     return ResponseEntity.ok(courseService.getMyCertifications(memberDetails.getMemberId()));
+  }
+
+  @GetMapping("/{courseId}/stats")
+  public ResponseEntity<GetMyCourseStatsResponse> getMyCourseStats(
+      @PathVariable Long courseId, @AuthenticationPrincipal MemberUserDetails memberDetails) {
+    return ResponseEntity.ok(courseService.getMyCourseStats(courseId, memberDetails.getMemberId()));
   }
 }

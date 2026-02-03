@@ -6,6 +6,7 @@ import com.edumax.molip.domain.course.dto.request.ToggleZzimCourseRequest;
 import com.edumax.molip.domain.course.dto.response.CourseDetailResponse;
 import com.edumax.molip.domain.course.dto.response.GetCertificatedCourseResponse;
 import com.edumax.molip.domain.course.dto.response.GetMyCertificationResponse;
+import com.edumax.molip.domain.course.dto.response.GetMyCourseStatsResponse;
 import com.edumax.molip.domain.course.dto.response.GetTrainerCourseResponse;
 import com.edumax.molip.domain.course.dto.response.GetZzimCourseResponse;
 import com.edumax.molip.domain.course.dto.response.ZzimCourseResponse;
@@ -39,4 +40,6 @@ public interface CourseService {
   List<GetTrainerCourseResponse> getTrainerCourses(Long workspaceId, Long memberId);
 
   List<GetMyCertificationResponse> getMyCertifications(Long memberId); // 일단 보류 (후순위)
+
+  GetMyCourseStatsResponse getMyCourseStats(Long courseId, Long memberId);
 }
