@@ -59,9 +59,14 @@
             </div>
             <!-- Course Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" v-if="filteredCourses.length > 0">
-                <DashboardCourseCard v-for="course in filteredCourses" :key="course.courseId" :course="course"
-                    @open-curriculum="openCurriculumModal" @enroll-course="handleEnrollCourse"
-                    @enter-course="handleEnterCourse(course.courseId)" />
+                <DashboardCourseCard 
+                    v-for="course in filteredCourses" 
+                    :key="course.courseId" 
+                    :course="course"
+                    :workspace-id="currentWorkspaceId"  @open-curriculum="openCurriculumModal" 
+                    @enroll-course="handleEnrollCourse"
+                    @enter-course="handleEnterCourse(course.courseId)" 
+                />
             </div>
             <div v-else class="text-center py-20 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                 <p class="text-slate-500">등록된 강의가 없습니다.</p>
@@ -88,7 +93,11 @@ const route = useRoute();
 const router = useRouter();
 const workspaceStore = useWorkspaceStore();
 const learnerCourseStore = useLearnerCourseStore();
-
+// 현재 워크스페이스 id
+const currentWorkspaceId = computed(() => {
+    const id = route.params.id;
+    return Array.isArray(id) ? id[0] : id;
+});
 const { workspaceStats } = storeToRefs(workspaceStore);
 const { workspaceCourses } = storeToRefs(learnerCourseStore);
 
@@ -121,12 +130,10 @@ const closeModal = () => {
 };
 
 const handleEnrollCourse = async (courseId: string | number) => {
-    // 1. URL에서 워크스페이스 ID 추출 및 규격화(Normalization)
-    const rawId = route.params.id;
-    const workspaceId = Array.isArray(rawId) ? rawId[0] : rawId;
-    
+    // 1. 워크스페이스 ID
+    const workspaceId = currentWorkspaceId.value;
     if (!workspaceId) return;
-
+    
     // 2. 신청할 강의 정보 확인
     const course = workspaceCourses.value.find(c => String(c.courseId) === String(courseId));
     if (!course) return;

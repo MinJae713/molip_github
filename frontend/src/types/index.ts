@@ -270,3 +270,14 @@ export interface ChangeRoleRequest {
   workspaceMemberId: number;
   workspaceMemberRole: "TRAINER" | "LEARNER"; // 오타 방지용 안전장치
 }
+
+///////////////////////////////////////////////////////
+export interface ZzimCourse {
+  zzimId: number;
+  title: string;
+  description: string;
+  subCategory: string;
+  courseTime: number;
+  learnerCount: number;
+  isApplied: boolean;
+}

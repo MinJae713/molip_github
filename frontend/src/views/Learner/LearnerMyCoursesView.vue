@@ -1,6 +1,5 @@
 <template>
     <div class="space-y-8">
-        <!-- Breadcrumb -->
         <nav aria-label="Breadcrumb" class="flex text-sm text-slate-500">
             <ol class="flex items-center space-x-2">
                 <li><router-link :to="homeRoute" class="hover:text-indigo-600">
@@ -12,14 +11,11 @@
                 <li class="font-medium text-indigo-600">내 강의실</li>
             </ol>
         </nav>
-        <!-- 페이지 제목 -->
         <div>
             <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">내 강의실</h1>
-            <!-- 통계 카드 -->
             <LearnerMyCoursesStats :ongoingCount="ongoingCourses.length" :completedCount="completedCourses.length"
-                :attendanceRate=0 />
+                :attendanceRate="0" />
         </div>
-        <!-- 탭 네비게이션 -->
         <div class="border-b border-slate-200">
             <nav aria-label="Tabs" class="flex gap-8">
                 <a v-for="tab in tabs" :key="tab.id" :class="[
@@ -41,13 +37,15 @@
             </nav>
         </div>
 
-        <!-- 강의 목록 -->
         <div v-if="displayedCourses.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            <LearnerMyCourseCard v-for="course in displayedCourses" :key="course.courseId" :course="course"
+            <LearnerMyCourseCard 
+                v-for="course in displayedCourses" 
+                :key="(course as any).courseId || (course as any).zzimId" 
+                :course="course as any" 
+                :workspace-id="Array.isArray(workspaceId) ? workspaceId[0] : workspaceId"
                 @enter-course="handleEnterCourse" />
         </div>
 
-        <!-- 데이터 없음 안내 -->
         <div v-else class="bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center">
             <div
                 class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
@@ -62,6 +60,7 @@
         </div>
     </div>
 </template>
+
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -77,9 +76,10 @@ const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
 const activeTab = ref('ongoing');
-const { workspaceCourses, myEnrolledCourses, myLikedCourses } = storeToRefs(courseStore);
+const { myEnrolledCourses, myLikedCourses } = storeToRefs(courseStore);
 const { user } = storeToRefs(userStore);
 const workspaceId = computed(() => route.params.id);
+
 // 현재 route에 따라 home 경로 결정
 const homeRoute = computed(() => {
     const isTrainer = route.name?.toString().includes('Trainer');
@@ -89,47 +89,51 @@ const homeRoute = computed(() => {
     };
 });
 
-// 1. 운영 중인 과정: 현재 수업 중인(PROCEED) 상태
+// 1. 운영 중인 과정
 const ongoingCourses = computed(() =>
     myEnrolledCourses.value.filter(course =>
-        course.status === "PROCEED"
+        course.status === "PROCEED" || course.status === "INVITE"
     )
 );
 
-// 2. 종료된 과정: 이미 강의가 끝난(FINISH) 상태
+// 2. 종료된 과정
 const completedCourses = computed(() =>
     myEnrolledCourses.value.filter(course =>
         course.status === "FINISH"
     )
 );
 
-const likedCoursesCount = computed(() => likedCourses.value.length);
+// 3. 찜한 과정 (computed로 깔끔하게 정리)
 const likedCourses = computed(() => myLikedCourses.value);
 
 // 탭별 동적 카운트
 const tabs = computed(() => [
     { id: 'ongoing', label: '운영 중인 과정', count: ongoingCourses.value.length },
-    { id: 'liked', label: '찜한 과정', count: likedCoursesCount },
+    { id: 'liked', label: '찜한 과정', count: likedCourses.value.length }, // [수정] count 로직 수정
     { id: 'completed', label: '종료된 과정', count: completedCourses.value.length }
 ]);
 
 onMounted(async () => {
-    // 내 강의 목록과 이번달 출석률 불러오기
     const wsId = Array.isArray(workspaceId.value) ? workspaceId.value[0] : workspaceId.value;
     if (wsId) {
-        await courseStore.fetchMyEnrolledCourses(wsId);
+        // [수정] 찜 목록과 수강 목록을 동시에 로드
+        await Promise.all([
+            courseStore.fetchMyEnrolledCourses(wsId),
+            courseStore.fetchLikeCourses(wsId)
+        ]);
     }
 });
+
 const displayedCourses = computed(() => {
     switch (activeTab.value) {
         case 'ongoing': return ongoingCourses.value;
-        // case 'liked': return likedCourses.value;
+        case 'liked': return likedCourses.value;
         case 'completed': return completedCourses.value;
         default: return [];
     }
 });
+
 const handleEnterCourse = (courseId: string | number) => {
-    console.log('강의실 입장:', courseId);
     router.push({
         name: 'workspaceLearnerCourseDetail',
         params: {
@@ -140,26 +144,21 @@ const handleEnterCourse = (courseId: string | number) => {
 };
 
 const handleEnrollCourse = async (courseId: string | number) => {
-    if (confirm('이 과정을 수항신청하시겠습니까?')) {
-        const success = await courseStore.enrollCourse(courseId, user.value.memberId);
+    if (confirm('이 과정을 수강신청하시겠습니까?')) {
+        // [수정] 스토어 enrollCourse 인자 순서 보정
+        const success = await courseStore.enrollCourse(courseId, Array.isArray(workspaceId.value) ? workspaceId.value[0] : workspaceId.value);
         if (success) {
             alert('수강신청이 성공적으로 완료되었습니다. 관리자 승인을 기다려주세요.');
-            // 목록 새로고침
             const wsId = Array.isArray(workspaceId.value) ? workspaceId.value[0] : workspaceId.value;
-            if (wsId) {
-                await courseStore.fetchMyEnrolledCourses(wsId, user.value.memberId, 'LEARNER');
-            }
+            if (wsId) await courseStore.fetchMyEnrolledCourses(wsId);
         } else {
             alert('수강신청에 실패했습니다. 다시 시도해주세요.');
         }
     }
 };
+
 const handleAddCourse = () => {
-    console.log('새 과정 신청');
-    // TODO: 과정 검색 모달 열기
-};
-const handleViewRecommendation = () => {
-    console.log('추천 과정 보기');
-    // TODO: 추천 과정 페이지로 이동
+    const wsId = Array.isArray(workspaceId.value) ? workspaceId.value[0] : workspaceId.value;
+    router.push({ name: 'workspaceLearner', params: { id: wsId } });
 };
 </script>
