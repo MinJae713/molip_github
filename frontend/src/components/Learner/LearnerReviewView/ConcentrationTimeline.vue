@@ -1,98 +1,137 @@
 <template>
-    <div class="h-full flex flex-col bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-        <!-- 상단 헤더 -->
-        <div class="flex items-center justify-between flex-none mb-6">
-            <div>
-                <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-indigo-600">monitoring</span>
-                    집중도 흐름
-                </h2>
-                <p class="text-xs text-slate-500 mt-1">세션 진행 시간에 따른 집중도 변화 그래프</p>
-            </div>
-            <!-- 범례 -->
-            <div class="flex items-center gap-4 text-xs">
-                <div class="flex items-center gap-1.5">
-                    <span class="w-3 h-3 bg-red-50 border border-red-100 dark:border-red-200"></span>
-                    <span class="text-slate-600 font-medium">집중 저조(&lt;30%)</span>
-                </div>
-                <div class="flex items-center gap-1.5">
-                    <span class="w-8 h-[2px] bg-indigo-600"></span>
-                    <span class="text-slate-600 font-medium">집중도(%)</span>
-                </div>
-            </div>
+    <div class="h-full flex flex-col bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <!-- 상단 탭 (네비게이션) -->
+        <div class="flex border-b border-slate-100 bg-slate-50/50">
+            <button 
+                @click="activeTab = 'concentration'"
+                class="flex-1 py-3 text-sm font-bold transition-all border-b-2 flex items-center justify-center gap-2"
+                :class="activeTab === 'concentration' 
+                    ? 'text-indigo-600 border-indigo-600 bg-indigo-50/30' 
+                    : 'text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-50'">
+                <span class="material-symbols-outlined text-[18px]">monitoring</span>
+                <span>집중도 흐름</span>
+            </button>
+            <button 
+                @click="activeTab = 'emotion'"
+                class="flex-1 py-3 text-sm font-bold transition-all border-b-2 flex items-center justify-center gap-2"
+                :class="activeTab === 'emotion' 
+                    ? 'text-purple-600 border-purple-600 bg-purple-50/30' 
+                    : 'text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-50'">
+                <span class="material-symbols-outlined text-[18px]">face</span>
+                <span>개인감정 타임라인</span>
+            </button>
         </div>
 
-        <!-- 차트 컨테이너 -->
-        <div class="relative flex-1 min-h-[200px] w-full" ref="chartRef" @mousemove="onMouseMove"
-            @mouseleave="onMouseLeave">
-
-            <!-- Y축 (점수) -->
-            <div
-                class="absolute left-0 top-0 bottom-6 w-8 flex flex-col justify-between text-[11px] text-slate-400 font-medium text-right pr-2 select-none">
-                <span>100</span>
-                <span>80</span>
-                <span>60</span>
-                <span>40</span>
-                <span>20</span>
-                <span>0</span>
-            </div>
-
-            <!-- 그래프 영역 -->
-            <div class="absolute left-10 right-0 top-0 bottom-6">
-                <!-- 수평 그리드 라인 (0, 20, 40, 60, 80, 100) -->
-                <div class="absolute inset-0 flex flex-col justify-between pointer-events-none z-0">
-                    <div class="w-full h-px bg-slate-100"></div>
-                    <div class="w-full h-px bg-slate-100"></div>
-                    <div class="w-full h-px bg-slate-100"></div>
-                    <div class="w-full h-px bg-slate-100"></div>
-                    <div class="w-full h-px bg-slate-100"></div>
-                    <div class="w-full h-px bg-slate-100"></div>
-                </div>
-
-                <!-- 데드존(저조 구간) 표시 -->
-                <div class="absolute inset-0 z-0">
-                    <div v-for="(zone, i) in deadZones" :key="'dz-' + i"
-                        class="absolute top-0 bottom-0 bg-red-50/80 border-x border-red-100 transition-colors hover:bg-red-100/50"
-                        :style="{ left: zone.left + '%', width: zone.width + '%' }">
+        <div class="flex-1 p-6 overflow-hidden relative">
+            <!-- 1. 집중도 흐름 탭 -->
+            <div v-if="activeTab === 'concentration'" class="h-full flex flex-col animate-fadeIn">
+                <!-- 차트 헤더 (범례 등) -->
+                <div class="flex items-center justify-between flex-none mb-6">
+                    <div>
+                        <p class="text-xs text-slate-500">세션 진행 시간에는 따른 집중도 변화 그래프</p>
+                    </div>
+                    <!-- 범례 -->
+                    <div class="flex items-center gap-3 text-[11px]">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 bg-slate-100 border border-slate-200"></span>
+                            <span class="text-slate-500">쉬는 시간</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 bg-red-50 border border-red-100"></span>
+                            <span class="text-slate-500">데드존</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-6 h-[2px] bg-indigo-600"></span>
+                            <span class="text-slate-600 font-bold">내 집중도</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- SVG 차트 -->
-                <svg class="absolute inset-0 w-full h-full overflow-visible z-10" preserveAspectRatio="none">
-                    <!-- 데이터 라인 -->
-                    <path :d="pathD" fill="none" stroke="#4F46E5" stroke-width="2" stroke-linejoin="round"
-                        stroke-linecap="round" />
+                <!-- 차트 컨테이너 -->
+                <div class="relative flex-1 min-h-[200px] w-full" ref="chartRef" @mousemove="onMouseMove" @mouseleave="onMouseLeave">
+                    
+                    <!-- Y축 (점수) -->
+                    <div class="absolute left-0 top-0 bottom-6 w-8 flex flex-col justify-between text-[11px] text-slate-400 font-medium text-right pr-2 select-none">
+                        <span>100</span>
+                        <span>80</span>
+                        <span>60</span>
+                        <span>40</span>
+                        <span>20</span>
+                        <span>0</span>
+                    </div>
 
-                    <!-- 데이터 포인트 (옵션: 마우스 근처만 보이게 하거나 항상 보이게) -->
-                    <!-- 여기서는 깔끔함을 위해 호버 시에만 포인트 표시 -->
-                </svg>
+                    <!-- 그래프 영역 -->
+                    <div class="absolute left-10 right-0 top-0 bottom-6">
+                        <!-- 수평 그리드 라인 -->
+                        <div class="absolute inset-0 flex flex-col justify-between pointer-events-none z-0">
+                            <div v-for="i in 6" :key="i" class="w-full h-px bg-slate-100"></div>
+                        </div>
 
-                <!-- 인터랙션: 툴팁 및 가이드 -->
-                <div v-if="tooltip" class="absolute top-0 bottom-0 pointer-events-none z-20"
-                    :style="{ left: tooltip.x + 'px' }">
-                    <!-- 수직선 -->
-                    <div class="absolute top-0 bottom-0 w-px bg-indigo-400 border-r border-dashed"></div>
-                    <!-- 포인트 마커 -->
-                    <div class="absolute w-2.5 h-2.5 bg-indigo-600 border-2 border-white rounded-full -translate-x-[4px]"
-                        :style="{ top: tooltip.y + 'px' }"></div>
-                    <!-- 툴팁 박스 -->
-                    <div
-                        class="absolute -top-10 left-1/2 -translate-x/2 bg-slate-800 text-white text-xs px-2 py-1.5 rounded shadow-lg whitespace-nowrap z-30">
-                        <span class="font-bold">{{ tooltip.time }}</span>
-                        <span class="mx-1 text-slate-400">|</span>
-                        <span class="text-indigo-300">{{ tooltip.score }}%</span>
+                        <!-- 데드존(저조 구간) 표시 (가장 뒤) -->
+                        <div class="absolute inset-0 z-0 pointer-events-none">
+                            <div v-for="(zone, i) in deadZones" :key="'dz-' + i"
+                                class="absolute top-0 bottom-0 bg-red-50/80 border-x border-red-100 transition-colors hover:bg-red-100/50 flex items-center justify-center pointer-events-auto group"
+                                :style="{ left: zone.left + '%', width: zone.width + '%' }">
+                                <!-- 데드존 이동 버튼 -->
+                                <button 
+                                    @click="$emit('jump-to-time', (zone.left / 100) * totalDuration * 60)"
+                                    class="opacity-0 group-hover:opacity-100 transition-all transform scale-90 group-hover:scale-100 bg-white border border-red-200 text-red-500 rounded-full px-2 py-1 shadow-sm flex items-center gap-1 text-[10px] font-bold whitespace-nowrap z-20 hover:bg-red-50"
+                                    title="이 구간으로 이동">
+                                    <span class="material-symbols-outlined text-[14px]">play_arrow</span>
+                                    <span>이동</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- SVG 차트 (중간) -->
+                        <svg class="absolute inset-0 w-full h-full overflow-visible z-10 pointer-events-none" preserveAspectRatio="none">
+                            <!-- 클래스 평균 라인 -->
+                            <path v-if="averagePathD" :d="averagePathD" fill="none" stroke="#94a3b8" stroke-width="2" 
+                                stroke-dasharray="4 4" stroke-linejoin="round" stroke-linecap="round" class="opacity-60" />
+                            <!-- 내 집중도 라인 -->
+                            <path :d="pathD" fill="none" stroke="#4F46E5" stroke-width="2" stroke-linejoin="round"
+                                stroke-linecap="round" />
+                        </svg>
+
+                        <!-- 쉬는 시간(Rest Period) 표시 (오버레이 - 가장 앞) -->
+                        <div class="absolute inset-0 z-20 pointer-events-none">
+                            <div v-for="(period, i) in restPeriodStyles" :key="'rp-' + i"
+                                class="absolute top-0 bottom-0 bg-slate-100/90 border-x border-slate-200 flex items-center justify-center overflow-hidden"
+                                :style="period.style">
+                            </div>
+                        </div>
+
+                        <!-- 툴팁 -->
+                        <div v-if="tooltip" class="absolute top-0 bottom-0 pointer-events-none z-30"
+                            :style="{ left: tooltip.x + 'px' }">
+                            <div class="absolute top-0 bottom-0 w-px bg-indigo-400 border-r border-dashed"></div>
+                            <div class="absolute w-2.5 h-2.5 bg-indigo-600 border-2 border-white rounded-full -translate-x-[4px]"
+                                :style="{ top: tooltip.y + 'px' }"></div>
+                            <div class="absolute -top-10 left-1/2 -translate-x/2 bg-slate-800 text-white text-xs px-2 py-1.5 rounded shadow-lg whitespace-nowrap">
+                                <span class="font-bold">{{ tooltip.time }}</span>
+                                <span class="mx-1 text-slate-400">|</span>
+                                <span class="text-indigo-300">{{ tooltip.score }}%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- X축 (시간) -->
+                    <div class="absolute bottom-0 left-10 right-0 h-6 flex justify-between items-end text-[11px] text-slate-400 font-medium select-none">
+                        <span>00:00</span>
+                        <span>{{ formatTime(totalDuration * 0.25) }}</span>
+                        <span>{{ formatTime(totalDuration * 0.5) }}</span>
+                        <span>{{ formatTime(totalDuration * 0.75) }}</span>
+                        <span>{{ formatTime(totalDuration) }}</span>
                     </div>
                 </div>
             </div>
 
-            <!-- X축 (시간) -->
-            <div
-                class="absolute bottom-0 left-10 right-0 h-6 flex justify-between items-end text-[11px] text-slate-400 font-medium select-none">
-                <span>00:00</span>
-                <span>{{ formatTime(totalDuration * 0.25) }}</span>
-                <span>{{ formatTime(totalDuration * 0.5) }}</span>
-                <span>{{ formatTime(totalDuration * 0.75) }}</span>
-                <span>{{ formatTime(totalDuration) }}</span>
+            <!-- 2. 개인감정 타임라인 탭 -->
+            <div v-else-if="activeTab === 'emotion'" class="h-full animate-fadeIn">
+                <EmotionTimeline 
+                    :duration="duration"
+                    :emotion-data="emotionData"
+                />
             </div>
         </div>
     </div>
@@ -100,6 +139,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import EmotionTimeline from './EmotionTimeline.vue';
 
 // props 정의
 interface DataPoint {
@@ -107,13 +147,27 @@ interface DataPoint {
     value: number;
 }
 
+interface EmotionSegment {
+    start: number;
+    end: number;
+    type: 'happy' | 'surprise' | 'fear' | 'disgust' | 'sad' | 'anger' | 'neutral';
+}
+
 const props = withDefaults(defineProps<{
     data?: DataPoint[];
+    averageData?: DataPoint[]; // 클래스 평균 데이터
     duration?: number; // 분 단위
+    restPeriods?: { start: number, end: number }[]; // 쉬는 시간 (분 단위)
+    emotionData?: EmotionSegment[];
 }>(), {
     data: () => [],
-    duration: 60
+    averageData: () => [],
+    duration: 60,
+    restPeriods: () => [],
+    emotionData: () => []
 });
+
+const activeTab = ref<'concentration' | 'emotion'>('concentration');
 
 // 샘플 데이터 (데이터가 없을 경우 사용)
 const defaultData: DataPoint[] = [
@@ -183,6 +237,22 @@ const deadZones = computed(() => {
     return zones;
 });
 
+// 쉬는 시간 스타일 계산
+const restPeriodStyles = computed(() => {
+    return props.restPeriods.map(period => {
+        const left = (period.start / totalDuration.value) * 100;
+        const width = ((period.end - period.start) / totalDuration.value) * 100;
+        return {
+            style: {
+                left: `${left}%`,
+                width: `${width}%`
+            }
+        };
+    });
+});
+
+defineEmits(['jump-to-time']);
+
 // 차트 크기 반응형 감지
 const chartRef = ref<HTMLDivElement | null>(null);
 const width = ref(0);
@@ -191,8 +261,6 @@ const height = ref(0);
 const updateSize = () => {
     if (chartRef.value) {
         // padding/axis area 제외하고 실제 그래프 영역 크기 계산
-        // left-10 (40px)
-        // bottom-6 (24px)
         const rect = chartRef.value.getBoundingClientRect();
         width.value = rect.width - 40;
         height.value = rect.height - 24;
@@ -212,31 +280,25 @@ const pathD = computed(() => {
     if (width.value === 0 || height.value === 0 || chartData.value.length === 0) return '';
 
     const points = chartData.value.map(pt => {
-        // x: 시간 비율 * 너비
         const x = (pt.minute / totalDuration.value) * width.value;
-        // y: (1 - 점수 비율) * 높이
         const y = height.value - (pt.value / 100) * height.value;
         return { x, y };
     });
 
-    // 포인트가 2개 미만이면 패스 생성 불가
     if (points.length < 2) return '';
 
     const firstPoint = points[0];
-    if (!firstPoint) return ''; // 방어 코드
+    if (!firstPoint) return '';
 
-    // 부드러운 곡선 (Catmull-Rom or Cubic Bezier)
     let d = `M ${firstPoint.x} ${firstPoint.y}`;
 
     for (let i = 0; i < points.length - 1; i++) {
         const p1 = points[i];
         const p2 = points[i + 1];
 
-        if (!p1 || !p2) continue; // 방어 코드
+        if (!p1 || !p2) continue;
 
-        // p0: 이전 점이 없으면 p1 사용
         const p0 = points[i - 1] || p1;
-        // p3: 다다음 점이 없으면 p2 사용
         const p3 = points[i + 2] || p2;
 
         const cp1x = p1.x + (p2.x - p0.x) * 0.2;
@@ -250,29 +312,58 @@ const pathD = computed(() => {
     return d;
 });
 
+// 평균 데이터 SVG Path 생성
+const averagePathD = computed(() => {
+    if (width.value === 0 || height.value === 0 || !props.averageData || props.averageData.length === 0) return '';
+
+    const points = props.averageData.map(pt => {
+        const x = (pt.minute / totalDuration.value) * width.value;
+        const y = height.value - (pt.value / 100) * height.value;
+        return { x, y };
+    });
+
+    if (points.length < 2) return '';
+
+    const firstPoint = points[0];
+    if (!firstPoint) return '';
+
+    let d = `M ${firstPoint.x} ${firstPoint.y}`;
+
+    for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+
+        if (!p1 || !p2) continue;
+
+        const p0 = points[i - 1] || p1;
+        const p3 = points[i + 2] || p2;
+
+        const cp1x = p1.x + (p2.x - p0.x) * 0.2;
+        const cp1y = p1.y + (p2.y - p0.y) * 0.2;
+        const cp2x = p2.x - (p3.x - p1.x) * 0.2;
+        const cp2y = p2.y - (p3.y - p1.y) * 0.2;
+
+        d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+    }
+    return d;
+});
+
 // 툴팁 로직
 const tooltip = ref<{ x: number, y: number, time: string, score: number } | null>(null);
 
 const onMouseMove = (e: MouseEvent) => {
     if (!chartRef.value || width.value === 0) return;
 
-    // 마우스 위치 계산 (그래프 영역 기준)
     const rect = chartRef.value.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left - 40; // 왼쪽 마진 40px
+    const offsetX = e.clientX - rect.left - 40;
 
     if (offsetX < 0 || offsetX > width.value) {
         tooltip.value = null;
         return;
     }
 
-    // 마우스 위치에 해당하는 시간 계산
     const timeAtCursor = (offsetX / width.value) * totalDuration.value;
-
-    // 가장 가까운 데이터 포인트 찾기 (또는 보간)
-    // 여기서는 보간(Linear Interpolation) 사용
     const val = interpolateValue(timeAtCursor);
-
-    // Y좌표 계산
     const y = height.value - (val / 100) * height.value;
 
     tooltip.value = {
@@ -294,7 +385,7 @@ const interpolateValue = (t: number) => {
     const first = data[0];
     const last = data[data.length - 1];
 
-    if (!first || !last) return 0; // 방어 코드
+    if (!first || !last) return 0;
 
     if (t <= first.minute) return first.value;
     if (t >= last.minute) return last.value;
@@ -313,10 +404,19 @@ const interpolateValue = (t: number) => {
     return 0;
 };
 
-// 유틸리티
 function formatTime(totalMinutes: number) {
     const mm = Math.floor(totalMinutes);
     const ss = Math.floor((totalMinutes - mm) * 60);
     return `${mm.toString().padStart(2, '0')}:${ss.toString().padStart(2, '0')}`;
 }
 </script>
+
+<style scoped>
+.animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>

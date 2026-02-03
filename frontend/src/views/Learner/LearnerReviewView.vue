@@ -1,7 +1,7 @@
 <template>
     <div class="fixed inset-0 z-50 bg-white flex flex-col font-sans">
         <ReviewHeader :title="sessionStore.currentSessionInfo?.title" session-number="01" @close="$emit('close')" />
-        <main class="flex-1 overflow-hidden bg-white">
+        <main class="flex-1 bg-white min-h-0 relative z-0">
             <div class="h-full flex flex-col lg:flex-row">
                 <!-- 메인 콘텐츠 -->
                 <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
@@ -41,11 +41,14 @@ import { useRoute } from 'vue-router';
 // 상태 관리
 import { useLearnerSessionStore } from '@/stores/learnerSession';
 import { useWorkspaceStore } from '@/stores/workspace';
+import { useUserStore } from '@/stores/user';
 
 // 라우터
 const route = useRoute();
 // 상태 관리
+// 상태 관리
 const sessionStore = useLearnerSessionStore();
+const userStore = useUserStore();
 // props
 defineProps<{ title: string }>();
 defineEmits(['close']);
@@ -60,45 +63,16 @@ const mockRestPeriods = [
 ];
 
 // 타임라인용 샘플 데이터 (내 집중도)
-const mockTimelineData = ref([
-    { minute: 0, value: 50 },
-    { minute: 5, value: 55 },
-    { minute: 10, value: 70 },
-    { minute: 15, value: 85 },
-    { minute: 20, value: 60 },
-    { minute: 25, value: 45 },
-    { minute: 28, value: 20 }, // 데드존 진입
-    { minute: 30, value: 15 }, // 저점
-    { minute: 35, value: 25 },
-    { minute: 38, value: 40 }, // 탈출
-    { minute: 40, value: 75 },
-    { minute: 45, value: 90 },
-    { minute: 50, value: 80 },
-    { minute: 55, value: 65 },
-    { minute: 60, value: 55 },
-]);
+// 타임라인용 샘플 데이터 (내 집중도)
+const mockTimelineData = ref<{ minute: number, value: number }[]>([]);
 
 // 타임라인용 샘플 데이터 (클래스 평균)
-const mockAverageData = [
-    { minute: 0, value: 45 },
-    { minute: 5, value: 50 },
-    { minute: 10, value: 60 },
-    { minute: 15, value: 65 },
-    { minute: 20, value: 70 },
-    { minute: 25, value: 65 },
-    { minute: 30, value: 60 },
-    { minute: 35, value: 55 },
-    { minute: 40, value: 60 },
-    { minute: 45, value: 70 },
-    { minute: 50, value: 65 },
-    { minute: 55, value: 60 },
-    { minute: 60, value: 55 },
-];
+const mockAverageData = ref<{ minute: number, value: number }[]>([]);
 
 // 무드 차트용 개인 데이터
-const mockPersonalMood = ref([0.8, 0.6, 0.4, 0.3, 0.2, 0.5, 0.7]);
+const mockPersonalMood = ref([0, 0, 0, 0, 0, 0, 0]);
 // 무드 차트용 클래스 데이터
-const mockClassMood = [0.5, 0.5, 0.6, 0.4, 0.4, 0.5, 0.5];
+const mockClassMood = ref([0, 0, 0, 0, 0, 0, 0]);
 
 // 타임라인 점프 핸들러
 const handleJumpToTime = (timeInSeconds: number) => {
@@ -112,7 +86,7 @@ onMounted(async () => {
     if (sessionId) {
         console.log(sessionId);
         await sessionStore.fetchSessionInfo(sessionId);
-        await loadReviewData(sessionId);
+        await loadReviewData("10002");
     }
 });
 
@@ -122,104 +96,149 @@ import { fetchReviewData, type MockDataItem } from '@/api/review';
 
 const mockEmotionData = ref<{ start: number, end: number, type: 'happy' | 'surprise' | 'fear' | 'disgust' | 'sad' | 'anger' | 'neutral' }[]>([]);
 
-async function loadReviewData(sessionId: string) {
-    try {
-        const response = await fetchReviewData(sessionId);
-        const rawData = response.message;
+// Data Processing Helper
+function processTimelineData(data: MockDataItem[]) {
+    // 1. Process Timeline (Concentration)
+    const timeline: { minute: number, value: number }[] = [];
+    data.forEach((item: MockDataItem) => {
+        timeline.push({
+            minute: item.timeline / 60,
+            value: item.concentrateValue
+        });
+    });
+
+    // 2. Process Emotion Distribution (for Radar Chart)
+    const emotionCounts = {
+        happy: 0, surprise: 0, fear: 0, disgust: 0, sad: 0, anger: 0, neutral: 0
+    };
+    let totalValid = 0;
+
+    data.forEach((item: MockDataItem) => {
+        let name = item.emotionName;
+        if (name === 'angry') name = 'anger';
         
-        if (!rawData || rawData.length === 0) return;
-
-        // 1. Process Timeline Data (Concentration)
-        const processedTimeline: { minute: number, value: number }[] = [];
-        const lastItem = rawData[rawData.length - 1];
-        
-        if (lastItem) {
-            rawData.forEach((item: MockDataItem) => {
-                processedTimeline.push({
-                    minute: item.timeline / 60, // Convert seconds to minutes
-                    value: item.concentrateValue
-                });
-            });
-            
-            mockTimelineData.value = processedTimeline;
-
-            // 2. Process Emotion Segments
-            const segments: { start: number, end: number, type: 'happy' | 'surprise' | 'fear' | 'disgust' | 'sad' | 'anger' | 'neutral' }[] = [];
-            const firstItem = rawData[0];
-
-            if (firstItem) {
-                let currentType = firstItem.emotionName;
-                if (currentType === 'angry') currentType = 'anger';
-
-                let startTime = firstItem.timeline / 60;
-                const maxTime = lastItem.timeline;
-
-                for (let i = 1; i < rawData.length; i++) {
-                    const item = rawData[i];
-                    if (!item) continue;
-                    
-                    let type = item.emotionName;
-                    if (type === 'angry') type = 'anger'; 
-
-                    const prevItem = rawData[i-1];
-                    let prevType = prevItem ? prevItem.emotionName : currentType;
-                    if (prevType === 'angry') prevType = 'anger';
-
-                    if (type !== prevType) {
-                        // End current segment
-                        const endTime = item.timeline / 60;
-                        segments.push({
-                            start: startTime,
-                            end: endTime,
-                            type: prevType as any
-                        });
-                        // Start new segment
-                        currentType = type;
-                        startTime = endTime;
-                    }
-                }
-                // Add last segment
-                segments.push({
-                    start: startTime,
-                    end: maxTime / 60,
-                    type: currentType as any
-                });
-                
-                mockEmotionData.value = segments;
-            }
-
-            // 3. Process Personal Mood (Radar Chart)
-            const emotionCounts = {
-                happy: 0, surprise: 0, fear: 0, disgust: 0, sad: 0, anger: 0, neutral: 0
-            };
-            let totalValid = 0;
-
-            rawData.forEach((item: MockDataItem) => {
-                let name = item.emotionName;
-                if (name === 'angry') name = 'anger';
-                
-                if (name && name in emotionCounts) {
-                    emotionCounts[name as keyof typeof emotionCounts]++;
-                    totalValid++;
-                }
-            });
-
-            if (totalValid > 0) {
-                mockPersonalMood.value = [
-                    emotionCounts.happy / totalValid,
-                    emotionCounts.surprise / totalValid,
-                    emotionCounts.fear / totalValid,
-                    emotionCounts.disgust / totalValid,
-                    emotionCounts.sad / totalValid,
-                    emotionCounts.anger / totalValid,
-                    emotionCounts.neutral / totalValid
-                ];
-            }
+        if (name && name in emotionCounts) {
+            emotionCounts[name as keyof typeof emotionCounts]++;
+            totalValid++;
         }
-    } catch (error) {
-        console.error("Failed to load review data:", error);
-    }
+    });
+
+    const moodDistribution = totalValid > 0 ? [
+        emotionCounts.happy / totalValid,
+        emotionCounts.surprise / totalValid,
+        emotionCounts.fear / totalValid,
+        emotionCounts.disgust / totalValid,
+        emotionCounts.sad / totalValid,
+        emotionCounts.anger / totalValid,
+        emotionCounts.neutral / totalValid
+    ] : [0, 0, 0, 0, 0, 0, 0];
+
+    return { timeline, moodDistribution };
 }
 
+// 3. Process Emotion Segments (Timeline bars) - Only for Learner
+function processEmotionSegments(data: MockDataItem[]) {
+    const segments: { start: number, end: number, type: 'happy' | 'surprise' | 'fear' | 'disgust' | 'sad' | 'anger' | 'neutral' }[] = [];
+    if (!data || data.length === 0) return segments;
 
+    const firstItem = data[0];
+    const lastItem = data[data.length - 1];
+    
+    let currentType = firstItem.emotionName;
+    if (currentType === 'angry') currentType = 'anger';
+
+    let startTime = firstItem.timeline / 60;
+    const maxTime = lastItem.timeline;
+
+    for (let i = 1; i < data.length; i++) {
+        const item = data[i];
+        if (!item) continue;
+        
+        let type = item.emotionName;
+        if (type === 'angry') type = 'anger'; 
+
+        const prevItem = data[i-1];
+        let prevType = prevItem ? prevItem.emotionName : currentType;
+        if (prevType === 'angry') prevType = 'anger';
+
+        if (type !== prevType) {
+            const endTime = item.timeline / 60;
+            segments.push({
+                start: startTime,
+                end: endTime,
+                type: prevType as any
+            });
+            currentType = type;
+            startTime = endTime;
+        }
+    }
+    
+    segments.push({
+        start: startTime,
+        end: maxTime / 60,
+        type: currentType as any
+    });
+    
+    return segments;
+}
+
+async function loadReviewData(sessionId: string) {
+    try {
+        if (!userStore.user.memberId) {
+            console.warn("[Review] No memberId found, attempting to fetch user info...");
+            await userStore.fetchUserInfo();
+        }
+        
+        const memberId = "10002";
+        console.log(`[Review] Fetching data for session: ${sessionId}, member: ${memberId}`);
+        
+        if (!memberId) {
+            console.error("[Review] Failed to get memberId even after fetch.");
+            return;
+        }
+
+        const response = await fetchReviewData(sessionId, memberId);
+        console.log("[Review] Raw API Response:", response);
+        
+        if (response) {
+            console.log("[Review] Response Keys:", Object.keys(response));
+        }
+
+        // Response format assumed: { leanerTimelineData: [], TrainerTimelineData: [] }
+         // 주의: 백엔드에서 'leaner'(오타)로 오는지 'learner'(정상)로 오는지 확인 필요
+        const { leanerTimelineData, TrainerTimelineData } = response;
+        console.log("[Review] Destructured Data - leanerTimelineData:", leanerTimelineData);
+        console.log("[Review] Destructured Data - TrainerTimelineData:", TrainerTimelineData);
+
+        // Process Learner Data
+        if (leanerTimelineData && leanerTimelineData.length > 0) {
+            const leanerProcessed = processTimelineData(leanerTimelineData);
+            console.log("[Review] Processed Leaner Data:", leanerProcessed);
+
+            mockTimelineData.value = leanerProcessed.timeline;
+            mockPersonalMood.value = leanerProcessed.moodDistribution;
+            
+            // Emotion segments for timeline
+            const segments = processEmotionSegments(leanerTimelineData);
+            console.log("[Review] Leaner Emotion Segments:", segments);
+            mockEmotionData.value = segments;
+        } else {
+            console.warn("[Review] No leanerTimelineData found.");
+        }
+
+        // Process Trainer Data (Class Average)
+        if (TrainerTimelineData && TrainerTimelineData.length > 0) {
+            const trainerProcessed = processTimelineData(TrainerTimelineData);
+            console.log("[Review] Processed Trainer Data:", trainerProcessed);
+
+            mockAverageData.value = trainerProcessed.timeline;
+            mockClassMood.value = trainerProcessed.moodDistribution;
+        } else {
+            console.warn("[Review] No TrainerTimelineData found.");
+        }
+
+    } catch (error) {
+        console.error("[Review] Failed to load review data:", error);
+    }
+}
 </script>
