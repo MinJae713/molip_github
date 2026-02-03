@@ -15,7 +15,7 @@ const Janus = JanusPkg?.Janus || (JanusPkg as any);
 
 // 화상회의 API 클라이언트
 const videoApi = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 5000,
 });
 
@@ -108,10 +108,14 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
 
   const selectedStudentId = ref<string | null>(null); // PIP에 띄울 학생 ID (string)
 
+  // Chat & QA Management
+  const chatList = ref<any[]>([]); // 채팅 메시지 목록
+  const qaList = ref<any[]>([]); // 질문/답변 메시지 목록
+
   // --- Actions ---
 
   async function initJanus(id: string | number) {
-    sessionId.value = 7;
+    sessionId.value = id;
     try {
       const res = await videoApi.get(`/session/${id}/connection`);
       roomInfo.value = {
@@ -247,6 +251,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
 
           // [New] 분석 시작 API 호출
           try {
+            console.log("Starting analysis for session", sessionId.value);
             await videoApi.post(`/review/start/analysis/${sessionId.value}`);
             console.log("Analysis Started");
           } catch (e) {
@@ -329,22 +334,17 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
         window.location.protocol === "https:" ? "wss://" : "ws://";
 
       let wsHost = window.location.hostname; // Fallback default
-      let apiBase = "i14a309.p.ssafy.io";
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
       // 프로토콜이 없으면 https:// 붙여서 파싱 시도
-      if (apiBase && !apiBase.startsWith("http")) {
-        apiBase = `https://${apiBase}`;
-      }
-
-      if (apiBase) {
+      if (apiBaseUrl) {
         try {
-          const urlObj = new URL(apiBase);
+          const urlObj = new URL(apiBaseUrl);
           wsHost = urlObj.host;
         } catch (e) {
           console.warn("Invalid API URL, using default");
         }
       }
-
       const wsUrl = `${protocol}${wsHost}/voice/${sessionId.value}`;
       console.log("Connecting Voice WS:", wsUrl);
 
@@ -580,5 +580,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     studentStreams,
     selectedStudentId,
     selectStudent,
+    chatList,
+    qaList,
   };
 });

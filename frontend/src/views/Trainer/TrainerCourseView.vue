@@ -63,12 +63,6 @@ onMounted(async () => {
     }
 });
 
-
-
-
-
-
-
 // 테스트용 임시 코드
 import api from "@/api";
 import { useTrainerLiveStore } from '@/stores/trainerlive';

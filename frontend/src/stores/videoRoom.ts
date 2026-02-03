@@ -121,6 +121,19 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
   const userRole = computed(() => "LEARNER"); // TEST ONLY
   const publishingCam = ref(false);
 
+  // Student Monitoring (for Trainer)
+  const studentStreams = ref<Map<string, MediaStream>>(new Map());
+  const participants = ref<
+    Array<{
+      id: string | number;
+      name: string;
+      avatar?: string;
+      concentrationScore: number;
+      isMicOn: boolean;
+    }>
+  >([]);
+  const selectedStudentId = ref<string | null>(null);
+
   // --- Actions ---
 
   /**
@@ -545,6 +558,15 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
   }
 
   /**
+   * 학생 선택 (모니터링)
+   */
+  function selectStudent(studentId: string) {
+    selectedStudentId.value = studentId;
+    console.log(`[VideoRoom] 학생 선택됨: ${studentId}`);
+    // TODO: Update PIP stream to show selected student's camera
+  }
+
+  /**
    * 테스트용 Mock Stream
    */
   function simulateRemoteStream(type: "main" | "pip") {
@@ -672,5 +694,10 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
     setAudioEnabled,
     setVideoEnabled,
     simulateRemoteStream,
+    // Student Monitoring
+    studentStreams,
+    participants,
+    selectedStudentId,
+    selectStudent,
   };
 });

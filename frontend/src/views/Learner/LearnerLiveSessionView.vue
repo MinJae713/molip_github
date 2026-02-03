@@ -23,7 +23,8 @@
                 <EngagementStats :engagementScore="engagementScore" :currentEmotion="currentEmotion"
                     :focusStatus="focusStatus" />
                 <!-- 채팅/질문 -->
-                <LiveChatContainer />
+                <!-- 채팅/질문 -->
+                <LiveChatContainer :roomId="(route.params.sessionId as string)" />
             </LiveSidebar>
         </main>
     </div>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useTrainerLiveStore } from '@/stores/trainerlive';
 
 // 스토어
@@ -21,10 +21,10 @@ import SessionEmotionAnalysis from '@/components/Live/AI/SessionEmotionAnalysis.
 // 사이드바 컴포넌트
 import SidebarStats from '@/components/Live/Sidebar/SidebarStats.vue';
 import SidebarTabs from '@/components/Live/Sidebar/SidebarTabs.vue';
-import ChatPanel from '@/components/Live/Sidebar/ChatPanel.vue';
-import QnAPanel from '@/components/Live/Sidebar/QnAPanel.vue';
+import TrainerLiveChatContainer from '@/components/Live/Sidebar/TrainerLiveChatContainer.vue';
 
 const router = useRouter();
+const route = useRoute();
 
 // --- UI 상태 관리 ---
 const isEndModalOpen = ref(false); // 수업 종료 확인 모달
@@ -36,9 +36,8 @@ const warningCount = computed(() => trainerLiveStore.participants.filter(p => p.
 const absentCount = computed(() => trainerLiveStore.participants.filter(p => p.status === 'away').length);
 
 onMounted(async () => {
-  // 초기 데이터 로드 (실제 환경에 맞게 전달)
-  // 세션 ID: 1 (테스트용)
-  await trainerLiveStore.initJanus('7');
+  const sessionId = route.params.sessionId as string;
+  await trainerLiveStore.initJanus(sessionId);
 });
 
 // --- 수업 종료 로직 ---
@@ -83,25 +82,22 @@ const handleEndSession = async () => {
 
         <!-- 탭 별 콘텐츠 영역 (공간 자동 차지) -->
         <div class="flex-1 overflow-hidden flex flex-col bg-white">
-          <Transition name="fade" mode="out-in">
-            <!-- 1. 참여자 상태 목록 -->
-            <div v-if="activeTab === 'status'" class="flex-1 overflow-y-auto p-7 pt-4 space-y-2 custom-scrollbar">
-              <div v-if="trainerLiveStore.participants.length > 0" class="flex flex-col gap-2">
-                <ParticipantItem v-for="p in trainerLiveStore.participants" :key="p.id" :participant="p"
-                  @click="trainerLiveStore.selectStudent(p.id)"
-                  class="cursor-pointer hover:ring-2 hover:ring-indigo-100 transition-all rounded-2xl active:scale-[0.98]" />
-              </div>
-              <div v-else class="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
-                <span class="material-symbols-outlined text-5xl mb-2">group_off</span>
-                <p class="text-sm font-medium tracking-tight">참여자가 없습니다.</p>
-              </div>
-            </div>
+          <!-- 1. 참여자 상태 목록 (v-show로 제어) -->
+          <div v-show="activeTab === 'status'" class="flex-1 overflow-hidden">
+            <ParticipantItem />
+          </div>
 
-            <!-- 2. 채팅 패널 -->
-            <ChatPanel v-else-if="activeTab === 'chat'" />
-            <!-- 3. 질문 패널 -->
-            <QnAPanel v-else />
-          </Transition>
+          <!-- 2. 채팅/질문 패널 영역 (Transition으로 제어) -->
+          <div v-show="activeTab !== 'status'" class="flex-1 overflow-hidden">
+            <Transition name="fade" mode="out-in">
+              <!-- 2-1. 채팅 패널 -->
+              <TrainerLiveChatContainer v-if="activeTab === 'chat'" key="tab-chat"
+                :roomId="(route.params.sessionId as string)" :viewType="'chat'" />
+              <!-- 2-2. 질문 패널 -->
+              <TrainerLiveChatContainer v-else key="tab-qa" :roomId="(route.params.sessionId as string)"
+                :viewType="'qa'" />
+            </Transition>
+          </div>
         </div>
 
         <!-- 하단 섹션: 학생 모니터링 (동적) & 조작 패널 -->
@@ -113,7 +109,6 @@ const handleEndSession = async () => {
               <StudentMonitor />
             </div>
           </Transition>
-
           <LiveControlPanel />
         </div>
       </aside>

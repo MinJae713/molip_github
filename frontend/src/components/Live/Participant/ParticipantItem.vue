@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
-import { useVideoRoomStore } from '@/stores/videoRoom';
+import { useTrainerLiveStore } from '@/stores/trainerlive';
 
-const videoRoomStore = useVideoRoomStore();
+const trainerLiveStore = useTrainerLiveStore();
 
 /** 1. 실시간 카메라 송출 여부 확인 */
 const isPublishing = (studentId: string | number) => {
-  return videoRoomStore.studentStreams.has(String(studentId));
+  return trainerLiveStore.studentStreams.has(String(studentId));
 };
 
 /** 2. 집중도 경고 기준 (예: 40% 미만일 때) */
@@ -16,7 +16,7 @@ const isLowConcentration = (score: number) => score < 40;
 const handleMonitor = (studentId: string | number) => {
   // 카메라를 켠 학생만 모니터링 가능
   if (isPublishing(studentId)) {
-    videoRoomStore.selectStudent(String(studentId));
+    trainerLiveStore.selectStudent(String(studentId));
   } else {
     alert("해당 학생의 카메라가 꺼져 있어 모니터링할 수 없습니다.");
   }
@@ -31,15 +31,15 @@ const handleMonitor = (studentId: string | number) => {
         <h2 class="font-bold text-slate-800 text-base">참여자 목록</h2>
       </div>
       <span class="px-3 py-1 bg-slate-100 rounded-full text-[11px] font-bold text-slate-500">
-        {{ videoRoomStore.participants.length }}명 참여 중
+        {{ trainerLiveStore.participants.length }}명 참여 중
       </span>
     </div>
 
     <div class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-      <div v-for="student in videoRoomStore.participants" :key="student.id" @click="handleMonitor(student.id)" :class="[
+      <div v-for="student in trainerLiveStore.participants" :key="student.id" @click="handleMonitor(student.id)" :class="[
         'relative flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer group',
         // 모니터링 중일 때 강조
-        videoRoomStore.selectedStudentId === String(student.id)
+        trainerLiveStore.selectedStudentId === String(student.id)
           ? 'bg-indigo-50 border-indigo-200 shadow-sm'
           : 'bg-white border-slate-50 hover:border-slate-200 hover:shadow-md',
         // 집중도 저하 시 빨간색 깜빡임 애니메이션 (Tailwind animate-pulse 활용)
@@ -85,7 +85,7 @@ const handleMonitor = (studentId: string | number) => {
             </span>
           </div>
 
-          <span v-if="videoRoomStore.selectedStudentId === String(student.id)"
+          <span v-if="trainerLiveStore.selectedStudentId === String(student.id)"
             class="material-symbols-outlined text-indigo-500 animate-bounce">
             visibility
           </span>
