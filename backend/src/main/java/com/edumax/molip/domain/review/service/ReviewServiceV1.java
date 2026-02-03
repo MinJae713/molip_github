@@ -272,17 +272,33 @@ public class ReviewServiceV1 {
     // TODO 퀴즈 정답률 계산 (지금은 0)
     float totalAvgQuizCorrect = totalSumQuizCorrenct / studentSize;
 
-    LearnerAnalysis learnerAnalysis =
-        LearnerAnalysis.builder()
-            .session(session)
-            .totalLearner(studentZero ? 0 : studentSize.intValue())
-            .totalAnalysisTime(totalTimelineZero ? 0 : totalTimeline)
-            .avgAttendance(totalAvgAttendance)
-            .avgConcentrate(totalAvgConcentrate)
-            .avgQuizCorrect(totalAvgQuizCorrect)
-            .build();
+    LearnerAnalysis learnerAnalysis = session.getLearnerAnalysis();
 
-    learnerAnalysisRepository.save(learnerAnalysis);
+    if (learnerAnalysis != null) {
+      // 2. 이미 존재한다면 '기존 객체'의 필드만 교체 (Dirty Checking)
+      learnerAnalysis.setTotalLearner(studentZero ? 0 : studentSize.intValue());
+      learnerAnalysis.setTotalAnalysisTime(totalTimelineZero ? 0 : totalTimeline);
+      learnerAnalysis.setAvgAttendance(totalAvgAttendance);
+      learnerAnalysis.setAvgConcentrate(totalAvgConcentrate);
+      learnerAnalysis.setAvgQuizCorrect(totalAvgQuizCorrect);
+
+      // [중요] 여기서 save()를 절대 호출하지 마세요.
+      // 이미 session에 묶여있으므로 트랜잭션 종료 시 자동 반영됩니다.
+    } else {
+      // 3. 진짜로 없을 때만 빌더로 생성
+      learnerAnalysis =
+          LearnerAnalysis.builder()
+              .session(session)
+              .totalLearner(studentZero ? 0 : studentSize.intValue())
+              .totalAnalysisTime(totalTimelineZero ? 0 : totalTimeline)
+              .avgAttendance(totalAvgAttendance)
+              .avgConcentrate(totalAvgConcentrate)
+              .avgQuizCorrect(totalAvgQuizCorrect)
+              .build();
+
+      // 신규 생성시에만 save 호출
+      learnerAnalysis = learnerAnalysisRepository.save(learnerAnalysis);
+    }
 
     // 감정 관련 처리
     List<Object> redisEmoResult =

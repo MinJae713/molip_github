@@ -84,6 +84,7 @@ public class SessionServiceImpl implements SessionService {
             .useQuiz(request.getUseQuiz())
             .quizCount(request.getQuizCount())
             .recordingId(generateRecordingId())
+            .trainerId(memberId)
             .build();
 
     Session savedSession = sessionRepository.save(session);

@@ -26,6 +26,7 @@ public class SessionDetailResponse {
   private Boolean useEmotion;
   private Boolean useQuiz;
   private Integer quizCount;
+  private Long trainerId;
   private List<QuizInfo> quizzes;
 
   @Builder
@@ -40,6 +41,7 @@ public class SessionDetailResponse {
       Boolean useEmotion,
       Boolean useQuiz,
       Integer quizCount,
+      Long trainerId,
       List<QuizInfo> quizzes) {
     this.sessionId = sessionId;
     this.title = title;
@@ -52,6 +54,7 @@ public class SessionDetailResponse {
     this.useQuiz = useQuiz;
     this.quizCount = quizCount;
     this.quizzes = quizzes;
+    this.trainerId = trainerId;
   }
 
   public static SessionDetailResponse of(Session session, List<ExitQuiz> exitQuizzes) {
@@ -70,6 +73,7 @@ public class SessionDetailResponse {
         .useQuiz(session.getUseQuiz())
         .quizCount(session.getQuizCount())
         .quizzes(quizInfos)
+        .trainerId(session.getTrainerId())
         .build();
   }
 
