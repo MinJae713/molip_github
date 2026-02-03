@@ -11,7 +11,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EndAnalysisRequest {
-  Long teacherId;
   Integer lastTimeline;
   List<PauseElement> pauseElementList;
   // public record PauseElement(int startTime, int endTime) {}

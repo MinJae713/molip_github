@@ -6,10 +6,10 @@ import com.edumax.molip.domain.course.repository.CourseLearnerAnalysisRepository
 import com.edumax.molip.domain.course.repository.CourseRepository;
 import com.edumax.molip.domain.review.entity.EmotionGraph;
 import com.edumax.molip.domain.review.entity.LearnerAnalysis;
+import com.edumax.molip.domain.review.entity.Script;
 import com.edumax.molip.domain.review.entity.TimelineElement;
 import com.edumax.molip.domain.review.repository.EmotionGraphRepository;
 import com.edumax.molip.domain.review.repository.LearnerAnalysisRepository;
-import com.edumax.molip.domain.review.repository.ScriptInsertRepository;
 import com.edumax.molip.domain.review.repository.ScriptRepository;
 import com.edumax.molip.domain.session.dto.request.EndAnalysisRequest;
 import com.edumax.molip.domain.session.dto.request.PauseElement;
@@ -50,7 +50,6 @@ public class ReviewService {
   private final AnalysisManagerRegistry analysisManagerRegistry;
   private final EmotionSaveListener emotionSaveListener;
 
-  private final ScriptInsertRepository scriptInsertRepository;
   private final SessionRepository sessionRepository;
   private final ScriptRepository scriptRepository;
   private final LearnerAnalysisRepository learnerAnalysisRepository;
@@ -60,19 +59,8 @@ public class ReviewService {
   private final CourseRepository courseRepository;
   private final StorageService storageService;
 
-  public void saveSttText(String roomId, Long sessionId) {
-    List<Long> timelineList = new ArrayList<>();
-    List<String> textList = new ArrayList<>();
-
-    String key = generateKey(roomId);
-    redisTemplate.opsForZSet().rangeWithScores(key, 0, -1).stream()
-        .forEach(
-            tuple -> {
-              timelineList.add((long) tuple.getScore().doubleValue());
-              textList.add(tuple.getValue().split("\\|")[1]);
-            });
-
-    scriptInsertRepository.bulkInsertScripts(timelineList, textList, sessionId);
+  public List<EmotionGraph> getEmotionGraph(Long sessionId, Long memberId) {
+    return emotionGraphRepository.findBySessionIdAndMemberId(sessionId, memberId);
   }
 
   public void startAnalysis(String sessionId) {
@@ -114,7 +102,7 @@ public class ReviewService {
   }
 
   @Transactional
-  public void endAnalysis(String sessionId, EndAnalysisRequest request) {
+  public void endAnalysis(String sessionId, EndAnalysisRequest request, Long trainerId) {
     emotionSaveListener.stopLecture(sessionId);
     analysisManagerRegistry.removeManager(sessionId);
 
@@ -124,7 +112,7 @@ public class ReviewService {
     List<Long> memberIdList =
         redisTemplate.opsForSet().members(joinKey).stream()
             .map(entry -> Long.parseLong(entry.split("\\|", 2)[0]))
-            .filter(memberId -> !request.getTeacherId().equals(memberId))
+            .filter(memberId -> !trainerId.equals(memberId))
             .toList();
 
     boolean studentZero = false;
@@ -150,6 +138,9 @@ public class ReviewService {
     Course course = session.getCourse();
     int attendance = course.getAttendance();
     int endSessionCnt = course.getEndSessionCount() + 1;
+
+    // stt 데이터 저장
+    saveScriptToMysql(sessionIdLong);
 
     // 1. 몰입도 데이터 Pipeline 실행
     List<Object> redisConResult =
@@ -383,7 +374,7 @@ public class ReviewService {
                 })
             .toList();
 
-    storageService.saveTimelineAnalysis(sessionIdLong, request.getTeacherId(), trainerMergedList);
+    storageService.saveTimelineAnalysis(sessionIdLong, trainerId, trainerMergedList);
 
     // LearnerAnalysis 저장 및 감정 그래프 연결
     LearnerAnalysis learnerAnalysis =
@@ -415,7 +406,7 @@ public class ReviewService {
               .name(AnalysisManager.toEmotion(e))
               .value(totalSumEmotion[e] / studentSize)
               .learnerAnalysis(learnerAnalysis)
-              .memberId(request.getTeacherId())
+              .memberId(trainerId)
               .build());
     }
 
@@ -462,10 +453,41 @@ public class ReviewService {
 
   record ConcentrateElement(int timeline, boolean empty, float concentrateValue, boolean fever) {}
 
-  String QIZE_STT_FORMAT = "quiz:stt:room-id:%s";
+  @Transactional
+  public void saveScriptToMysql(Long sessionId) {
+    String key = generateKey(sessionId);
+    Set<String> values = redisTemplate.opsForZSet().range(key, 0, -1);
 
-  String generateKey(String roomId) {
-    return QIZE_STT_FORMAT.formatted(roomId);
+    if (values == null || values.isEmpty()) {
+      return;
+    }
+
+    // DB를 조회하지 않고도 연관관계를 맺기 위함입니다.
+    LearnerAnalysis learnerAnalysis = LearnerAnalysis.builder().sessionId(sessionId).build();
+
+    List<Script> scriptList =
+        values.stream()
+            .map(
+                val -> {
+                  String[] parts = val.split("\\|", 2);
+
+                  return Script.builder()
+                      .timeline(Integer.parseInt(parts[0]))
+                      .message(parts.length > 1 ? parts[1] : "")
+                      .learnerAnalysis(learnerAnalysis) // 위에서 만든 객체 삽입
+                      .build();
+                })
+            .toList();
+
+    scriptRepository.saveAll(scriptList);
+
+    redisTemplate.delete(key);
+  }
+
+  String QUIZ_STT_FORMAT = "quiz:stt:session-id:%d";
+
+  String generateKey(Long sessionId) {
+    return QUIZ_STT_FORMAT.formatted(sessionId);
   }
 
   String SESSION_JOIN_FORMAT = "session:join:session-id:%s";

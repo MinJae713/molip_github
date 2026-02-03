@@ -16,7 +16,7 @@ public class SttSaveListener {
   private final StringRedisTemplate redisTemplate;
 
   // 상수는 static final로 관리하는 것이 메모리 효율상 좋습니다.
-  private static final String KEY_FORMAT = "quiz:stt:session-id:%s";
+  private static final String KEY_FORMAT = "quiz:stt:session-id:%d";
   private static final Duration TTL = Duration.ofDays(1);
 
   @Async("sttSaveExecutor")
@@ -29,7 +29,7 @@ public class SttSaveListener {
     redisTemplate.expire(key, TTL);
   }
 
-  private String generateKey(String sessionId) {
-    return String.format(KEY_FORMAT, sessionId);
+  private String generateKey(Long sessionId) {
+    return KEY_FORMAT.formatted(sessionId);
   }
 }

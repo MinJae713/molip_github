@@ -21,10 +21,10 @@ public class QuizService {
   private final QuizServiceGrpc.QuizServiceBlockingStub quizServiceBlockingStub;
   private final ScriptRepository scriptRepository;
 
-  String KEY_FORMAT = "quiz:stt:room-id:%s";
+  String KEY_FORMAT = "quiz:stt:room-id:%d";
 
-  public AiQuizMessage createQuizRedis(String roomId, int textLength) {
-    String key = generateKey(roomId);
+  public AiQuizMessage createQuizRedis(Long sessionId, int textLength) {
+    String key = generateKey(sessionId);
     StringBuilder sb = new StringBuilder();
 
     Long totalCntLong = redisTemplate.opsForZSet().zCard(key);
@@ -34,7 +34,7 @@ public class QuizService {
 
     List<String> reverseTextList = new ArrayList<>();
     int totalCnt = totalCntLong.intValue();
-    int chunkSize = 10;
+    int chunkSize = 30;
     boolean finished = false;
     int curLength = 0;
     int maxPage = (int) Math.ceil((double) totalCnt / chunkSize);
@@ -75,7 +75,10 @@ public class QuizService {
     }
 
     QuizRequest request =
-        QuizRequest.newBuilder().setSessionId(roomId).setSttText(sb.toString().trim()).build();
+        QuizRequest.newBuilder()
+            .setSessionId(sessionId.toString())
+            .setSttText(sb.toString().trim())
+            .build();
 
     log.info("Quiz STT Text: {}", sb.toString().trim());
     QuizResponse response = quizServiceBlockingStub.createQuiz(request);
@@ -91,8 +94,8 @@ public class QuizService {
         .build();
   }
 
-  private String generateKey(String roomId) {
-    return KEY_FORMAT.formatted(roomId);
+  private String generateKey(Long sessionId) {
+    return KEY_FORMAT.formatted(sessionId);
   }
 
   public AiQuizMessage createQuizDB(Long sessionId, int time, int textLength) {
@@ -105,7 +108,7 @@ public class QuizService {
 
     List<String> reverseTextList = new ArrayList<>();
     int totalCnt = totalCntLong.intValue();
-    int chunkSize = 10;
+    int chunkSize = 30;
     boolean finished = false;
     int curLength = 0;
     int maxPage = (int) Math.ceil((double) totalCnt / chunkSize);
@@ -141,7 +144,7 @@ public class QuizService {
 
     QuizRequest request =
         QuizRequest.newBuilder()
-            .setSessionId(String.valueOf(sessionId))
+            .setSessionId(sessionId.toString())
             .setSttText(sb.toString().trim())
             .build();
 
