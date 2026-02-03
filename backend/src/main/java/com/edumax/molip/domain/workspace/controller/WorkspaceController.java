@@ -22,6 +22,7 @@ import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberRes
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdResponse;
+import com.edumax.molip.domain.workspace.dto.response.workspace_member_stat_box.FindWorkspaceMemberStatBoxResponse;
 import com.edumax.molip.domain.workspace.service.WorkspaceService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -173,5 +174,13 @@ public class WorkspaceController {
       @PathVariable(name = "workspaceId") Long workspaceId,
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(workspaceService.findWorkspaceRegisters(workspaceId));
+  }
+
+  @GetMapping("/{workspaceId}/stats")
+  public ResponseEntity<FindWorkspaceMemberStatBoxResponse> findWorkspaceMemberStatBox(
+      @PathVariable(name = "workspaceId") Long workspaceId,
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(
+        workspaceService.findWorkspaceMemberStatBox(workspaceId, member.getMemberId()));
   }
 }
