@@ -12,6 +12,8 @@ export const useUserStore = defineStore("user", () => {
     profileImageUrl: "",
   });
 
+  const token = ref<string | null>(null);
+
   // 데이터 로딩 여부 (선택 사항)
   const isLoaded = ref(false);
   // JWT 파싱기
@@ -40,18 +42,30 @@ export const useUserStore = defineStore("user", () => {
   async function fetchUserInfo() {
     if (isLoaded.value) return;
 
-    const token = localStorage.getItem("accessToken");
-
-    // 토큰이 없으면 굳이 API를 호출하지 않고 종료
-    if (!token) {
+    const savedToken = localStorage.getItem("accessToken");
+    if (!savedToken) {
       isLoaded.value = true;
       return;
     }
 
+    token.value = savedToken;
+
     try {
-      // 1. 서버에 내 정보 요청 (토큰은 보통 interceptor에서 자동으로 담긴다고 가정)
+      // 토큰 파싱해서 ID 추출
+      console.log("dd1-Token from localStorage:", token.value); // [Debug]
+      const payload = parseJwt(token.value);
+      console.log("dd2-Parsed Payload:", payload); // [Debug]
+      // JWT payload에 memberId가 있으면 그것을 사용, 없으면 sub 사용
+      const userId = payload?.memberId || payload?.sub;
+      console.log("dd3-Extracted userId:", userId); // [Debug]
+
+      if (!userId) {
+        throw new Error("Invalid Token");
+      }
+      // DB에서 최신 유저 정보 조회
+      console.log(`dd4-Fetching info for userId: ${userId}`); // [Debug]
       const response = await api.get(`/members/me`);
-      // Axios 기준 응답 데이터 추출
+      console.log("dd5-User Info Response:", response.data); // [Debug]
       const userData = response.data;
       // 2. 데이터 검증 (백엔드 구조에 따라 userData.data 등으로 수정 필요할 수 있음)
       if (!userData || !userData.id) {
@@ -68,21 +82,15 @@ export const useUserStore = defineStore("user", () => {
         email: userData.email,
         profileImageUrl: userData.profileImageUrl,
       };
+
       isLoaded.value = true;
     } catch (error) {
-      // 401 에러(토큰 만료 등) 시 처리 로직을 추가하면 더 좋습니다.
-      console.error("유저 정보 조회 실패:", error);
-      // 에러 발생 시 무한 루프 방지를 위해 로딩 완료 처리
-      isLoaded.value = true;
-      user.value = {
-        memberId: 0,
-        name: "",
-        email: "",
-        profileImageUrl: "",
-      };
+      console.error("dd6-Fetch User Info Failed:", error);
+      logout();
     }
   }
-  // 쿠키 설정
+
+  // [Helper] 쿠키 설정
   function setCookie(name: string, value: string, days: number) {
     let expires = "";
     if (days) {
@@ -108,6 +116,7 @@ export const useUserStore = defineStore("user", () => {
         profileImageUrl,
       } = response.data;
       // LocalStorage 저장
+      token.value = accessToken;
       localStorage.setItem("accessToken", accessToken);
       // Cookie 저장
       setCookie("accessToken", accessToken, 1); // 1일 유지
@@ -126,9 +135,26 @@ export const useUserStore = defineStore("user", () => {
       return false;
     }
   }
-
+  async function signup(form: any) {
+    try {
+      await api.post("/members/register", {
+        email: form.email,
+        password: form.password,
+        name: form.name,
+        age: form.age,
+        address: form.address,
+        gender: form.gender,
+      });
+      // 회원가입 성공 시 별도 처리 없이 true 반환 (자동 로그인 아님)
+      return true;
+    } catch (error) {
+      console.error("Signup Failed:", error);
+      return false;
+    }
+  }
   // 로그아웃
   function logout() {
+    token.value = null;
     user.value = {
       memberId: 0,
       name: "",
@@ -146,6 +172,5 @@ export const useUserStore = defineStore("user", () => {
   }
 
   const isAuthenticated = computed(() => !!user.value.memberId);
-
-  return { user, fetchUserInfo, login, logout, isAuthenticated };
+  return { user, token, fetchUserInfo, login, signup, logout, isAuthenticated };
 });
