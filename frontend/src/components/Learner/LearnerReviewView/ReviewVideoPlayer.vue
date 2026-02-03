@@ -139,6 +139,21 @@ const toggleFullscreen = () => {
         document.exitFullscreen();
     }
 };
+
+// 외부 제어용 함수 노출
+const seekTo = (seconds: number) => {
+    if (!videoRef.value) return;
+    videoRef.value.currentTime = seconds;
+    if (!isPlaying.value) {
+         // 이동 후 자동 재생 여부는 기획에 따라 결정 (여기서는 이동만 함)
+         // videoRef.value.play();
+         // isPlaying.value = true;
+    }
+};
+
+defineExpose({
+    seekTo
+});
 </script>
 <style scoped>
 /* 구글 아이콘 버튼 기본 설정 */
