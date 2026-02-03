@@ -1,5 +1,6 @@
 package com.edumax.molip.domain.review.service;
 
+import com.edumax.molip.domain.chatting.service.ChattingService;
 import com.edumax.molip.domain.course.entity.Course;
 import com.edumax.molip.domain.course.entity.CourseLearnerAnalysis;
 import com.edumax.molip.domain.course.repository.CourseLearnerAnalysisRepository;
@@ -57,7 +58,9 @@ public class ReviewService {
   private final EmotionGraphRepository emotionGraphRepository;
   private final CourseLearnerAnalysisRepository courseLearnerAnalysisRepository;
   private final CourseRepository courseRepository;
+
   private final StorageService storageService;
+  private final ChattingService chattingService;
 
   public List<EmotionGraph> getEmotionGraph(Long sessionId, Long memberId) {
     return emotionGraphRepository.findBySessionIdAndMemberId(sessionId, memberId);
