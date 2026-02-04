@@ -5,6 +5,8 @@ import com.edumax.molip.domain.course.dto.request.CourseUpdateRequest;
 import com.edumax.molip.domain.course.dto.request.ToggleZzimCourseRequest;
 import com.edumax.molip.domain.course.dto.response.CourseDetailResponse;
 import com.edumax.molip.domain.course.dto.response.GetCertificatedCourseResponse;
+import com.edumax.molip.domain.course.dto.response.GetCourseApplyResponse;
+import com.edumax.molip.domain.course.dto.response.GetCourseLearnerResponse;
 import com.edumax.molip.domain.course.dto.response.GetMyCertificationResponse;
 import com.edumax.molip.domain.course.dto.response.GetMyCourseStatsResponse;
 import com.edumax.molip.domain.course.dto.response.GetMyCourseStatsResponse.SessionRecord;
@@ -14,7 +16,8 @@ import com.edumax.molip.domain.course.dto.response.ZzimCourseResponse;
 import com.edumax.molip.domain.course.entity.Course;
 import com.edumax.molip.domain.course.entity.CourseApply;
 import com.edumax.molip.domain.course.entity.Zzim;
-import com.edumax.molip.domain.course.exception.IncorrenctWorkspaceCourseException;
+import com.edumax.molip.domain.course.exception.IncorrectCourseTrainerException;
+import com.edumax.molip.domain.course.exception.IncorrectWorkspaceCourseException;
 import com.edumax.molip.domain.course.exception.NoCourseException;
 import com.edumax.molip.domain.course.exception.NoZzimException;
 import com.edumax.molip.domain.course.repository.CourseApplyRepository;
@@ -41,6 +44,7 @@ import com.edumax.molip.domain.workspace.repository.WorkspaceRepository;
 import com.edumax.molip.domain.workspace.types.WorkspaceMemberRole;
 import com.edumax.molip.domain.workspace.types.WorkspaceMemberStatus;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -357,7 +361,7 @@ public class CourseServiceImpl implements CourseService {
     Long courseId = toggleZzimCourseRequest.getCourseId();
     Course course = courseRepository.findById(courseId).orElseThrow(NoCourseException::new);
     if (!course.getWorkspace().getWorkspaceId().equals(workspaceId)) {
-      throw new IncorrenctWorkspaceCourseException();
+      throw new IncorrectWorkspaceCourseException();
     }
     if (toggleZzimCourseRequest.getIsZzim()) {
       zzimRepository.save(Zzim.builder().workspaceMember(workspaceMember).course(course).build());
@@ -478,5 +482,92 @@ public class CourseServiceImpl implements CourseService {
         .concentrateMyAverage(concentrateMyAverage)
         .sessionRecords(sessionRecords)
         .build();
+  }
+
+  @Override
+  public List<GetCourseApplyResponse> getCourseAppliesResponse(Long courseId, Long memberId) {
+    Member member =
+        memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
+    Course course = courseRepository.findById(courseId).orElseThrow(NoCourseException::new);
+    Workspace workspace = course.getWorkspace();
+    WorkspaceMember workspaceMember =
+        workspaceMemberRepository
+            .findByMemberAndWorkspace(member, workspace)
+            .orElseThrow(NoWorkspaceMemberException::new);
+    if (workspaceMember.getRole() != WorkspaceMemberRole.TRAINER) {
+      throw new NoTrainerException();
+    }
+    if (!course.getLeaner().getWorkspaceMemberId().equals(workspaceMember.getWorkspaceMemberId())) {
+      throw new IncorrectCourseTrainerException();
+    }
+
+    List<CourseApply> courseApplies = course.getCourseApplies();
+    return courseApplies.stream()
+        .filter(courseApply -> !courseApply.getIsApplied())
+        .map(
+            courseApply -> {
+              WorkspaceMember applyWorkspaceMember = courseApply.getWorkspaceMember();
+              Member applyMember = applyWorkspaceMember.getMember();
+              Long workspaceMemberId = applyWorkspaceMember.getWorkspaceMemberId();
+
+              Long courseApplyId = courseApply.getCourseApplyId();
+              String profileImageUrl = applyMember.getProfileImageUrl();
+              String name = applyMember.getName();
+              String position = applyMember.getPosition();
+              LocalDateTime createdAt = courseApply.getCreatedAt();
+              return GetCourseApplyResponse.builder()
+                  .memberId(applyMember.getId())
+                  .workspaceMemberId(workspaceMemberId)
+                  .courseApplyId(courseApplyId)
+                  .profileImageUrl(profileImageUrl)
+                  .name(name)
+                  .position(position)
+                  .createdAt(createdAt)
+                  .build();
+            })
+        .toList();
+  }
+
+  @Override
+  public List<GetCourseLearnerResponse> getCourseLearnersResponse(Long courseId, Long memberId) {
+    Member member =
+        memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
+    Course course = courseRepository.findById(courseId).orElseThrow(NoCourseException::new);
+    Workspace workspace = course.getWorkspace();
+    WorkspaceMember workspaceMember =
+        workspaceMemberRepository
+            .findByMemberAndWorkspace(member, workspace)
+            .orElseThrow(NoWorkspaceMemberException::new);
+    if (workspaceMember.getRole() != WorkspaceMemberRole.TRAINER) {
+      throw new NoTrainerException();
+    }
+    if (!course.getLeaner().getWorkspaceMemberId().equals(workspaceMember.getWorkspaceMemberId())) {
+      throw new IncorrectCourseTrainerException();
+    }
+
+    List<CourseLearner> courseLearners = course.getCourseLearners();
+    return courseLearners.stream()
+        .map(
+            courseLearner -> {
+              WorkspaceMember learnerWorkspaceMember = courseLearner.getWorkspaceMember();
+              Member learnerMember = learnerWorkspaceMember.getMember();
+              Long workspaceMemberId = learnerWorkspaceMember.getWorkspaceMemberId();
+
+              Long courseLearnerId = courseLearner.getCourseLearnerId();
+              String profileImageUrl = learnerMember.getProfileImageUrl();
+              String name = learnerMember.getName();
+              String position = learnerMember.getPosition();
+              Double attandanceRate = courseLearner.getSessionAttandanceRate();
+              return GetCourseLearnerResponse.builder()
+                  .memberId(learnerMember.getId())
+                  .workspaceMemberId(workspaceMemberId)
+                  .courseLearnerId(courseLearnerId)
+                  .profileImageUrl(profileImageUrl)
+                  .name(name)
+                  .position(position)
+                  .attandanceRate(attandanceRate)
+                  .build();
+            })
+        .toList();
   }
 }

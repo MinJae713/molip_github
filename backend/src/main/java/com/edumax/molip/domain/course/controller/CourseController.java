@@ -6,6 +6,8 @@ import com.edumax.molip.domain.course.dto.request.CourseUpdateRequest;
 import com.edumax.molip.domain.course.dto.request.ToggleZzimCourseRequest;
 import com.edumax.molip.domain.course.dto.response.CourseDetailResponse;
 import com.edumax.molip.domain.course.dto.response.GetCertificatedCourseResponse;
+import com.edumax.molip.domain.course.dto.response.GetCourseApplyResponse;
+import com.edumax.molip.domain.course.dto.response.GetCourseLearnerResponse;
 import com.edumax.molip.domain.course.dto.response.GetMyCertificationResponse;
 import com.edumax.molip.domain.course.dto.response.GetMyCourseStatsResponse;
 import com.edumax.molip.domain.course.dto.response.GetTrainerCourseResponse;
@@ -149,5 +151,19 @@ public class CourseController {
   public ResponseEntity<GetMyCourseStatsResponse> getMyCourseStats(
       @PathVariable Long courseId, @AuthenticationPrincipal MemberUserDetails memberDetails) {
     return ResponseEntity.ok(courseService.getMyCourseStats(courseId, memberDetails.getMemberId()));
+  }
+
+  @GetMapping("/{courseId}/applies")
+  public ResponseEntity<List<GetCourseApplyResponse>> getCourseApplies(
+      @PathVariable Long courseId, @AuthenticationPrincipal MemberUserDetails memberDetails) {
+    return ResponseEntity.ok(
+        courseService.getCourseAppliesResponse(courseId, memberDetails.getMemberId()));
+  }
+
+  @GetMapping("/{courseId}/learners")
+  public ResponseEntity<List<GetCourseLearnerResponse>> getCourseLearners(
+      @PathVariable Long courseId, @AuthenticationPrincipal MemberUserDetails memberDetails) {
+    return ResponseEntity.ok(
+        courseService.getCourseLearnersResponse(courseId, memberDetails.getMemberId()));
   }
 }

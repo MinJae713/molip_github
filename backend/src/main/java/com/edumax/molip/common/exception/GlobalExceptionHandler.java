@@ -1,6 +1,7 @@
 package com.edumax.molip.common.exception;
 
-import com.edumax.molip.domain.course.exception.IncorrenctWorkspaceCourseException;
+import com.edumax.molip.domain.course.exception.IncorrectCourseTrainerException;
+import com.edumax.molip.domain.course.exception.IncorrectWorkspaceCourseException;
 import com.edumax.molip.domain.course.exception.NoCourseException;
 import com.edumax.molip.domain.course.exception.NoZzimException;
 import com.edumax.molip.domain.member.exception.DuplicateEmailException;
@@ -72,7 +73,8 @@ public class GlobalExceptionHandler {
   @ExceptionHandler({
     NoCourseException.class,
     NoZzimException.class,
-    IncorrenctWorkspaceCourseException.class
+    IncorrectWorkspaceCourseException.class,
+    IncorrectCourseTrainerException.class
   })
   public ResponseEntity<ErrorResponse> handleCourseBadRequestException(RuntimeException e) {
     ErrorResponse body = ErrorResponse.create(e, HttpStatus.BAD_REQUEST, e.getMessage());
