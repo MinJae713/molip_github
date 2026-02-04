@@ -6,6 +6,8 @@ import JanusPkg from "janus-gateway";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { useUserStore } from "@/stores/user";
 import type { Participant } from "@/types/live";
+import Stomp from "stompjs";
+import SockJS from "sockjs-client";
 
 // Janus 전역 설정
 if (typeof window !== "undefined") {
@@ -249,6 +251,8 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
           const publish = { request: "configure", audio: true, video: true };
           roomHandle.value!.send({ message: publish, jsep });
 
+          // 구독
+          handleConnectWs();
           // [New] 분석 시작 API 호출
           try {
             console.log("Starting analysis for session", sessionId.value);
@@ -322,6 +326,67 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
       console.error("Change Screen Share Error", e);
     }
   }
+
+  // =================================================================================
+  const handleSubscribe = () => {
+    // 강사(Trainer)는 세션 전체의 집계 데이터를 수신합니다.
+    stompClient.subscribe(`/topic/analysis/${sessionId}`, (res: any) => {
+      console.log("📥 [Raw STOMP Message]:", res.body);
+      const data = JSON.parse(res.body);
+
+      // 1. 강의 시작 시간 수신
+      if (data.startTime) {
+        console.log("📢 [강의 시작] 시간:", data.startTime);
+      }
+
+      // 2. 통합 분석 결과 수신
+      // (서버가 보내는 데이터가 { type: "concentrate", ... } 형태의 플랫한 구조일 수 있음)
+      const isConcentrate = data.type === 'concentrate' || data.concentrateMessage;
+      const isEmotion = data.type === 'emotion' || data.emotionMessage;
+      console.log(`- 주요 감정: ${isEmotion}`);
+
+      if (isConcentrate || isEmotion) {
+        console.log(`📊 [분석 결과 수신] Type: ${data.type || 'unknown'}`);
+
+        if (isConcentrate) {
+          const content = data.concentrateMessage || data;
+          console.log(`- 집중도: ${content.concentration?.toFixed(1)}% (Timeline: ${content.timeline})`);
+        }
+        if (isEmotion) {
+          const content = data.emotionMessage || data;
+          console.log(`- 주요 감정: ${content.emotion1}`);
+        }
+        if (data.stateChangeList && data.stateChangeList.length > 0) {
+          console.log(`- 상태 변화 감지: ${data.stateChangeList.length}건`);
+          data.stateChangeList.forEach((change: any) => {
+            console.log(`  > Member ${change.memberId}: ${change.newState}`);
+          });
+        }
+
+        // 로그 리스트에 추가 (UI 표시용)
+        // analysisLogs.value.unshift(data);
+      }
+    });
+    console.log(`🔔 구독 시작 완료 (Target: /topic/analysis/${sessionId})`);
+  };
+
+  // 분석결과 수신용 stomp 연결
+  let stompClient: any = null;
+  const handleConnectWs = () => {
+    const socket = new SockJS(`${import.meta.env.VITE_SOCKET_BASE_URL}/message`);
+    stompClient = Stomp.over(socket);
+    stompClient.debug = null;
+
+    const token = localStorage.getItem("accessToken");
+
+    stompClient.connect({ Authorization: `Bearer ${token}` }, () => {
+      console.log("🌐 소켓 연결 성공");
+      handleSubscribe(); // 연결 성공하면 자동으로 구독
+    });
+  };
+
+  // =================================================================================
+
 
   /**
    * 음성 분석용 웹소켓 연결 및 전송
