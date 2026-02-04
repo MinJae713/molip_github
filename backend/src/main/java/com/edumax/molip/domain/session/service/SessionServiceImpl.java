@@ -4,11 +4,9 @@ import com.edumax.molip.domain.course.entity.Course;
 import com.edumax.molip.domain.course.repository.CourseApplyRepository;
 import com.edumax.molip.domain.course.repository.CourseRepository;
 import com.edumax.molip.domain.quiz.entity.ExitQuiz;
-import com.edumax.molip.domain.quiz.entity.ExitQuizAnswer;
 import com.edumax.molip.domain.quiz.repository.ExitQuizAnswerRepository;
 import com.edumax.molip.domain.quiz.repository.ExitQuizRepository;
 import com.edumax.molip.domain.session.dto.request.SessionCreateRequest;
-import com.edumax.molip.domain.session.dto.request.SessionCreateRequest.QuizDto;
 import com.edumax.molip.domain.session.dto.response.SessionDetailResponse;
 import com.edumax.molip.domain.session.dto.response.SessionSimpleResponse;
 import com.edumax.molip.domain.session.dto.response.SessionStartResponse;
@@ -89,9 +87,9 @@ public class SessionServiceImpl implements SessionService {
 
     Session savedSession = sessionRepository.save(session);
 
-    if (Boolean.TRUE.equals(request.getUseQuiz()) && request.getQuizzes() != null) {
-      createQuizzes(savedSession, request.getQuizzes());
-    }
+    //    if (Boolean.TRUE.equals(request.getUseQuiz()) && request.getQuizzes() != null) {
+    //      createQuizzes(savedSession, request.getQuizzes());
+    //    }
 
     return savedSession.getSessionId();
   }
@@ -135,24 +133,24 @@ public class SessionServiceImpl implements SessionService {
     // request.getQuizzes() 가 null이면 퀴즈 수정은 없다는 뜻으로 간주하거나,
     // 빈 리스트면 퀴즈를 모두 지우는 것으로 간주할 수 있음.
     // 여기서는 request.getQuizzes() != null 일 때만 퀴즈 업데이트를 수행하도록 함.
-    if (request.getQuizzes() != null) {
-      // 4-1. 기존 퀴즈 삭제 (Cascade설정이 있다면 부모만 지워도 되지만, 안전하게 answer부터 삭제 고려)
-      // fetch join이 안된 상태이므로 exitQuizzes 접근 시 select 쿼리 나감
-      for (ExitQuiz quiz : session.getExitQuizzes()) {
-        // answer 삭제 (CascadeType.ALL + orphanRemoval이 아니므로 수동 삭제)
-        // 하지만 ExitQuiz Entity에 Cascade 설정이 없으므로 Repository로 지워야 함
-        exitQuizAnswerRepository.deleteAll(quiz.getExitQuizAnswers());
-      }
-      exitQuizRepository.deleteAll(session.getExitQuizzes());
-
-      // 세션 엔티티의 컬렉션도 비워줌 (1차 캐시 동기화)
-      session.getExitQuizzes().clear();
-
-      // 4-2. 새 퀴즈 생성
-      if (Boolean.TRUE.equals(request.getUseQuiz())) {
-        createQuizzes(session, request.getQuizzes());
-      }
-    }
+    //    if (request.getQuizzes() != null) {
+    //      // 4-1. 기존 퀴즈 삭제 (Cascade설정이 있다면 부모만 지워도 되지만, 안전하게 answer부터 삭제 고려)
+    //      // fetch join이 안된 상태이므로 exitQuizzes 접근 시 select 쿼리 나감
+    //      for (ExitQuiz quiz : session.getExitQuizzes()) {
+    //        // answer 삭제 (CascadeType.ALL + orphanRemoval이 아니므로 수동 삭제)
+    //        // 하지만 ExitQuiz Entity에 Cascade 설정이 없으므로 Repository로 지워야 함
+    //        exitQuizAnswerRepository.deleteAll(quiz.getExitQuizAnswers());
+    //      }
+    //      exitQuizRepository.deleteAll(session.getExitQuizzes());
+    //
+    //      // 세션 엔티티의 컬렉션도 비워줌 (1차 캐시 동기화)
+    //      session.getExitQuizzes().clear();
+    //
+    //      // 4-2. 새 퀴즈 생성
+    //      if (Boolean.TRUE.equals(request.getUseQuiz())) {
+    //        createQuizzes(session, request.getQuizzes());
+    //      }
+    //    }
   }
 
   @Override
@@ -346,33 +344,33 @@ public class SessionServiceImpl implements SessionService {
     }
   }
 
-  private void createQuizzes(Session session, List<QuizDto> quizDtos) {
-    for (QuizDto quizDto : quizDtos) {
-      ExitQuiz exitQuiz =
-          ExitQuiz.builder()
-              .session(session)
-              .question(quizDto.getQuestion())
-              .answerNumber(quizDto.getAnswerNumber())
-              .build();
-
-      ExitQuiz savedQuiz = exitQuizRepository.save(exitQuiz);
-
-      // 보기 생성
-      // 이전에 List<String> 일 때는 index+1로 번호를 매겼으나
-      // 지금은 List<ChoiceDto> 로 들어오므로, DTO의 number와 content를 사용
-      if (quizDto.getChoices() != null) {
-        for (SessionCreateRequest.ChoiceDto choiceDto : quizDto.getChoices()) {
-          ExitQuizAnswer answer =
-              ExitQuizAnswer.builder()
-                  .exitQuiz(savedQuiz)
-                  .number(choiceDto.getNumber())
-                  .answer(choiceDto.getContent())
-                  .build();
-          exitQuizAnswerRepository.save(answer);
-        }
-      }
-    }
-  }
+  //  private void createQuizzes(Session session, List<QuizDto> quizDtos) {
+  //    for (QuizDto quizDto : quizDtos) {
+  //      ExitQuiz exitQuiz =
+  //          ExitQuiz.builder()
+  //              .session(session)
+  //              .question(quizDto.getQuestion())
+  //              .answerNumber(quizDto.getAnswerNumber())
+  //              .build();
+  //
+  //      ExitQuiz savedQuiz = exitQuizRepository.save(exitQuiz);
+  //
+  //      // 보기 생성
+  //      // 이전에 List<String> 일 때는 index+1로 번호를 매겼으나
+  //      // 지금은 List<ChoiceDto> 로 들어오므로, DTO의 number와 content를 사용
+  //      if (quizDto.getChoices() != null) {
+  //        for (SessionCreateRequest.ChoiceDto choiceDto : quizDto.getChoices()) {
+  //          ExitQuizAnswer answer =
+  //              ExitQuizAnswer.builder()
+  //                  .exitQuiz(savedQuiz)
+  //                  .number(choiceDto.getNumber())
+  //                  .answer(choiceDto.getContent())
+  //                  .build();
+  //          exitQuizAnswerRepository.save(answer);
+  //        }
+  //      }
+  //    }
+  //  }
 
   @Override
   @Transactional(readOnly = true)

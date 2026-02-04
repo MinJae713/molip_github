@@ -1,9 +1,7 @@
 package com.edumax.molip.domain.session.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,28 +32,28 @@ public class SessionCreateRequest {
   @Builder.Default private Integer quizCount = 0;
 
   // Optional: 퀴즈도 함께 생성할 경우 사용
-  private List<QuizDto> quizzes;
-
-  @Getter
-  @Setter
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @Builder
-  @JsonIgnoreProperties(ignoreUnknown = true) // quizId 등 불필요한 필드는 무시
-  public static class QuizDto {
-    private String question;
-    private Integer answerNumber; // 정답 번호 (1~4)
-    private List<ChoiceDto> choices; // 보기 문항들 (number + content 구조)
-  }
-
-  @Getter
-  @Setter
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @Builder
-  @JsonIgnoreProperties(ignoreUnknown = true) // answerId 등 불필요한 필드는 무시
-  public static class ChoiceDto {
-    private Integer number;
-    private String content;
-  }
+  //  private List<QuizDto> quizzes;
+  //
+  //  @Getter
+  //  @Setter
+  //  @NoArgsConstructor
+  //  @AllArgsConstructor
+  //  @Builder
+  //  @JsonIgnoreProperties(ignoreUnknown = true) // quizId 등 불필요한 필드는 무시
+  //  public static class QuizDto {
+  //    private String question;
+  //    private Integer answerNumber; // 정답 번호 (1~4)
+  //    private List<ChoiceDto> choices; // 보기 문항들 (number + content 구조)
+  //  }
+  //
+  //  @Getter
+  //  @Setter
+  //  @NoArgsConstructor
+  //  @AllArgsConstructor
+  //  @Builder
+  //  @JsonIgnoreProperties(ignoreUnknown = true) // answerId 등 불필요한 필드는 무시
+  //  public static class ChoiceDto {
+  //    private Integer number;
+  //    private String content;
+  //  }
 }
