@@ -13,5 +13,4 @@ import lombok.Setter;
 @Builder
 public class CreateExitQuizResponse {
   private Boolean apiResult;
-  private Long exitQuizId;
 }
