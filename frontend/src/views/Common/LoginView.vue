@@ -85,8 +85,10 @@
                     <div class="mt-8 pt-6 border-t border-slate-100 text-center">
                         <p class="text-sm text-slate-500">
                             계정이 없으신가요?
-                            <a class="ml-1 font-bold text-indigo-brand hover:text-indigo-dark transition-colors"
-                                href="#">회원가입</a>
+                            <router-link to="/signup"
+                                class="ml-1 font-bold text-indigo-brand hover:text-indigo-dark transition-colors">
+                                회원가입
+                            </router-link>
                         </p>
                     </div>
                 </div>

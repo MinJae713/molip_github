@@ -23,10 +23,12 @@
                 <EngagementStats :engagementScore="engagementScore" :currentEmotion="currentEmotion"
                     :focusStatus="focusStatus" />
                 <!-- 채팅/질문 -->
-                <!-- 채팅/질문 -->
-                <LiveChatContainer :roomId="(route.params.sessionId as string)" />
+                <LiveChatContainer :chatList="chatList" :qaList="qaList" @send-message="sendChatMessage" />
             </LiveSidebar>
         </main>
+
+        <!-- 서프라이즈 퀴즈 모달 -->
+        <LearnerQuizModal :isOpen="isQuizModalOpen" :quizData="surpriseQuizData" @close="handleQuizClose" />
     </div>
 </template>
 
@@ -35,6 +37,8 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useVideoRoomStore } from '@/stores/videoRoom';
 import { useWorkspaceStore } from '@/stores/workspace';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
 
 // Components
 import LiveSessionHeader from '@/components/Learner/LearnerLiveSession/LiveSessionHeader.vue';
@@ -45,6 +49,7 @@ import LiveQuizCard from '@/components/Learner/LearnerLiveSession/LiveQuizCard.v
 import EngagementStats from '@/components/Learner/LearnerLiveSession/EngagementStats.vue';
 import LiveChatContainer from '@/components/Learner/LearnerLiveSession/LiveChatContainer.vue';
 import DeviceSetupModal from '@/components/Learner/LearnerLiveSession/DeviceSetupModal.vue';
+import LearnerQuizModal from '@/components/Learner/LearnerLiveSession/LearnerQuizModal.vue';
 
 const route = useRoute();
 const videoStore = useVideoRoomStore();
@@ -62,6 +67,15 @@ const activeTab = ref<'chat' | 'qa'>('qa');
 const newMessage = ref('');
 const isAnonymous = ref(false);
 
+// WebSocket 상태 관리
+const stompClient = ref<Client | null>(null);
+const chatList = ref<any[]>([]);
+const qaList = ref<any[]>([]);
+const surpriseQuizData = ref<any>(null);
+const isQuizModalOpen = ref(false);
+
+const socketUrl = import.meta.env.VITE_CHAT_SOCKET_URL;
+
 
 // 실시간 감정분석 이모지 라벨링
 const currentEmotion = ref({
@@ -72,6 +86,71 @@ const currentEmotion = ref({
 let timerInterval: number | null = null;
 const isSetupComplete = ref(false);
 
+// --- WebSocket 연결 ---
+const connectWebSocket = () => {
+    const sessionId = route.params.sessionId as string;
+
+    stompClient.value = new Client({
+        webSocketFactory: () => new SockJS(socketUrl),
+        connectHeaders: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        reconnectDelay: 5000,
+        onConnect: () => {
+            console.log('[Learner] WebSocket Connected ✅');
+
+            // 1. 채팅/질문 구독
+            stompClient.value?.subscribe(`/topic/chat-room/${sessionId}`, (res) => {
+                console.log('[Learner] Chat/QA Message:', res.body);
+                const msg = JSON.parse(res.body);
+
+                if (!msg.questionId) {
+                    chatList.value.push(msg);
+                } else {
+                    qaList.value.push(msg);
+                }
+            });
+
+            // 2. 서프라이즈 퀴즈 구독
+            stompClient.value?.subscribe(`/topic/surprise-quiz/${sessionId}`, (res) => {
+                console.log('[Learner] Surprise Quiz:', res.body);
+                surpriseQuizData.value = JSON.parse(res.body);
+                isQuizModalOpen.value = true;
+            });
+        },
+        onStompError: (frame) => {
+            console.error('[Learner] Broker error:', frame.headers['message']);
+        },
+        onWebSocketClose: () => {
+            console.log('[Learner] Connection Closed ❌');
+        }
+    });
+
+    stompClient.value.activate();
+};
+
+// 메시지 전송
+const sendChatMessage = (content: string, type: string, questionId?: number | string | null) => {
+    if (!content.trim() || !stompClient.value?.connected) return;
+    const sessionId = route.params.sessionId as string;
+
+    const payload = {
+        type,
+        content,
+        questionId: questionId || null
+    };
+
+    stompClient.value.publish({
+        destination: `/app/chat-room/${sessionId}`,
+        body: JSON.stringify(payload)
+    });
+};
+
+// 퀴즈 모달 닫기
+const handleQuizClose = () => {
+    isQuizModalOpen.value = false;
+};
+
 const handleJoinSession = async () => {
     isSetupComplete.value = true;
     startSessionTimer();
@@ -81,6 +160,7 @@ const handleJoinSession = async () => {
     if (sessionId) {
         try {
             await videoStore.initJanus(sessionId as string);
+            connectWebSocket(); // WebSocket 연결
         } catch (e) {
             console.error("Session Entry Failed", e);
             // TODO: User notification UI
@@ -104,6 +184,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
     if (timerInterval) clearInterval(timerInterval);
+    stompClient.value?.deactivate();
 });
 
 // 화면 컨트롤 토글

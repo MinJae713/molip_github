@@ -104,6 +104,7 @@ const isModalOpen = ref(false);
 const selectedCourse = ref<LearnerCourse>({} as LearnerCourse);
 
 const selectedCourseSessions = ref<Session[]>([]);
+
 const openCurriculumModal = async (courseId: string | number) => {
     const course = workspaceCourses.value.find(c => String(c.courseId) === String(courseId));
     if (course) {
@@ -124,7 +125,7 @@ const handleEnrollCourse = async (courseId: string | number) => {
     // 1. URL에서 워크스페이스 ID 추출 및 규격화(Normalization)
     const rawId = route.params.id;
     const workspaceId = Array.isArray(rawId) ? rawId[0] : rawId;
-    
+
     if (!workspaceId) return;
 
     // 2. 신청할 강의 정보 확인

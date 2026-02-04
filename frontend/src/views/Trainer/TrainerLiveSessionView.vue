@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, nextTick, provide, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useTrainerLiveStore } from '@/stores/trainerlive';
+import { useUserStore } from '@/stores/user';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
 
 // 스토어
 const trainerLiveStore = useTrainerLiveStore();
+const userStore = useUserStore();
 
 // [컴포넌트 임포트]
 import LiveHeader from '@/components/Live/Console/LiveHeader.vue';
@@ -22,6 +26,7 @@ import SessionEmotionAnalysis from '@/components/Live/AI/SessionEmotionAnalysis.
 import SidebarStats from '@/components/Live/Sidebar/SidebarStats.vue';
 import SidebarTabs from '@/components/Live/Sidebar/SidebarTabs.vue';
 import TrainerLiveChatContainer from '@/components/Live/Sidebar/TrainerLiveChatContainer.vue';
+import QuickQuizModal from '@/components/Live/Sidebar/QuickQuizModal.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -29,15 +34,149 @@ const route = useRoute();
 // --- UI 상태 관리 ---
 const isEndModalOpen = ref(false); // 수업 종료 확인 모달
 const activeTab = ref<'status' | 'chat' | 'qna'>('status'); // 사이드바 활성 탭 (기본: 상태)
+const isQuickQuizModalOpen = ref(false); // 퀵 퀴즈 모달
+
+// --- WebSocket 상태 관리 ---
+interface Message {
+  id?: number;
+  type?: string;
+  questionId?: number | string;
+  content: string;
+  senderName?: string;
+  name?: string;
+  profileImageUrl?: string;
+  createdAt?: string;
+  timestamp?: string;
+}
+
+const chatList = ref<Message[]>([]);
+const qaList = ref<Message[]>([]);
+const quizData = ref<any>(null); // 퀴즈 데이터 (추후 타입 정의)
+const stompClient = ref<Client | null>(null);
+const socketUrl = import.meta.env.VITE_CHAT_SOCKET_URL;
 
 // --- 통계 (Computed) ---
 const focusCount = computed(() => trainerLiveStore.participants.filter(p => p.status === 'focus').length);
 const warningCount = computed(() => trainerLiveStore.participants.filter(p => p.status === 'distracted').length); // distracted status check
 const absentCount = computed(() => trainerLiveStore.participants.filter(p => p.status === 'away').length);
 
+// --- WebSocket 연결 ---
+const connectWebSocket = () => {
+  const sessionId = route.params.sessionId as string;
+  console.log(`[Trainer Live] Connecting to WebSocket. SessionID: ${sessionId}`);
+
+  stompClient.value = new Client({
+    webSocketFactory: () => new SockJS(socketUrl),
+    connectHeaders: {
+      Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+    },
+    debug: (str) => {
+      console.log('[Trainer Live Stomp Debug]', str);
+    },
+    onConnect: () => {
+      console.log(`[Trainer Live] Connected ✅`);
+
+      // 1. 채팅/질문 구독
+      stompClient.value?.subscribe(`/topic/chat-room/${sessionId}`, (res) => {
+        console.log(`[Trainer Live] Chat/QA Message:`, res.body);
+        const msg: Message = JSON.parse(res.body);
+        // questionId 유무로 채팅/질문 구분
+        if (!msg.questionId) {
+          chatList.value.push(msg);
+        } else {
+          qaList.value.push(msg);
+        }
+      });
+      // 2. ai 퀴즈 받아오는 방 구독
+      stompClient.value?.subscribe(`/topic/quiz/${sessionId}/test`, (res) => {
+        // stompClient.value?.subscribe(`/topic/quiz/${sessionId}`, (res) => {
+        console.log(`[Trainer Live] AI Quiz Received:`, res.body);
+        quizData.value = JSON.parse(res.body);
+      });
+    },
+    onStompError: (frame) => {
+      console.error('[Trainer Live] Broker error:', frame.headers['message']);
+      console.error('[Trainer Live] Details:', frame.body);
+    },
+    onWebSocketClose: () => {
+      console.log('[Trainer Live] Connection Closed ❌');
+    }
+  });
+
+  stompClient.value.activate();
+};
+
+// --- 메시지 전송 함수 ---
+const sendChatMessage = (content: string, type: string, questionId?: number | string | null) => {
+  if (!content.trim() || !stompClient.value?.connected) return;
+  const sessionId = route.params.sessionId as string;
+  const payload = {
+    type,
+    content,
+    questionId: questionId || null
+  };
+
+  stompClient.value.publish({
+    destination: `/app/chat-room/${sessionId}`,
+    body: JSON.stringify(payload)
+  });
+};
+
+const getQuiz = () => {
+  if (!stompClient.value?.connected) return;
+  const sessionId = route.params.sessionId as string;
+  const payload = {
+    content: "퀴즈주세요",
+  }
+  stompClient.value.publish({
+    destination: `/app/quiz/${sessionId}`,
+    body: JSON.stringify(payload)
+  });
+};
+
+// 학생들에게 퀴즈 전송
+const sendQuizToStudents = (quizzes: any) => {
+  if (!stompClient.value?.connected) return;
+  const sessionId = route.params.sessionId as string;
+
+  stompClient.value.publish({
+    destination: `/app/quiz/send/${sessionId}`,
+    body: JSON.stringify(quizzes)
+  });
+
+  console.log('[Trainer Live] Quiz sent to students:', quizzes);
+};
+
+// provide로 하위 컴포넌트에 함수 전달
+provide('sendQuizToStudents', sendQuizToStudents);
+provide('getQuiz', getQuiz);
+
+// --- 퀵 퀴즈 모달 관리 ---
+// quizData가 업데이트되면 모달 자동 열기
+watch(quizData, (newData) => {
+  if (newData && Object.keys(newData).length > 0) {
+    isQuickQuizModalOpen.value = true;
+  }
+});
+
+const handleQuickQuizClose = () => {
+  isQuickQuizModalOpen.value = false;
+};
+
+const handleQuickQuizSend = (quiz: any) => {
+  sendQuizToStudents(quiz);
+  isQuickQuizModalOpen.value = false;
+  alert('퀴즈가 학생들에게 전달되었습니다.');
+};
+
 onMounted(async () => {
   const sessionId = route.params.sessionId as string;
   await trainerLiveStore.initJanus(sessionId);
+  connectWebSocket();
+});
+
+onUnmounted(() => {
+  stompClient.value?.deactivate();
 });
 
 // --- 수업 종료 로직 ---
@@ -91,11 +230,11 @@ const handleEndSession = async () => {
           <div v-show="activeTab !== 'status'" class="flex-1 overflow-hidden">
             <Transition name="fade" mode="out-in">
               <!-- 2-1. 채팅 패널 -->
-              <TrainerLiveChatContainer v-if="activeTab === 'chat'" key="tab-chat"
-                :roomId="(route.params.sessionId as string)" :viewType="'chat'" />
+              <TrainerLiveChatContainer v-if="activeTab === 'chat'" key="tab-chat" :chatList="chatList" :qaList="qaList"
+                :viewType="'chat'" @send-message="sendChatMessage" />
               <!-- 2-2. 질문 패널 -->
-              <TrainerLiveChatContainer v-else key="tab-qa" :roomId="(route.params.sessionId as string)"
-                :viewType="'qa'" />
+              <TrainerLiveChatContainer v-else key="tab-qa" :chatList="chatList" :qaList="qaList" :viewType="'qa'"
+                @send-message="sendChatMessage" />
             </Transition>
           </div>
         </div>
@@ -137,6 +276,10 @@ const handleEndSession = async () => {
         </div>
       </div>
     </Transition>
+
+    <!-- 퀵 퀴즈 모달 -->
+    <QuickQuizModal :isOpen="isQuickQuizModalOpen" :quizData="quizData" @close="handleQuickQuizClose"
+      @send-to-students="handleQuickQuizSend" />
   </div>
 </template>
 

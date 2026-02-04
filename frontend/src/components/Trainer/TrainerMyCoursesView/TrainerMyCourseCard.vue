@@ -31,7 +31,7 @@
                     </div>
                     <div>
                         <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">수강생</div>
-                        <div class="text-base font-bold text-slate-900">{{ displayCourse('learnerCount') || 0 }}명</div>
+                        <div class="text-base font-bold text-slate-900">{{ displayCourse('learnersCount') || 0 }}명</div>
                     </div>
                 </div>
                 <!-- 총 세션 수 -->
@@ -42,7 +42,7 @@
                     </div>
                     <div>
                         <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">세션</div>
-                        <div class="text-base font-bold text-slate-900">{{ displayCourse('totalSessionCount') || 0 }}개
+                        <div class="text-base font-bold text-slate-900">{{ displayCourse('totalLessons') || 0 }}개
                         </div>
                     </div>
                 </div>

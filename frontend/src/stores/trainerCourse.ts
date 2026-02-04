@@ -24,17 +24,14 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
     status: data.status,
   });
 
-  // 워크스페이스의 모든 코스 목록 가져오기
+  // 워크스페이스의 모든 코스 목록 가져오기(강사)
   async function fetchWorkspaceAllCourses(workspaceId: string | number) {
     isLoading.value = true;
     try {
       const response = await api.get(`/workspaces/${workspaceId}/courses`);
-      workspaceAllCourses.value = Array.isArray(response.data)
-        ? response.data.map(mapTrainerCourse)
-        : [];
+      workspaceAllCourses.value = response.data;
     } catch (error) {
       console.error("워크스페이스 모든 코스 목록 로드 실패:", error);
-
       workspaceAllCourses.value = [];
     } finally {
       isLoading.value = false;
