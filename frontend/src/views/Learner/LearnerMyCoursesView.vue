@@ -58,7 +58,7 @@
             <p class="text-slate-500 mb-6">{{ emptyStateMessage }}</p>
             <button 
                 v-if="activeTab === 'ongoing'"
-                @click="$router.push(`/learner/workspaces/${workspaceId}`)"
+                @click="$router.push(`/workspace/${workspaceId}/learner`)"
                 class="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm hover:shadow-md">
                 강의 목록 보러가기
             </button>
@@ -97,7 +97,7 @@ const homeRoute = computed(() => {
 // 1. 학습 중인 과정
 const ongoingCourses = computed(() =>
     myEnrolledCourses.value.filter(course =>
-        course.status === "PROCEED" || course.status === "INVITE"
+        course.status === "PROCEED" || course.status === "INVITE" || course.status === "PREPARING"
     )
 );
 
