@@ -26,17 +26,17 @@
                     </g>
 
                     <!-- 데이터 영역 (전체 클래스) -->
-                    <polygon :points="getDataPoints(classMoodData)" 
+                    <polygon :points="getDataPoints(props.classMoodData)" 
                             class="fill-indigo-500/20 stroke-indigo-400 stroke-dashed" 
                             stroke-width="1.5" stroke-dasharray="4 4" />
                     
                     <!-- 데이터 영역 (나의 무드) -->
-                    <polygon :points="getDataPoints(personalMoodData)" 
+                    <polygon :points="getDataPoints(props.personalMoodData)" 
                             class="fill-emerald-500/30 stroke-emerald-600" 
                             stroke-width="2" />
                     
                     <!-- 데이터 포인트 (나의 무드만 표시하거나 둘 다 표시) -->
-                    <circle v-for="(point, index) in getDataPointsArray(personalMoodData)" :key="'p-'+index"
+                    <circle v-for="(point, index) in getDataPointsArray(props.personalMoodData)" :key="'p-'+index"
                             :cx="point.x" :cy="point.y" r="3" class="fill-emerald-600" />
                     
 
@@ -76,8 +76,10 @@ const labels = [
 ];
 
 // 예시 데이터 (0~1 사이 값)
-const classMoodData = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
-const personalMoodData = [0.8, 0.6, 0.4, 0.3, 0.2, 0.5, 0.7];
+const props = defineProps<{
+    personalMoodData: number[];
+    classMoodData: number[];
+}>();
 
 // 7각형 꼭짓점 좌표 계산 (문자열 반환)
 function getPolygonPoints(scale: number) {

@@ -136,10 +136,74 @@ function processTimelineData(data: MockDataItem[]) {
     return { timeline, moodDistribution };
 }
 
+// 2. Process Mood Graph Data (Radar Chart)
+// Helper to normalize emotion graph data to [happy, surprise, fear, disgust, sad, anger, neutral] order
+function processMoodGraphData(graphData: any[]): number[] {
+    if (!graphData || graphData.length === 0) return [0, 0, 0, 0, 0, 0, 0];
+
+    // Initialize map
+    const emotionMap: Record<string, number> = {
+        happy: 0,
+        surprise: 0,
+        fear: 0,
+        disgust: 0,
+        sad: 0,
+        angry: 0, // API returns 'angry'
+        anger: 0, // Fallback
+        neutral: 0
+    };
+
+    // Sum values (if multiple entries exist per emotion) or take max?
+    // User sample shows multiple entries for same emotion (index 0, 1 etc). 
+    // Assuming we should average them or sum them?
+    // Wait, the user sample shows:
+    // { index: 0, name: "happy", value: 60.5 }, { index: 0, name: "happy", value: 15.0 }...
+    // This looks like time-series data or something. But for a single radar chart, we usually need AGGREGATED values.
+    // However, looking at the sample values (60.5, 15.0), they sum up to > 1. 
+    // The chart expects 0~1 normalized values.
+    // If the values are percentages (0-100), we need to divide by 100.
+    
+    // Strategy: Sum up values per emotion and then normalize if needed.
+    // If it's percentage, divide by 100.
+
+    graphData.forEach(item => {
+        const name = item.name.toLowerCase();
+        if (emotionMap[name] !== undefined) {
+            // Use maximum value or sum? 
+            // If it's distinct occurrences, maybe sum triggers larger area?
+            // Let's assume average for now if multiple, or just Sum if they form parts.
+            // Actually, if input is {happy: 60.5, happy: 15.0}, maybe it's just raw data points.
+            // Let's take the MAX for now to show peak intensity, or AVERAGE.
+            // Let's go with Average for the session summary.
+            // BUT wait, simple approach: Map specific keys to specific indices.
+            
+            // Let's just accumulate for now.
+             emotionMap[name] += item.value;
+        }
+    });
+
+    // Handle 'angry' -> 'anger' key consolidation if needed for our array map
+    const angerVal = (emotionMap.angry || 0) + (emotionMap.anger || 0);
+
+    // Normalize to 0~1 range if values are > 1 (assuming percentage like 60.5)
+    // We will cap at 100 for normalization base.
+    const normalize = (val: number) => Math.min(val / 100, 1);
+
+    return [
+        normalize(emotionMap.happy || 0),
+        normalize(emotionMap.surprise || 0),
+        normalize(emotionMap.fear || 0),
+        normalize(emotionMap.disgust || 0),
+        normalize(emotionMap.sad || 0),
+        normalize(angerVal),
+        normalize(emotionMap.neutral || 0)
+    ];
+}
+
 // 3. Process Emotion Segments (Timeline bars) - Only for Learner
 function processEmotionSegments(data: MockDataItem[]) {
     const segments: { start: number, end: number, type: 'happy' | 'surprise' | 'fear' | 'disgust' | 'sad' | 'anger' | 'neutral' }[] = [];
-    if (!data || data.length === 0) return segments;
+    if (!data || data.length === 0 || !data[0]) return segments;
 
     const firstItem = data[0];
     const lastItem = data[data.length - 1];
@@ -148,7 +212,7 @@ function processEmotionSegments(data: MockDataItem[]) {
     if (currentType === 'angry') currentType = 'anger';
 
     let startTime = firstItem.timeline / 60;
-    const maxTime = lastItem.timeline;
+    const maxTime = lastItem?.timeline || 0;
 
     for (let i = 1; i < data.length; i++) {
         const item = data[i];
@@ -235,6 +299,24 @@ async function loadReviewData(sessionId: string) {
             mockClassMood.value = trainerProcessed.moodDistribution;
         } else {
             console.warn("[Review] No TrainerTimelineData found.");
+        }
+
+        const moodData = await fetchMoodData(sessionId);
+        console.log("[Review] Mood Data:", moodData);
+
+        if (moodData) {
+            // API Response: { learnerEmotionGraph: [], trainerEmotionGraph: [] }
+            // Each graph is array of { index, name, value }
+            
+            if (moodData.learnerEmotionGraph) {
+                mockPersonalMood.value = processMoodGraphData(moodData.learnerEmotionGraph);
+                console.log("[Review] Processed Personal Mood:", mockPersonalMood.value);
+            }
+
+            if (moodData.trainerEmotionGraph) {
+                mockClassMood.value = processMoodGraphData(moodData.trainerEmotionGraph);
+                console.log("[Review] Processed Class Mood:", mockClassMood.value);
+            }
         }
 
     } catch (error) {
