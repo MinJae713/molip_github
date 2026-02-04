@@ -1,6 +1,7 @@
 package com.edumax.molip.domain.chatting.controller;
 
 import com.edumax.molip.common.model.MemberUserDetails;
+import com.edumax.molip.domain.chatting.dto.request.QnaMessage;
 import com.edumax.molip.domain.chatting.dto.response.ChattingMessage;
 import com.edumax.molip.domain.chatting.dto.response.QuestionMessage;
 import com.edumax.molip.domain.chatting.service.ChattingService;
@@ -66,6 +67,7 @@ public class ChattingController {
   public ResponseEntity<List<QnaMessageResponse>> getQnaMessages(
       @PathVariable Long sessionId, @PathVariable Long memberId) {
 
+    chattingService.createChatRoom(sessionId, memberId);
     List<QnaMessageResponse> qnaMessageResponseList =
         chattingService.readAllMessages(sessionId, memberId).stream()
             .map(
@@ -81,18 +83,25 @@ public class ChattingController {
 
   @MessageMapping("/qna-room/{sessionId}/{memberId}")
   public void sendQnAMessage(
-      QnAMessage qnaMessage,
+      QnaMessage qnaMessage,
       @DestinationVariable Long sessionId,
       @DestinationVariable Long memberId) {
-    chattingService.createChatRoom(sessionId, memberId);
     QnaMessageResponse aiMessageResponse =
-        chattingService.getAiAnswerAndSaveMessage(sessionId, memberId, qnaMessage.content);
+        chattingService.getAiAnswerAndSaveMessage(sessionId, memberId, qnaMessage.getContent());
 
     messagingTemplate.convertAndSend(
         "/topic/qna-room/" + sessionId + "/" + memberId, aiMessageResponse);
   }
 
-  public class QnAMessage {
-    private String content;
+  @MessageMapping("/qna-room/{sessionId}/{memberId}/test")
+  public void sendQnAMessageTest(
+      QnaMessage qnaMessage,
+      @DestinationVariable Long sessionId,
+      @DestinationVariable Long memberId) {
+    QnaMessageResponse aiMessageResponse =
+        chattingService.getAiAnswerAndSaveMessageTest(sessionId, memberId, qnaMessage.getContent());
+
+    messagingTemplate.convertAndSend(
+        "/topic/qna-room/" + sessionId + "/" + memberId, aiMessageResponse);
   }
 }

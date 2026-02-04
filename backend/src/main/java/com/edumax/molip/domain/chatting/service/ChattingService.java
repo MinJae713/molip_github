@@ -83,4 +83,25 @@ public class ChattingService {
 
     return new ChattingController.QnaMessageResponse(timestamp, 0L, response.getAnswer());
   }
+
+  public ChattingController.QnaMessageResponse getAiAnswerAndSaveMessageTest(
+      Long sessionId, Long memberId, String content) {
+    QnaRequest request =
+        QnaRequest.newBuilder()
+            .setSessionId(sessionId.toString())
+            .setMemberId(memberId.toString())
+            .setQuestion("안녕하세요. 테스트 질문입니다. 인사해주세요")
+            .build();
+
+    log.info("QNA TEST REQUEST SENT {}", request.getQuestion());
+    QnaResponse response = qnaServiceBlockingStub.createQna(request);
+    log.info("QNA AI ANSWER: {}", response.getAnswer());
+
+    LocalDateTime timestamp = LocalDateTime.now();
+
+    eventPublisher.publishEvent(
+        new QnaMessageSaveEvent(timestamp, content, response.getAnswer(), sessionId, memberId));
+
+    return new ChattingController.QnaMessageResponse(timestamp, 0L, response.getAnswer());
+  }
 }
