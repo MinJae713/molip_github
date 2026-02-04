@@ -10,10 +10,6 @@
         </div>
         <div class="flex gap-3">
             <button
-                class="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 shadow-sm transition-colors">
-                강의실 입장
-            </button>
-            <button
                 class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-sm shadow-indigo-200 transition-colors flex items-center gap-2">
                 <span class="material-symbols-outlined text-[18px]">edit</span>
                 과정 수정

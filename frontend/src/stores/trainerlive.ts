@@ -327,7 +327,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
           roomHandle.value!.send({ message: publish, jsep });
 
           // 구독
-          // handleConnectWs();
+          handleConnectWs();
           // [New] 분석 시작 API 호출
           try {
             console.log("Starting analysis for session", sessionId.value);
@@ -429,7 +429,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
   }
   const handleSubscribe = () => {
     // 강사(Trainer)는 세션 전체의 집계 데이터를 수신합니다.
-    stompClient.subscribe(`/topic/analysis/${sessionId}`, (res: any) => {
+    stompClient.subscribe(`/topic/analysis/${sessionId.value}`, (res: any) => {
       console.log("📥 [Raw STOMP Message]:", res.body);
       const data = JSON.parse(res.body);
 
@@ -469,7 +469,9 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
         // analysisLogs.value.unshift(data);
       }
     });
-    console.log(`🔔 구독 시작 완료 (Target: /topic/analysis/${sessionId})`);
+    console.log(
+      `🔔 구독 시작 완료 (Target: /topic/analysis/${sessionId.value})`,
+    );
   };
 
   // 분석결과 수신용 stomp 연결

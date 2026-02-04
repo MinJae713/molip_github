@@ -67,17 +67,32 @@ export const useTrainerSessionStore = defineStore("trainerSession", () => {
 
   // 세션 생성
   async function createSession(
-    workspaceId: string | number,
+    workspaceId: string | number, // used for refresh
     courseId: string | number,
-    payload: Partial<Session>,
+    payload: any,
   ) {
     try {
-      await api.post(`/courses/${courseId}/sessions`, {
-        ...payload,
-        course_id: Number(courseId),
-      });
-      await fetchManagedSessions(workspaceId, courseId); // 목록 갱신
-      return true;
+      const requestData = {
+        courseId: Number(courseId),
+        title: payload.title,
+        description: payload.description,
+        date: payload.date,
+        startAt: payload.startAt,
+        endAt: payload.endAt,
+        useFocus: payload.useFocus,
+        useEmotion: payload.useEmotion,
+        useQuiz: payload.useQuiz,
+        quizCount: payload.quizCount || 0,
+      };
+
+      console.log("[createSession] Request Body:", requestData);
+      const response = await api.post(`/session`, requestData);
+      console.log("[createSession] Response:", response.data);
+      // 3. 목록 갱신
+      await fetchManagedSessions(workspaceId, courseId);
+
+      // 성공 시 sessionId 반환 (혹은 true)
+      return response.data;
     } catch (error) {
       console.error("세션 생성 실패:", error);
       return false;

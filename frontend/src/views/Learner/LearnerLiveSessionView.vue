@@ -81,7 +81,7 @@ const newMessage = ref('');
 const isAnonymous = ref(false);
 
 // WebSocket 상태 관리
-const stompClient = ref<Client | null>(null);
+// const stompClient = ref<Client | null>(null);
 const chatList = ref<any[]>([]);
 const qaList = ref<any[]>([]);
 const surpriseQuizData = ref<any>(null);
@@ -132,7 +132,7 @@ const connectStomp = () => {
         console.log("STOMP Connected!");
         isConnected.value = true; // 연결 상태 업데이트
         // 결과 구독
-        stompClient.subscribe(`/topic/analysis/${sessionId}/4`, (res: any) => {
+        stompClient.subscribe(`/topic/analysis/${sessionId}/${memberId}`, (res: any) => {
             const result = JSON.parse(res.body);
             console.log("분석 결과 수신:", result);
 
@@ -164,7 +164,7 @@ const connectStomp = () => {
 // Binary WebSocket 연결 (이미지 전송)
 const connectBinarySocket = () => {
     // 쿼리 파라미터로 토큰 전송
-    const url = `wss://i14a309.p.ssafy.io/emotion/${sessionId}?member-id=4`;
+    const url = `wss://i14a309.p.ssafy.io/emotion/${sessionId}?member-id=${memberId}`;
     console.log(`[Binary] Connecting to: ${url}`);
 
     try {
@@ -305,10 +305,10 @@ const handleAnalysisResult = (focusData: GazeResult) => {
         empty: focusData.isAbsent
     }
 
-    console.log(`📤 [Learner] Sending analysis data to /app/concentrate/${sessionId}/4`, payload);
+    console.log(`📤 [Learner] Sending analysis data to /app/concentrate/${sessionId}/${memberId}`, payload);
 
     stompClient.send(
-        `/app/concentrate/${sessionId}/4`,
+        `/app/concentrate/${sessionId}/${memberId}`,
         {},
         JSON.stringify(payload)
     );
@@ -331,7 +331,7 @@ const connectWebSocket = () => {
             console.log('[Learner] WebSocket Connected ✅');
 
             // 1. 채팅/질문 구독
-            stompClient.value?.subscribe(`/topic/chat-room/${sessionId}`, (res) => {
+            stompClient.value?.subscribe(`/topic/chat-room/${sessionId}`, (res: any) => {
                 console.log('[Learner] Chat/QA Message:', res.body);
                 const msg = JSON.parse(res.body);
 
@@ -343,7 +343,7 @@ const connectWebSocket = () => {
             });
 
             // 2. 서프라이즈 퀴즈 구독
-            stompClient.value?.subscribe(`/topic/surprise-quiz/${sessionId}`, (res) => {
+            stompClient.value?.subscribe(`/topic/surprise-quiz/${sessionId}`, (res: any) => {
                 console.log('[Learner] Surprise Quiz:', res.body);
                 surpriseQuizData.value = JSON.parse(res.body);
                 isQuizModalOpen.value = true;

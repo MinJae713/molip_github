@@ -9,7 +9,7 @@
         <!-- 탭 네비게이션 -->
         <div class="border-b border-slate-200">
             <div class="flex space-x-8">
-                <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
+                <button v-for="tab in tabs" :key="tab.id" @click="handleTabChange(tab.id)"
                     class="pb-3 px-1 border-b-2 text-sm font-medium transition-colors"
                     :class="activeTab === tab.id ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'">
                     {{ tab.label }}
@@ -22,6 +22,13 @@
             <!-- 세션 일정 관리 -->
             <div v-if="activeTab === 'session'">
                 <TrainerSessionList :sessions="sessionList" @start-live="handleStartLive" />
+            </div>
+            <!-- 수강생 관리 -->
+            <div v-else-if="activeTab === 'student'" class="space-y-6">
+                <!-- 참가 신청 현황 -->
+                <TrainerStudentRequestList />
+                <!-- 수강생 명단 -->
+                <TrainerStudentList />
             </div>
             <!-- 다른 탭 placeholder -->
             <div v-else class="py-20 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
@@ -39,6 +46,8 @@ import type { Session } from '@/types';
 import TrainerCourseDetailHeader from '@/components/Trainer/TrainerCourseView/TrainerCourseDetailHeader.vue';
 import TrainerCourseStats from '@/components/Trainer/TrainerCourseView/TrainerCourseStats.vue';
 import TrainerSessionList from '@/components/Trainer/TrainerCourseView/TrainerSessionList.vue';
+import TrainerStudentRequestList from '@/components/Trainer/TrainerCourseView/TrainerStudentRequestList.vue';
+import TrainerStudentList from '@/components/Trainer/TrainerCourseView/TrainerStudentList.vue';
 const router = useRouter();
 const route = useRoute();
 
@@ -54,12 +63,31 @@ const tabs = [
     { id: 'stats', label: '교육통계' }
 ];
 
+const handleTabChange = async (tabId: string) => {
+    activeTab.value = tabId;
+    const courseId = route.params.courseId;
+    if (!courseId) return;
+
+    if (tabId === 'student') {
+        await Promise.all([
+            trainerCourseStore.fetchStudentRequests(courseId as string),
+            trainerCourseStore.fetchStudents(courseId as string)
+        ]);
+    }
+};
+
 onMounted(async () => {
     const courseId = route.params.courseId;
     console.log("courseId", courseId);
     if (courseId) {
         sessionList.value = await trainerCourseStore.fetchCourseSessions(Number(courseId));
-        console.log("sessionList", sessionList.value);
+        // 초기 로드 시 탭에 따라 데이터 로드
+        if (activeTab.value === 'student') {
+            await Promise.all([
+                trainerCourseStore.fetchStudentRequests(courseId as string),
+                trainerCourseStore.fetchStudents(courseId as string)
+            ]);
+        }
     }
 });
 
