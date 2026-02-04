@@ -39,7 +39,7 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
   private final CourseApplyRepository courseApplyRepository;
   private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
-  private final String SESSION_JOIN_FORMAT = "session:join:session-id:%s";
+  private String SESSION_JOIN_FORMAT = "session:join:session-id:%s";
 
   private final Map<String, WebSocketSession> clientToJanusMap = new ConcurrentHashMap<>();
   private final Map<String, WebSocketSession> janusToClientMap = new ConcurrentHashMap<>();
