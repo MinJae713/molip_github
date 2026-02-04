@@ -1,5 +1,5 @@
 <template>
-    <div class="h-[280px] flex-none border-t border-slate-200 bg-slate-50 flex flex-col">
+    <div class="h-full flex-none border-t border-slate-200 bg-slate-50 flex flex-col">
         <div class="px-4 py-2 border-b border-slate-200 flex items-center justify-between bg-white flex-none">
             <div class="flex items-center gap-2">
                 <span class="material-symbols-outlined text-indigo-600 text-[18px]">forum</span>
