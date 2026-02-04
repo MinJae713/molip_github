@@ -252,7 +252,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
           roomHandle.value!.send({ message: publish, jsep });
 
           // 구독
-          handleConnectWs();
+          // handleConnectWs();
           // [New] 분석 시작 API 호출
           try {
             console.log("Starting analysis for session", sessionId.value);
