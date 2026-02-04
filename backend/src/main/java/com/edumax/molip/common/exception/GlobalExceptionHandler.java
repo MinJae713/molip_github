@@ -6,6 +6,9 @@ import com.edumax.molip.domain.course.exception.NoZzimException;
 import com.edumax.molip.domain.member.exception.DuplicateEmailException;
 import com.edumax.molip.domain.member.exception.NoAdminException;
 import com.edumax.molip.domain.member.exception.NoMemberException;
+import com.edumax.molip.domain.quiz.exception.DuplicatedSolvedExitQuizException;
+import com.edumax.molip.domain.quiz.exception.IncorrectExitQuizAnswerException;
+import com.edumax.molip.domain.quiz.exception.InvalidCourseLearnerException;
 import com.edumax.molip.domain.quiz.exception.InvalidExitQuizAnswerNumberException;
 import com.edumax.molip.domain.quiz.exception.NoCreateExitQuizPermitException;
 import com.edumax.molip.domain.quiz.exception.NoExitQuizAnswerException;
@@ -87,7 +90,10 @@ public class GlobalExceptionHandler {
     NoExitQuizException.class,
     NoExitQuizAnswerException.class,
     NoExitQuizResultException.class,
-    InvalidExitQuizAnswerNumberException.class
+    InvalidExitQuizAnswerNumberException.class,
+    InvalidCourseLearnerException.class,
+    IncorrectExitQuizAnswerException.class,
+    DuplicatedSolvedExitQuizException.class
   })
   public ResponseEntity<ErrorResponse> handleQuizBadRequestException(RuntimeException e) {
     ErrorResponse body = ErrorResponse.create(e, HttpStatus.BAD_REQUEST, e.getMessage());

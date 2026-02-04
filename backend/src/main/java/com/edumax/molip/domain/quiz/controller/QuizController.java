@@ -2,7 +2,7 @@ package com.edumax.molip.domain.quiz.controller;
 
 import com.edumax.molip.common.model.MemberUserDetails;
 import com.edumax.molip.domain.quiz.dto.request.CreateExitQuizRequest;
-import com.edumax.molip.domain.quiz.dto.request.SubmitExitQuizListRequest;
+import com.edumax.molip.domain.quiz.dto.request.SubmitExitQuizRequest;
 import com.edumax.molip.domain.quiz.dto.response.AiQuizMessage;
 import com.edumax.molip.domain.quiz.dto.response.CreateExitQuizResponse;
 import com.edumax.molip.domain.quiz.dto.response.FindExitQuizResponse;
@@ -17,7 +17,6 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -60,10 +59,10 @@ public class QuizController {
   }
 
   @PostMapping("/{sessionId}/exit/submit")
-  public ResponseEntity<SubmitExitQuizListResponse> submitExitQuizList(
+  public ResponseEntity<List<SubmitExitQuizListResponse>> submitExitQuizList(
       @PathVariable Long sessionId,
       @AuthenticationPrincipal MemberUserDetails member,
-      @Validated @RequestBody SubmitExitQuizListRequest submitExitQuizListRequest) {
+      @Valid @RequestBody List<SubmitExitQuizRequest> submitExitQuizListRequest) {
     return ResponseEntity.ok(
         exitQuizService.submitExitQuizList(
             sessionId, member.getMemberId(), submitExitQuizListRequest));

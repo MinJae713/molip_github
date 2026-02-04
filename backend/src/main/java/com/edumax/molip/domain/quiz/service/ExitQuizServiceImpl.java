@@ -4,23 +4,31 @@ import com.edumax.molip.domain.course.entity.Course;
 import com.edumax.molip.domain.member.entity.Member;
 import com.edumax.molip.domain.quiz.dto.request.CreateExitQuizRequest;
 import com.edumax.molip.domain.quiz.dto.request.CreateExitQuizRequest.CreateExitQuizAnswerRequest;
-import com.edumax.molip.domain.quiz.dto.request.SubmitExitQuizListRequest;
+import com.edumax.molip.domain.quiz.dto.request.SubmitExitQuizRequest;
 import com.edumax.molip.domain.quiz.dto.response.CreateExitQuizResponse;
 import com.edumax.molip.domain.quiz.dto.response.FindExitQuizResponse;
 import com.edumax.molip.domain.quiz.dto.response.FindExitQuizResponse.FindExitQuizAnswerResponse;
 import com.edumax.molip.domain.quiz.dto.response.SubmitExitQuizListResponse;
 import com.edumax.molip.domain.quiz.entity.ExitQuiz;
 import com.edumax.molip.domain.quiz.entity.ExitQuizAnswer;
+import com.edumax.molip.domain.quiz.entity.ExitQuizResult;
+import com.edumax.molip.domain.quiz.exception.DuplicatedSolvedExitQuizException;
+import com.edumax.molip.domain.quiz.exception.IncorrectExitQuizAnswerException;
+import com.edumax.molip.domain.quiz.exception.InvalidCourseLearnerException;
 import com.edumax.molip.domain.quiz.exception.InvalidExitQuizAnswerNumberException;
 import com.edumax.molip.domain.quiz.exception.NoCreateExitQuizPermitException;
+import com.edumax.molip.domain.quiz.exception.NoExitQuizException;
 import com.edumax.molip.domain.quiz.repository.ExitQuizAnswerRepository;
 import com.edumax.molip.domain.quiz.repository.ExitQuizRepository;
 import com.edumax.molip.domain.quiz.repository.ExitQuizResultRepository;
+import com.edumax.molip.domain.session.entity.CourseLearner;
 import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.session.exception.NoSessionException;
 import com.edumax.molip.domain.session.repository.SessionRepository;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -102,9 +110,55 @@ public class ExitQuizServiceImpl implements ExitQuizService {
 
   @Override
   @Transactional
-  public SubmitExitQuizListResponse submitExitQuizList(
-      Long sessionId, Long memberId, SubmitExitQuizListRequest submitExitQuizListRequest) {
-    System.out.println("증답 제출");
-    return null;
+  public List<SubmitExitQuizListResponse> submitExitQuizList(
+      Long sessionId, Long memberId, List<SubmitExitQuizRequest> submitExitQuizListRequest) {
+    // 멤버 검증 - 해당 세션 수강생인지 확인
+    Session session = sessionRepository.findById(sessionId).orElseThrow(NoSessionException::new);
+    Course course = session.getCourse();
+    List<CourseLearner> courseLearners = course.getCourseLearners();
+    boolean isCourseLearner = false;
+    WorkspaceMember currentWorkspaceMember = null;
+    for (CourseLearner courseLearner : courseLearners) {
+      WorkspaceMember workspaceMember = courseLearner.getWorkspaceMember();
+      Member member = workspaceMember.getMember();
+      if (member.getId().equals(memberId)) {
+        isCourseLearner = true;
+        currentWorkspaceMember = workspaceMember;
+        break;
+      }
+    }
+    if (!isCourseLearner) {
+      throw new InvalidCourseLearnerException();
+    }
+    // 퇴실 퀴즈 답안 검증 및 저장
+    if (session.getExitQuizzes().size() != submitExitQuizListRequest.size()) {
+      throw new IncorrectExitQuizAnswerException();
+    }
+    List<SubmitExitQuizListResponse> result = new ArrayList<>();
+    for (SubmitExitQuizRequest submitExitQuizRequest : submitExitQuizListRequest) {
+      Long exitQuizId = submitExitQuizRequest.getExitQuizId();
+      ExitQuiz exitQuiz =
+          exitQuizRepository.findById(exitQuizId).orElseThrow(NoExitQuizException::new);
+      Optional<ExitQuizResult> exitQuizResult =
+          exitQuizResultRepository.findByExitQuizAndWorkspaceMember(
+              exitQuiz, currentWorkspaceMember);
+      if (exitQuizResult.isPresent()) {
+        throw new DuplicatedSolvedExitQuizException();
+      }
+
+      Integer number = submitExitQuizRequest.getNumber();
+      boolean answerResult = exitQuiz.getAnswerNumber().equals(number);
+      exitQuizResultRepository.save(
+          ExitQuizResult.builder()
+              .resultNumber(number)
+              .result(answerResult)
+              .exitQuiz(exitQuiz)
+              .workspaceMember(currentWorkspaceMember)
+              .build());
+      result.add(
+          SubmitExitQuizListResponse.builder().exitQuizId(exitQuizId).result(answerResult).build());
+    }
+
+    return result;
   }
 }

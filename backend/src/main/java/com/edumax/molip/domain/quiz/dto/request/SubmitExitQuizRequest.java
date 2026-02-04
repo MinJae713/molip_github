@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SubmitExitQuizListRequest {
+public class SubmitExitQuizRequest {
 
   @NotNull(message = "퇴실 퀴즈 아이디는 필수값입니다.")
   @Positive(message = "퇴실 퀴즈 아이디는 양수여야 합니다.")

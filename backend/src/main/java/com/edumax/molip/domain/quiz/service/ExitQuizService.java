@@ -1,7 +1,7 @@
 package com.edumax.molip.domain.quiz.service;
 
 import com.edumax.molip.domain.quiz.dto.request.CreateExitQuizRequest;
-import com.edumax.molip.domain.quiz.dto.request.SubmitExitQuizListRequest;
+import com.edumax.molip.domain.quiz.dto.request.SubmitExitQuizRequest;
 import com.edumax.molip.domain.quiz.dto.response.CreateExitQuizResponse;
 import com.edumax.molip.domain.quiz.dto.response.FindExitQuizResponse;
 import com.edumax.molip.domain.quiz.dto.response.SubmitExitQuizListResponse;
@@ -17,6 +17,6 @@ public interface ExitQuizService {
 
   //  void deleteExitQuiz();
 
-  SubmitExitQuizListResponse submitExitQuizList(
-      Long sessionId, Long memberId, SubmitExitQuizListRequest submitExitQuizListRequest);
+  List<SubmitExitQuizListResponse> submitExitQuizList(
+      Long sessionId, Long memberId, List<SubmitExitQuizRequest> submitExitQuizListRequest);
 }
