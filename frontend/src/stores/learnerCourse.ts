@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 
 import api from "@/api";
-import type { LearnerCourse, Material, ZzimCourse } from "@/types";
+import type { LearnerCourse, Material, ZzimCourse, WorkspaceStats } from "@/types";
 
 // 이 스토어는 수강생(Learner)이 수강 중인 코스를 관리하는 역할에 집중
 // 강사가 관리하는 코스 정보는 `stores/trainerCourse.ts`를 사용
@@ -16,6 +16,7 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
   const courseMaterials = ref<Material[]>([]); // (수강생 뷰) 강의 자료 목록
   const isLoading = ref(false);
   const myCoursesAttendanceRate = ref<number | null>(null);
+  const workspaceStats = ref<WorkspaceStats | null>(null);
 
   // 캐싱용
   const materialsCache = ref<Map<string | number, Material[]>>(new Map());
@@ -82,6 +83,23 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
     }
   }
 
+  // [R] 수료한 강의 목록
+  const myCertificatedCourses = ref<any[]>([]); // 타입 호환을 위해 any 또는 별도 인터페이스 사용
+  async function fetchMyCertificatedCourses(workspaceId: string | number) {
+    if (!workspaceId) return;
+    isLoading.value = true;
+    try {
+      const response = await api.get(`/courses/${workspaceId}/certificated`);
+      myCertificatedCourses.value = response.data;
+      console.log("[Learner] 수료 강의 로드 성공:", myCertificatedCourses.value);
+    } catch (error) {
+      console.error("[Learner] 수료 강의 로드 실패:", error);
+      myCertificatedCourses.value = [];
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   // [U] 강의 찜하기 토글
   // [수정] 성공 여부를 반환하도록(boolean) 반환 타입 수정
   async function toggleCourseLike(
@@ -92,7 +110,7 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
     try {
       const response = await api.post(`/courses/${workspaceId}/zzim`, {
         courseId: Number(courseId),
-        isZzim: !isCurrentlyLiked 
+        isZzim: !isCurrentlyLiked
       });
 
       if (response.data.apiResult) {
@@ -103,10 +121,10 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
           const item = list.find(c => String(c.courseId) === String(courseId));
           if (item) item.isLiked = !isCurrentlyLiked;
         };
-        
+
         updateList(workspaceCourses.value);
         updateList(myEnrolledCourses.value);
-        
+
         console.log(`[Learner] 찜 ${!isCurrentlyLiked ? '등록' : '해제'} 성공`);
         return true; // ★ 성공 반환
       }
@@ -128,11 +146,17 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
       if (workspaceId) {
         await fetchMyEnrolledCourses(workspaceId);
         await fetchCoursesByWorkspace(workspaceId, true);
+        await fetchLikeCourses(workspaceId); // 찜 목록 갱신 (상태 변경 반영)
       }
-      return true;
-    } catch (error) {
+      return { success: true, status: 'ok' };
+    } catch (error: any) {
       console.error("[Learner] 수강 신청 실패:", error);
-      return false;
+      // 이미 신청된 경우 (백엔드 에러 메시지나 코드로 식별)
+      // 여기서는 에러 메시지에 '이미' 또는 409 상태코드를 체크한다고 가정
+      if (error.response?.status === 409 || error.response?.data?.message?.includes('이미')) {
+        return { success: false, status: 'already_applied', message: error.response?.data?.message };
+      }
+      return { success: false, status: 'error', message: '수강 신청 중 오류가 발생했습니다.' };
     } finally {
       isLoading.value = false;
     }
@@ -210,6 +234,18 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
     }
   }
 
+  // [R] 워크스페이스 상단 통계 박스
+  async function fetchWorkspaceStats(workspaceId: string | number) {
+    try {
+      // 백엔드 컨트롤러: @GetMapping("/{workspace_id}/stats")
+      const response = await api.get(`/workspaces/${workspaceId}/stats`);
+      workspaceStats.value = response.data;
+      console.log("[Learner] 통계 데이터 로드 성공:", workspaceStats.value);
+    } catch (error) {
+      console.error("[Learner] 통계 데이터 로드 실패:", error);
+    }
+  }
+
   return {
     myEnrolledCourses,
     workspaceCourses,
@@ -218,6 +254,8 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
     myCoursesAttendanceRate,
     courseInfo,
     courseMaterials,
+    workspaceStats,
+    fetchWorkspaceStats,
     fetchMyEnrolledCourses,
     fetchCoursesByWorkspace,
     toggleCourseLike,
@@ -227,5 +265,7 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
     fetchLikeCourses,
     fetchCourseInfo,
     fetchCourseMaterials,
+    myCertificatedCourses,
+    fetchMyCertificatedCourses,
   };
 });

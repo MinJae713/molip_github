@@ -13,8 +13,11 @@
         </nav>
         <div>
             <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">내 강의실</h1>
-            <LearnerMyCoursesStats :ongoingCount="ongoingCourses.length" :completedCount="completedCourses.length"
-                :attendanceRate="0" />
+            <LearnerMyCoursesStats 
+              :ongoingCount="courseStore.workspaceStats?.learningCourseCount || 0" 
+              :completedCount="courseStore.workspaceStats?.certificatedCount || 0"
+              :attendanceRate="courseStore.myCoursesAttendanceRate || 0" 
+            />
         </div>
         <div class="border-b border-slate-200">
             <nav aria-label="Tabs" class="flex gap-8">
@@ -43,7 +46,8 @@
                 :key="(course as any).courseId || (course as any).zzimId" 
                 :course="course as any" 
                 :workspace-id="(Array.isArray(workspaceId) ? workspaceId[0] : (workspaceId || '')) as string | number"
-                @enter-course="handleEnterCourse" />
+                @enter-course="handleEnterCourse" 
+                @enroll-course="handleEnrollCourse" />
         </div>
 
         <div v-else class="bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center">
@@ -51,11 +55,12 @@
                 class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
                 <span class="material-symbols-outlined text-3xl">school</span>
             </div>
-            <h3 class="text-lg font-bold text-slate-900 mb-2">과정이 없습니다.</h3>
-            <p class="text-slate-500 mb-6">아직 수강 중인 과정이 없습니다. 새로운 과정을 찾아보세요!</p>
-            <button @click="handleAddCourse"
-                class="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors">
-                과정 보러가기
+            <p class="text-slate-500 mb-6">{{ emptyStateMessage }}</p>
+            <button 
+                v-if="activeTab === 'ongoing'"
+                @click="$router.push(`/learner/workspaces/${workspaceId}`)"
+                class="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm hover:shadow-md">
+                강의 목록 보러가기
             </button>
         </div>
     </div>
@@ -96,12 +101,25 @@ const ongoingCourses = computed(() =>
     )
 );
 
-// 2. 종료된 과정
-const completedCourses = computed(() =>
-    myEnrolledCourses.value.filter(course =>
-        course.status === "FINISH"
-    )
-);
+// 2. 종료된 과정 (수료 + 상태가 FINISH인 강의)
+const { myCertificatedCourses } = storeToRefs(courseStore);
+const completedCourses = computed(() => {
+    // 1. 수료증 있는 강의
+    const certificated = myCertificatedCourses.value || [];
+    
+    // 2. 수강 목록 중 상태가 FINISH인 강의
+    const finished = (myEnrolledCourses.value || []).filter(c => c.status === 'FINISH');
+
+    // 3. 중복 제거 및 합치기 (courseId 기준)
+    const merged = [...certificated];
+    finished.forEach(f => {
+        if (!merged.some(m => String(m.courseId) === String(f.courseId))) {
+            merged.push(f);
+        }
+    });
+    
+    return merged;
+});
 
 // 3. 찜한 과정 (computed로 깔끔하게 정리)
 const likedCourses = computed(() => myLikedCourses.value);
@@ -109,18 +127,28 @@ const likedCourses = computed(() => myLikedCourses.value);
 // 탭별 동적 카운트
 const tabs = computed(() => [
     { id: 'ongoing', label: '학습 중인 과정', count: ongoingCourses.value.length },
-    { id: 'liked', label: '찜한 과정', count: likedCourses.value.length }, // [수정] count 로직 수정
+    { id: 'liked', label: '찜한 과정', count: likedCourses.value.length }, 
     { id: 'completed', label: '종료된 과정', count: completedCourses.value.length }
 ]);
+
+const emptyStateMessage = computed(() => {
+    switch (activeTab.value) {
+        case 'ongoing': return '아직 수강 중인 과정이 없습니다. 새로운 과정을 찾아보세요!';
+        case 'liked': return '찜한 과정이 없습니다. 관심 있는 강의를 찜해보세요!';
+        case 'completed': return '아직 종료된 과정이 없습니다. 열심히 학습하여 과정을 완료해보세요!';
+        default: return '과정이 없습니다.';
+    }
+});
 
 onMounted(async () => {
     const wsId = Array.isArray(workspaceId.value) ? workspaceId.value[0] : workspaceId.value;
     if (wsId) {
-        // [수정] 찜 목록과 수강 목록을 동시에 로드
+        // 모든 탭 관련 데이터 로드
         await Promise.all([
             courseStore.fetchMyEnrolledCourses(wsId),
             courseStore.fetchLikeCourses(wsId),
-            courseStore.fetchCoursesByWorkspace(wsId)
+            courseStore.fetchCoursesByWorkspace(wsId),
+            courseStore.fetchMyCertificatedCourses(wsId) // 수료 과정 로드
         ]);
     }
 });
@@ -146,23 +174,23 @@ const handleEnterCourse = (courseId: string | number) => {
 
 const handleEnrollCourse = async (courseId: string | number) => {
     if (confirm('이 과정을 수강신청하시겠습니까?')) {
-        // [수정] 스토어 enrollCourse 인자 순서 보정
-        const success = await courseStore.enrollCourse(
+        // [수정] 스토어 enrollCourse 반환값 처리
+        const result = await courseStore.enrollCourse(
             courseId, 
             (Array.isArray(workspaceId.value) ? workspaceId.value[0] : (workspaceId.value ?? '')) as string | number
         );
-        if (success) {
+        
+        // result가 객체 { success, status, message }
+        if (result && result.success) {
             alert('수강신청이 성공적으로 완료되었습니다. 관리자 승인을 기다려주세요.');
-            const wsId = Array.isArray(workspaceId.value) ? workspaceId.value[0] : workspaceId.value;
-            if (wsId) await courseStore.fetchMyEnrolledCourses(wsId);
+        } else if (result && result.status === 'already_applied') {
+            // [추가] 이미 신청된 경우 메시지 처리
+            alert('이미 수강신청된 강의입니다. (승인 대기 중)');
+            // 필요한 경우 목록 갱신을 여기서 한번 더 호출할 수도 있음 (보통은 enrollCourse 안에서 함)
         } else {
             alert('수강신청에 실패했습니다. 다시 시도해주세요.');
         }
     }
 };
 
-const handleAddCourse = () => {
-    const wsId = Array.isArray(workspaceId.value) ? workspaceId.value[0] : workspaceId.value;
-    router.push({ name: 'workspaceLearner', params: { id: wsId } });
-};
 </script>

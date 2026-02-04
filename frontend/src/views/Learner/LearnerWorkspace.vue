@@ -96,7 +96,7 @@ const learnerCourseStore = useLearnerCourseStore();
 // 현재 워크스페이스 id
 const currentWorkspaceId = computed(() => {
     const id = route.params.id;
-    return Array.isArray(id) ? id[0] : id;
+    return (Array.isArray(id) ? id[0] : id) || '';
 });
 const { workspaceStats } = storeToRefs(workspaceStore);
 const { workspaceCourses } = storeToRefs(learnerCourseStore);
@@ -141,12 +141,14 @@ const handleEnrollCourse = async (courseId: string | number) => {
     if (!confirm(`"${course.title}" 강의를 수강 신청하시겠습니까?`)) return;
 
     // 3. 수강 신청 실행
-    const success = await learnerCourseStore.enrollCourse(courseId, workspaceId);
+    const result = await learnerCourseStore.enrollCourse(courseId, workspaceId);
 
-    if (success) {
+    if (result && result.success) {
         alert('수강 신청이 완료되었습니다!\n관리자 승인 후 수강이 가능합니다.');
         // 스토어 내부에서 fetchCoursesByWorkspace를 재호출하므로 
         // workspaceCourses가 바뀌며 화면이 자동으로 업데이트됩니다.
+    } else if (result && result.status === 'already_applied') {
+        alert('이미 수강신청된 강의입니다. (승인 대기 중)');
     } else {
         alert('❌ 수강 신청 중 오류가 발생했습니다.\n다시 시도해주세요.');
     }
@@ -226,7 +228,11 @@ const filteredCourses = computed(() => {
             result.sort((a, b) => Number(a.courseId) - Number(b.courseId));
             break;
         case 'deadline':
-            result.sort((a, b) => Number(a.dDay || 999) - Number(b.dDay || 999));
+            result.sort((a, b) => {
+                const dateA = a.dDay ? new Date(a.dDay).getTime() : Number.MAX_SAFE_INTEGER;
+                const dateB = b.dDay ? new Date(b.dDay).getTime() : Number.MAX_SAFE_INTEGER;
+                return dateA - dateB;
+            });
             break;
     }
     return result;

@@ -113,22 +113,14 @@ const courseStore = useLearnerCourseStore();
 
 // --- 수강 상태 및 UI 로직 ---
 const courseStatus = computed(() => {
-    if (props.course.applyStatus === 'APPROVED') return '수강중';
+    if (props.course.applyStatus === 'APPROVE') return '수강중';
     if (props.course.applyStatus === 'PENDING') return '승인대기';
     return '신청가능';
 });
 
 // 찜 상태 판별
 const isHeartFilled = computed(() => {
-    // 1. props의 zzimId 확인 (만약 백엔드에서 준다면)
-    if ((props.course as any).zzimId) return true;
-    
-    // 2. 스토어의 찜 목록에서 확인
-    // 타이틀로 비교 (LearnerMyCourseCard와 로직 통일)
-    const currentTitle = props.course.title;
-    return courseStore.myLikedCourses.some(
-        (liked: any) => liked.title === currentTitle
-    );
+    return props.course.isLiked;
 });
 
 // 찜 토글
@@ -156,7 +148,7 @@ const progressRate = computed(() => {
 const badgeColorClass = computed(() => {
     const status = props.course.applyStatus || '';
     const classes: Record<string, string> = {
-        APPROVED: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+        APPROVE: 'bg-indigo-50 text-indigo-600 border-indigo-100',
         PENDING: 'bg-amber-50 text-amber-600 border-amber-100',
         REJECTED: 'bg-red-50 text-red-600 border-red-100',
     };

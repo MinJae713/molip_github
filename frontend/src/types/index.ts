@@ -46,26 +46,38 @@ export interface LearnerCourse {
   category: string;
   subCategory?: string;
 
-  // 상태 및 강사 정보 (명세서 기준 추가)
+  // 상태 정보
   status: 'PREPARING' | 'PROCEED' | 'FINISH' | 'INVITE';
-  ownerName: string;
-  isOwner: boolean;
 
-  // 강의 상세 지표 (명세서 2번 기준 추가)
-  attendance?: number;      // 출석률
-  engagement?: number;      // 집중도
-  exitQuiz?: number;        // 종료 퀴즈 점수
+  // API 응답에 맞춰 수정 (Optional로 변경)
+  ownerName?: string;
+  isOwner?: boolean;
+
+  // 강의 상세 지표
+  attendance?: number;
+  engagement?: number;
+  exitQuiz?: number;
   maxLearner?: number;
   period?: number;
   isEngageCheck?: boolean;
   isSentimentAnalysis?: boolean;
 
-  // 프론트엔드 UI용 커스텀 필드 (기존 유지)
-  currentLessons?: number;
-  totalLessons?: number;
-  isLiked?: boolean;
-  dDay?: string;
-  applyStatus?: string; // 수강 신청 상태 (필요 시 유지)
+  // 프론트엔드 UI용 필수 필드 (API 응답 포함)
+  currentLessons: number;
+  totalLessons: number;
+  isLiked: boolean;
+  dDay: string;
+  applyStatus: string; // NONE, APPROVE, PENDING 등
+}
+
+export interface CertificatedCourse {
+  courseCertificatedId: number;
+  title: string;
+  description: string;
+  certificatedAt: string;
+  averageParticipate: number;
+  certificationId: number;
+  courseId: number;
 }
 
 export interface User {
@@ -77,22 +89,14 @@ export interface User {
   auth?: string;
 }
 
+// 내 강의실 통계카드
 export interface WorkspaceStats {
-  id: number;
   workspaceId: number;
-  progress: {
-    value: number;
-    trend?: string;
-    trendType?: "up" | "down" | "info";
-  };
-  sessions: {
-    value: number;
-    nextSession?: string | null;
-  };
-  completed: {
-    value: number;
-    total: number;
-  };
+  workspaceMemberId: number;
+  role: 'LEARNER' | 'TRAINER';
+  learningCourseCount: number;  // 학습 중인 과정 수
+  certificatedCount: number;    // 수료 완료 수
+  todaySessionCount: number;    // 오늘 세션 수
 }
 
 export interface Session {
@@ -274,7 +278,7 @@ export interface ChangeRoleRequest {
 ///////////////////////////////////////////////////////
 export interface ZzimCourse {
   zzimId: number;
-  courseId: number;
+  courseId?: number; // API 응답 예시에는 없지만 로직상 필요할 수 있음 (매칭용)
   title: string;
   description: string;
   subCategory: string;
