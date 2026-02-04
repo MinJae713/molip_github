@@ -41,7 +41,7 @@ export class MediaPipeManager {
     async init() {
         // 1. Initialize FaceMesh
         this.faceMesh = new FaceMesh({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/${file}`
         });
         this.faceMesh.setOptions({
             maxNumFaces: 1,
@@ -52,7 +52,7 @@ export class MediaPipeManager {
 
         // 2. Initialize Pose
         this.pose = new Pose({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${file}`
         });
         this.pose.setOptions({
             modelComplexity: 1,

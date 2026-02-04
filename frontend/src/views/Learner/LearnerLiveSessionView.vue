@@ -11,6 +11,30 @@
             🔌 연결 끊기 (TEST)
         </button>
 
+        <!-- INFO: Gaze Tracker 디버그 UI -->
+        <div class="absolute top-36 left-6 z-50 bg-black/80 text-white p-4 rounded-lg shadow-xl text-xs space-y-2 pointer-events-none">
+            <h3 class="font-bold text-yellow-400 mb-2">👀 Gaze Tracker Status</h3>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+                <span class="text-slate-400">Looking At Monitor:</span>
+                <span :class="debugGazeStatus.isLookingAtMonitor ? 'text-green-400 font-bold' : 'text-red-400'">
+                    {{ debugGazeStatus.isLookingAtMonitor ? 'YES' : 'NO' }}
+                </span>
+
+                <span class="text-slate-400">Stable (No Move):</span>
+                <span :class="debugGazeStatus.isStable ? 'text-green-400' : 'text-yellow-400 font-bold'">
+                    {{ debugGazeStatus.isStable ? 'YES' : 'NO (!)' }}
+                </span>
+
+                <span class="text-slate-400">User Present:</span>
+                <span :class="!debugGazeStatus.isAbsent ? 'text-blue-400' : 'text-red-500 font-bold'">
+                    {{ !debugGazeStatus.isAbsent ? 'YES' : 'ABSENT' }}
+                </span>
+            </div>
+             <div class="mt-2 text-[10px] text-slate-500 border-t border-slate-700 pt-1">
+                Last Update: {{ debugGazeStatus.timestamp }}
+            </div>
+        </div>
+
         <LiveSessionHeader sessionTitle="인공지능 윤리와 실제 실습" sessionSubtitle="디지털 비즈니스 전략 강의 (4주차)"
             :elapsedTime="elapsedTime" />
         <main class="flex flex-1 overflow-hidden p-6 gap-6 relative">
@@ -88,6 +112,14 @@ const currentEmotion = ref({
 let timerInterval: number | null = null;
 const isSetupComplete = ref(false);
 
+// 디버깅용 상태
+const debugGazeStatus = ref({
+    isLookingAtMonitor: false,
+    isStable: true,
+    isAbsent: false,
+    timestamp: '-'
+});
+
 //================================================================================
 
 // MediaPipe
@@ -121,7 +153,7 @@ const connectStomp = () => {
         console.log("STOMP Connected!");
         isConnected.value = true; // 연결 상태 업데이트
         // 결과 구독
-        stompClient.subscribe(`/topic/analysis/${sessionId}/4`, (res: any) => {
+        stompClient.subscribe(`/topic/analysis/${sessionId}/2`, (res: any) => {
             const result = JSON.parse(res.body);
             console.log("분석 결과 수신:", result);
 
@@ -153,7 +185,7 @@ const connectStomp = () => {
 // Binary WebSocket 연결 (이미지 전송)
 const connectBinarySocket = () => {
     // 쿼리 파라미터로 토큰 전송
-    const url = `wss://i14a309.p.ssafy.io/emotion/${sessionId}?member-id=4`;
+    const url = `wss://i14a309.p.ssafy.io/emotion/${sessionId}?member-id=2`;
     console.log(`[Binary] Connecting to: ${url}`);
 
     try {
@@ -294,13 +326,22 @@ const handleAnalysisResult = (focusData: GazeResult) => {
         empty: focusData.isAbsent
     }
 
-    console.log(`📤 [Learner] Sending analysis data to /app/concentrate/${sessionId}/4`, payload);
+    console.log(`📤 [Learner] Sending analysis data to /app/concentrate/${sessionId}/2`, payload);
 
     stompClient.send(
-        `/app/concentrate/${sessionId}/4`, 
+        `/app/concentrate/${sessionId}/2`, 
         {}, 
         JSON.stringify(payload)
     );
+
+    // Debug 상태 업데이트
+    debugGazeStatus.value = {
+        isLookingAtMonitor: focusData.isLookingAtMonitor,
+        isStable: focusData.isStable,
+        isAbsent: focusData.isAbsent,
+        timestamp: new Date().toLocaleTimeString()
+    };
+
     console.log("집중도 데이터 전송", JSON.stringify(payload))
 }
 
