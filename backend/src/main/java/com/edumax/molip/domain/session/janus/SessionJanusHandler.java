@@ -15,7 +15,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.SubProtocolCapable;
@@ -39,7 +41,47 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
   private final CourseApplyRepository courseApplyRepository;
   private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
+  @Autowired @Lazy
+  private org.springframework.messaging.simp.SimpMessagingTemplate
+      messagingTemplate; // STOMP 전송용 템플릿 추가 (Field Injection)
+
   private static final String SESSION_JOIN_FORMAT = "session:join:session-id:%s";
+
+  // 참가자 목록 변동 시 알림을 보낼 STOMP 주소 포맷
+  // /topic/session/{sessionId}/participants
+  private static final String PARTICIPANT_TOPIC_FORMAT = "/topic/session/%s/participants";
+
+  /** 참가자 상태 변경 알림 전송 (JOIN/LEAVE) */
+  private void sendParticipantUpdate(
+      Long sessionId, String type, Long memberId, String name, Long feedId) {
+    try {
+      // 강사 ID 확인을 위해 세션 조회 (캐싱 권장하지만 여기서는 직접 조회)
+      // 주의: 빈번한 호출이 아니므로 괜찮지만, 성능 이슈 시 캐싱 필요
+      Session session = sessionRepository.findById(sessionId).orElse(null);
+      String role = "STUDENT";
+      if (session != null && session.getCourse().getLeaner().getMember().getId().equals(memberId)) {
+        role = "TEACHER";
+      }
+
+      String destination = String.format(PARTICIPANT_TOPIC_FORMAT, sessionId);
+      Map<String, Object> message = new java.util.HashMap<>();
+      message.put("type", type);
+      message.put("memberId", memberId);
+      message.put("name", name);
+      message.put("feedId", feedId != null ? feedId : -1L);
+      message.put("role", role);
+
+      messagingTemplate.convertAndSend(destination, (Object) message);
+      log.info(
+          "[STOMP] Sent participant update: {} -> {} (Role: {}, Session: {})",
+          type,
+          name,
+          role,
+          sessionId);
+    } catch (Exception e) {
+      log.error("[STOMP] Failed to send participant update", e);
+    }
+  }
 
   private final Map<String, WebSocketSession> clientToJanusMap = new ConcurrentHashMap<>();
   private final Map<String, WebSocketSession> janusToClientMap = new ConcurrentHashMap<>();
@@ -292,6 +334,9 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
                       oldVal,
                       newVal,
                       sessionId);
+
+                  // [STOMP Notification] Redis 업데이트 후 강사에게 알림 전송 (JOIN)
+                  sendParticipantUpdate(sessionId, "JOIN", memberId, memberName, feedId);
                 }
               }
 
@@ -349,6 +394,9 @@ public class SessionJanusHandler extends TextWebSocketHandler implements SubProt
         }
         redisTemplate.opsForSet().remove(key, valToRemove);
         log.info("[Redis] Removed participant: {} (Session: {})", valToRemove, sessionId);
+
+        // [STOMP Notification] Redis 제거 후 강사에게 알림 전송 (LEAVE)
+        sendParticipantUpdate(sessionId, "LEAVE", memberId, memberName, feedId);
       }
     } catch (Exception e) {
       log.error("Failed to cleanup Redis on close", e);

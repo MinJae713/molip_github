@@ -42,4 +42,7 @@ public interface SessionService {
   boolean isFeverState(boolean empty, boolean focusOn, boolean movement);
 
   boolean handleFeverState(String sessionId, Long memberId, int timeline);
+
+  List<com.edumax.molip.domain.session.dto.response.ParticipantResponse> getParticipants(
+      Long sessionId);
 }

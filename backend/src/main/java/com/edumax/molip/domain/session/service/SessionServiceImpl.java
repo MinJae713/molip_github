@@ -447,6 +447,46 @@ public class SessionServiceImpl implements SessionService {
     }
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public List<com.edumax.molip.domain.session.dto.response.ParticipantResponse> getParticipants(
+      Long sessionId) {
+    String key = getJoinKey(String.valueOf(sessionId));
+    java.util.Set<String> members = redisTemplate.opsForSet().members(key);
+
+    if (members == null || members.isEmpty()) {
+      return java.util.Collections.emptyList();
+    }
+
+    // 세션 정보 조회하여 강사 ID 확인
+    Session session =
+        sessionRepository
+            .findById(sessionId)
+            .orElseThrow(() -> new IllegalArgumentException("Session not found: " + sessionId));
+    Long instructorId = session.getCourse().getLeaner().getMember().getId();
+
+    return members.stream()
+        .map(
+            str -> {
+              // format: memberId|memberName|feedId
+              String[] parts = str.split("\\|");
+              Long memberId = Long.parseLong(parts[0]);
+              String name = parts.length > 1 ? parts[1] : "Unknown";
+              Long feedId = parts.length > 2 ? Long.parseLong(parts[2]) : null;
+
+              // 역할 결정: 강사 ID와 비교
+              String role = memberId.equals(instructorId) ? "TEACHER" : "STUDENT";
+
+              return com.edumax.molip.domain.session.dto.response.ParticipantResponse.builder()
+                  .memberId(memberId)
+                  .name(name)
+                  .feedId(feedId)
+                  .role(role)
+                  .build();
+            })
+        .collect(java.util.stream.Collectors.toList());
+  }
+
   private String generateRecordingId() {
     String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     StringBuilder sb = new StringBuilder(40);

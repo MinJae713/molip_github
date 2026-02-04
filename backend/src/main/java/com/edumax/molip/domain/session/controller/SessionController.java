@@ -109,6 +109,14 @@ public class SessionController {
     return ResponseEntity.ok(sessionService.getSessionList(courseId, userDetails.getMemberId()));
   }
 
+  @GetMapping("/{sessionId}/participants")
+  public ResponseEntity<
+          java.util.List<com.edumax.molip.domain.session.dto.response.ParticipantResponse>>
+      getParticipants(@PathVariable Long sessionId) {
+    // SessionService를 통해 Redis에서 참가자 목록 조회
+    return ResponseEntity.ok(sessionService.getParticipants(sessionId));
+  }
+
   @GetMapping("/{sessionId}/simple")
   public ResponseEntity<SessionSimpleResponse> getSessionSimple(
       @PathVariable Long sessionId, @AuthenticationPrincipal MemberUserDetails userDetails) {
