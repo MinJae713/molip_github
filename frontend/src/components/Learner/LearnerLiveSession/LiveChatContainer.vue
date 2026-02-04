@@ -17,7 +17,7 @@
         <div ref="scrollContainer" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/30">
 
             <div v-if="activeTab === 'chat'" class="flex flex-col gap-3">
-                <div v-for="(msg, index) in chatList" :key="index" class="flex gap-2"
+                <div v-for="(msg, index) in props.chatList" :key="index" class="flex gap-2"
                     :class="{ 'flex-row-reverse': isMyMessage(msg.senderName || msg.name) }">
 
                     <!-- 아바타 영역 -->
@@ -50,7 +50,7 @@
                             {{ msg.content }}</p>
                     </div>
                 </div>
-                <div v-if="chatList.length === 0" class="text-center text-slate-400 text-xs py-10">
+                <div v-if="props.chatList.length === 0" class="text-center text-slate-400 text-xs py-10">
                     채팅이 시작되었습니다.
                 </div>
             </div>
@@ -122,9 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue';
-import SockJS from 'sockjs-client';
-import { Client } from '@stomp/stompjs';
+import { ref, nextTick, watch, computed } from 'vue';
 import { useUserStore } from '@/stores/user';
 
 // ... (existing imports)
@@ -192,11 +190,16 @@ interface GroupedQa extends Message {
     replies: Message[];
 }
 
-const props = defineProps<{ roomId?: string | number }>();
-const socketUrl = import.meta.env.VITE_WEBSOCKET_URL;
+const props = defineProps<{
+    chatList: any[],
+    qaList: any[]
+}>();
+
+const emit = defineEmits<{
+    'send-message': [content: string, type: string, questionId?: number | string | null]
+}>();
 
 // --- 상태 관리 ---
-const roomId = props.roomId;
 const activeTab = ref<'chat' | 'qa'>('chat');
 const inputMessage = ref('');
 const hasNewQa = ref(false);
@@ -211,7 +214,7 @@ const groupedQaList = computed(() => {
     const groups: Record<string, GroupedQa> = {};
 
     // 1. 모든 QA 메시지를 순회하며 그룹핑
-    qaList.value.forEach((msg) => {
+    props.qaList.forEach((msg) => {
         if (!msg.questionId) return; // 안전장치
 
         const qId = String(msg.questionId);
@@ -229,47 +232,18 @@ const groupedQaList = computed(() => {
     return Object.values(groups);
 });
 
-// --- 웹소켓 연결 ---
-const stompClient = ref<Client | null>(null);
 
-const connect = () => {
-    console.log(`[Learner Chat] Connecting to WebSocket. RoomID: ${roomId}`);
-    stompClient.value = new Client({
-        webSocketFactory: () => new SockJS(socketUrl),
-        connectHeaders: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`
-        },
-        onConnect: () => {
-            console.log(`[Learner Chat] Connected to Room: ${roomId} ✅`);
-            // 단일 주소 구독 (동료분 코드 로직 반영)
-            stompClient.value?.subscribe(`/topic/chat-room/${roomId}`, (res) => {
-                console.log(`[Learner Chat] Message Received for Room ${roomId}:`, res.body);
-                const msg: Message = JSON.parse(res.body);
-                console.log(msg)
-
-                // 분류 로직: questionId 유무로 판단
-                if (!msg.questionId) {
-                    chatList.value.push(msg);
-                    if (activeTab.value === 'chat') scrollToBottom();
-                } else {
-                    qaList.value.push(msg);
-                    if (activeTab.value !== 'qa') hasNewQa.value = true;
-                    if (activeTab.value === 'qa') scrollToBottom();
-                }
-            });
-        },
-    });
-    stompClient.value.activate();
-};
 
 // --- 메시지 전송 ---
 const sendMessage = () => {
-    if (!inputMessage.value.trim() || !stompClient.value?.connected) return;
+    if (!inputMessage.value.trim()) return;
 
     let finalQuestionId = null;
+    let messageType = 'chat';
 
     // 질문 탭일 경우 ID 계산 로직
     if (activeTab.value === 'qa') {
+        messageType = 'question';
         if (selectedQuestionId.value) {
             // 1. 카드를 선택한 상태 -> 답변 (해당 ID 사용)
             finalQuestionId = selectedQuestionId.value;
@@ -279,20 +253,10 @@ const sendMessage = () => {
         }
     }
 
-    const payload = {
-        type: activeTab.value === 'chat' ? 'chat' : 'question',
-        content: inputMessage.value,
-        questionId: finalQuestionId // 채팅이면 null, 질문/답변이면 숫자값
-    };
-
-    stompClient.value.publish({
-        destination: `/app/chat-room/${roomId}`,
-        body: JSON.stringify(payload),
-    });
-
+    // 부모 컴포넌트로 메시지 전송 요청
+    emit('send-message', inputMessage.value, messageType, finalQuestionId);
     inputMessage.value = '';
-    // 전송 후 선택 상태 유지가 편하면 아래 줄 주석 처리, 풀고 싶으면 주석 해제
-    // selectedQuestionId.value = null; 
+    // selectedQuestionId.value = null; // 선택 유지하려면 주석 처리
 };
 
 // --- UI 헬퍼 함수 ---
@@ -336,7 +300,4 @@ watch(activeTab, (newTab) => {
     if (newTab === 'qa') hasNewQa.value = false;
     scrollToBottom();
 });
-
-onMounted(() => connect());
-onUnmounted(() => stompClient.value?.deactivate());
 </script>

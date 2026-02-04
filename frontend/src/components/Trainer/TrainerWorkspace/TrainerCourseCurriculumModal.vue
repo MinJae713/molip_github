@@ -98,11 +98,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { LearnerCourse, Session } from '@/types';
+import type { TrainerCourse, Session } from '@/types';
 
 const props = defineProps<{
     isOpen: boolean;
-    course: LearnerCourse;
+    course: TrainerCourse;
     sessions: Session[];
 }>();
 

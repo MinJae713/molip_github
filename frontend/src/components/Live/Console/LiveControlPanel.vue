@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, inject } from 'vue';
 import { useVideoRoomStore } from '@/stores/videoRoom'; // Unified Store
 import { useQuizStore } from '@/stores/quiz';
 import QuizGenerationModal from '@/components/Live/Sidebar/QuizGenerationModal.vue';
@@ -8,6 +8,7 @@ import { useTimer } from '@/composables/useTimer';
 const videoRoomStore = useVideoRoomStore();
 const quizStore = useQuizStore();
 const { startTimer } = useTimer();
+const getQuiz = inject<() => void>('getQuiz');
 
 // 모달 상태 관리 (쉬는 시간은 로컬, 퀴즈는 스토어)
 const isTimeModalOpen = ref(false);
@@ -24,6 +25,16 @@ const handleStartBreak = (minutes: number) => {
 // 퀴즈 모달 열기 함수 (Store 액션 활용)
 const openQuizModal = () => {
   quizStore.toggleModal(true); // store에 정의한 toggleModal 함수 호출
+};
+
+// 퀵 퀴즈 요청 함수
+const handleQuickQuiz = () => {
+  if (getQuiz) {
+    getQuiz();
+    console.log('[LiveControlPanel] Quick quiz requested');
+  } else {
+    console.error('[LiveControlPanel] getQuiz function not available');
+  }
 };
 </script>
 
@@ -89,13 +100,7 @@ const openQuizModal = () => {
       전체 음소거
     </button>
 
-    <div class="grid grid-cols-2 gap-3">
-      <button
-        class="flex items-center justify-center gap-2 py-3 bg-slate-50 text-slate-700 rounded-xl text-xs font-bold border border-slate-100 hover:bg-slate-100 transition-all active:scale-95">
-        <span class="material-symbols-outlined text-lg">flag</span>
-        체크포인트
-      </button>
-
+    <div class="grid grid-cols-3 gap-3">
       <button @click="isTimeModalOpen = !isTimeModalOpen" :class="[
         'flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold border transition-all active:scale-95',
         isTimeModalOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100'
@@ -104,16 +109,16 @@ const openQuizModal = () => {
         쉬는 시간
       </button>
 
+      <button @click="handleQuickQuiz"
+        class="flex items-center justify-center gap-2 py-3 bg-purple-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-purple-100 hover:bg-purple-700 transition-all active:scale-95">
+        <span class="material-symbols-outlined text-lg">bolt</span>
+        퀵 퀴즈
+      </button>
+
       <button @click="openQuizModal"
         class="flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95">
         <span class="material-symbols-outlined text-lg">quiz</span>
         퇴실 퀴즈
-      </button>
-
-      <button
-        class="flex items-center justify-center gap-2 py-3 bg-slate-50 text-slate-700 rounded-xl text-xs font-bold border border-slate-100 hover:bg-slate-100 transition-all">
-        <span class="material-symbols-outlined text-lg">settings</span>
-        설정
       </button>
 
       <QuizGenerationModal />

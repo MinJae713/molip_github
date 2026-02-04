@@ -96,6 +96,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
   // --- State ---
   const janus = ref<any>(null); // Janus instance itself is complex, keeping any for now or basic type
   const camHandle = ref<JanusHandle | null>(null);
+  const isLiveEnded = ref(false); // 라이브 세션 살아있는지 확인하는 변
 
   const roomInfo = ref<VideoRoom | null>(null);
   const connStatus = ref("Ready");
@@ -332,7 +333,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
             },
             destroyed: () => {
               console.log("[Janus] 세션 파괴됨");
-              window.location.reload();
+              // window.location.reload(); 파. 괴. 한. 다.
             },
           });
         },
@@ -417,6 +418,10 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
    */
   function handleMessage(handle: JanusHandle, msg: JanusMessage, jsep: JSEP) {
     const event = msg["videoroom"];
+    if (event === "destroyed") {
+      alert("수업이 종료되었습니다.");
+      // 필요 시 라우터 이동 로직 추가 (Router 인스턴스가 스토어 내부에 없으므로 컴포넌트 레벨에서 watch하거나, window.location 사용)
+    }
     if (event === "joined") {
       myId.value = msg["id"] || null;
       myPrivateId.value = msg["private_id"] || null;

@@ -46,9 +46,10 @@
                 </div>
             </div>
             <!-- 코스(강의 영역) -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" v-if="workspaceCourses.length > 0">
-                <TrainerMyCourseCard v-for="course in workspaceCourses" :key="course.courseId" :course="(course as any)"
-                    @enter-course="handleEnterCourse" />
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" v-if="workspaceAllCourses.length > 0">
+                <TrainerDashboardCourseCard v-for="course in workspaceAllCourses" :key="course.courseId"
+                    :course="(course as any)" @manage-course="handleEnterCourse" @open-curriculum="openCurriculumModal"
+                    @view-history="" />
             </div>
             <div v-else class="text-center py-20 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                 <p class="text-slate-500">등록된 강의가 없습니다.</p>
@@ -65,15 +66,17 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 // 워크스페이스 스토어
-import { useWorkspaceStore } from '@/stores/workspace';
-const workspaceStore = useWorkspaceStore();
-const { workspaceStats } = storeToRefs(workspaceStore);
+import { useTrainerCourseStore } from '@/stores/trainerCourse';
+const trainerCourseStore = useTrainerCourseStore();
+const { workspaceAllCourses } = storeToRefs(trainerCourseStore);
+
 // 통계 데이터 직접 가공 (computed)
 const ongoingCount = computed(() =>
-    workspaceCourses.value.filter(c => c.status === 'PROCEED' || !c.status).length
+    workspaceAllCourses.value.filter(c => c.status === 'PROCEED' || !c.status).length
 );
+// 끝난 강의
 const completedCount = computed(() =>
-    workspaceCourses.value.filter(c => c.status === 'END').length
+    workspaceCourses.value.filter(c => c.status === 'FINISH').length
 );
 // 학생 코스 스토어(워크스페이스 모달용)
 import { useLearnerCourseStore } from '@/stores/learnerCourse';
@@ -82,10 +85,10 @@ const { workspaceCourses } = storeToRefs(learnerCourseStore);
 
 
 import { storeToRefs } from 'pinia';
-import type { LearnerCourse, Session } from '@/types';
+import type { TrainerCourse, Session } from '@/types';
 import { useRouter } from 'vue-router';
 import TrainerMyCoursesStats from '@/components/Trainer/TrainerMyCoursesView/TrainerMyCoursesStats.vue';
-import TrainerMyCourseCard from '@/components/Trainer/TrainerMyCoursesView/TrainerMyCourseCard.vue';
+import TrainerDashboardCourseCard from '@/components/Trainer/TrainerWorkspace/TrainerDashboardCourseCard.vue';
 import TrainerCourseCurriculumModal from '@/components/Trainer/TrainerWorkspace/TrainerCourseCurriculumModal.vue';
 
 const router = useRouter();
@@ -104,18 +107,17 @@ const sortOption = ref<'newest' | 'deadline' | 'oldest'>('newest');
 
 // 모달 상태관리
 const isModalOpen = ref(false);
-const selectedCourse = ref<LearnerCourse>({} as LearnerCourse);
+const selectedCourse = ref<TrainerCourse>({} as TrainerCourse);
 const mockSessions = ref<Session[]>([]);
 
 // 커리큘럼 확인 모달 열기
 const selectedCourseSessions = ref<Session[]>([]);
 const openCurriculumModal = async (courseId: string | number) => {
-    const course = workspaceCourses.value.find(c => String(c.courseId) === String(courseId));
+    console.log(courseId)
+    const course = workspaceAllCourses.value.find(c => String(c.courseId) === String(courseId));
     if (course) {
         selectedCourse.value = course;
-        console.log("코스정보", course)
         const sessions = await learnerCourseStore.fetchCourseSessions(courseId);
-        console.log(sessions)
         selectedCourseSessions.value = sessions;
         isModalOpen.value = true;
     }
@@ -151,6 +153,32 @@ const sortOptionLabel = computed(() => {
 const setSort = (option: 'newest' | 'deadline' | 'oldest') => {
     sortOption.value = option;
 };
+// 검색 기능
+const filteredCourses = computed(() => {
+    let result = [...workspaceCourses.value];
+    // 검색어로 찾기
+    if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase();
+        result = result.filter(course =>
+            course.title.toLowerCase().includes(query) ||
+            course.description.toLowerCase().includes(query)
+        );
+    }
+    // 정렬
+    switch (sortOption.value) {
+        case 'newest':
+            result.sort((a, b) => Number(b.courseId) - Number(a.courseId));
+            break;
+        case 'oldest':
+            result.sort((a, b) => Number(a.courseId) - Number(b.courseId));
+            break;
+        case 'deadline':
+            result.sort((a, b) => Number(a.dDay || 999) - Number(b.dDay || 999));
+            break;
+    }
+    return result;
+});
+
 
 // 대시보드 초기화
 const initDashboard = async () => {
@@ -158,9 +186,7 @@ const initDashboard = async () => {
     if (workspaceId) {
         const id = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
         if (!id) return;
-        await workspaceStore.setCurrentWorkspaceById(id);
-        await learnerCourseStore.fetchCoursesByWorkspace(id); // 강사: 관리 코스 목록 조회
-        // await workspaceStore.fetchWorkspaceStats(id); // [Unused] 기존 통계 호출 제거
+        await trainerCourseStore.fetchWorkspaceAllCourses(id);
     }
 };
 onMounted(() => {

@@ -3,8 +3,6 @@
         class="bg-white border border-slate-200 rounded-xl p-5 hover:border-indigo-300 hover:shadow-md transition-all group relative">
         <div class="flex gap-5">
             <div class="flex-1">
-                <!-- 맨 윗줄 강의 상태 태그-->
-                <!-- 수강신청 된 강의면 수강중, 아니면 강의 상태(모집중, 준비중, 끝남)-->
                 <div class="flex items-center gap-1 mb-2">
                     <span
                         :class="['px-2 py-0.5 text-[10px] font-bold rounded border uppercase tracking-wide flex items-center gap-1', badgeColorClass]">
@@ -17,14 +15,12 @@
                 <p class="text-sm text-slate-500 line-clamp-2 mb-4">
                     {{ course.description }}
                 </p>
-                <!-- 신청가능이면 몇강짜린지 표시-->
                 <div v-if="courseStatus === '신청가능'"
                     class="flex items-center gap-4 text-xs font-medium text-slate-500 pt-2">
                     <span class="flex items-center gap-1"><span
                             class="material-symbols-outlined text-[16px]">play_lesson</span> {{ course.totalLessons }}
                         강의</span>
                 </div>
-                <!-- 수강중이면 진도율 표기 -->
                 <div v-else-if="courseStatus === '수강중'" class="space-y-2">
                     <div class="flex justify-between text-xs font-bold">
                         <span :class="progressRate > 0 ? 'text-indigo-600' : 'text-slate-500'">
@@ -37,7 +33,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- 승인대기 -->
                 <div v-else-if="courseStatus === '승인대기'"
                     class="flex items-center gap-4 text-xs font-medium text-slate-500 pt-2">
                     <span class="flex items-center gap-1"><span
@@ -47,33 +42,33 @@
             </div>
 
             <div class="flex flex-col justify-between items-end gap-4 min-w-25">
-                <!-- 찜하기 버튼 -->
-                <div class="flex flex-col items-end gap-2">
-                    <button @click.prevent.stop="toggleLike" class="transition-colors p-1 group/like"
-                        :class="course.isLiked ? 'text-red-500 hover:text-red-600' : 'text-slate-300 hover:text-indigo-500'"
+                <div class="flex flex-col items-end gap-2 relative">
+                     <!-- 찜하기 버튼 추가 -->
+                    <button @click.prevent.stop="toggleLike" class="transition-colors p-1 group/like absolute -top-1 -right-1"
+                        :class="isHeartFilled ? 'text-red-500 hover:text-red-600' : 'text-slate-300 hover:text-indigo-500'"
                         title="찜하기">
                         <span
                             class="material-symbols-outlined text-2xl transition-transform active:scale-95 group-hover/like:scale-110"
-                            :style="{ 'font-variation-settings': `'FILL' ${course.isLiked ? 1 : 0}` } as any">
+                            :style="{ 'font-variation-settings': `'FILL' ${isHeartFilled ? 1 : 0}` } as any">
                             favorite
                         </span>
                     </button>
-                    <!-- 강의실 들어가기 버튼 -->
+
+                    <div class="h-8"></div> <!-- 공간 확보용 -->
+
                     <button v-if="courseStatus === '수강중'" @click.stop="$emit('enter-course', course.courseId)"
-                        class="size-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors cursor-pointer">
+                        class="size-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors cursor-pointer mt-2">
                         <span class="material-symbols-outlined">
                             {{ progressRate > 0 ? 'resume' : 'play_arrow' }}
                         </span>
                     </button>
                 </div>
-                <!-- 수강 신청하기 버튼 -->
                 <div v-if="courseStatus === '신청가능'" class="flex flex-col items-stretch gap-2">
                     <button 
-                        v-if="courseStatus === '신청가능'" 
                         @click.stop="handleEnrollClick" 
                         :disabled="isSubmitting"
                         :class="{ 'opacity-50 cursor-not-allowed': isSubmitting }"
-                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg ..."
+                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg border border-indigo-600 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap shadow-sm"
                     >
                         <span class="material-symbols-outlined text-[18px]">
                             {{ isSubmitting ? 'sync' : 'how_to_reg' }} 
@@ -109,32 +104,55 @@ import { useLearnerCourseStore } from '@/stores/learnerCourse';
 
 const props = defineProps<{
     course: LearnerCourse;
-    isLiked?: boolean;
+    workspaceId: string | number;
 }>();
 
 // --- 상태 및 상수 ---
+const isSubmitting = ref(false);
 const courseStore = useLearnerCourseStore();
-const isSubmitting = ref(false); // [위치 조정] 함수보다 먼저 선언
 
 // --- 수강 상태 및 UI 로직 ---
 const courseStatus = computed(() => {
-    if (props.course.applyStatus === 'APPROVED') return '수강중';
+    if (props.course.applyStatus === 'APPROVE') return '수강중';
     if (props.course.applyStatus === 'PENDING') return '승인대기';
     return '신청가능';
 });
 
+// 찜 상태 판별
+const isHeartFilled = computed(() => {
+    return props.course.isLiked;
+});
+
+// 찜 토글
+const toggleLike = async () => {
+    if (!props.workspaceId || !props.course.courseId) return;
+
+    try {
+        await courseStore.toggleCourseLike(
+            props.workspaceId,
+            props.course.courseId,
+            isHeartFilled.value
+        );
+        // 스토어에서 이미 refresh를 수행하지만, 필요하다면 추가 로직 작성
+    } catch (error) {
+        console.error("찜 토글 실패:", error);
+    }
+};
+
 const progressRate = computed(() => {
-    return (props.course.currentLessons + 1) / props.course.totalLessons * 100;
+    if (!props.course.totalLessons) return 0;
+    // 단순 계산 로직 유지
+    return Math.round(((props.course.currentLessons || 0) / props.course.totalLessons) * 100);
 });
 
 const badgeColorClass = computed(() => {
-    const color = (props.course as any).applyStatus;
+    const status = props.course.applyStatus || '';
     const classes: Record<string, string> = {
-        APPROVED: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+        APPROVE: 'bg-indigo-50 text-indigo-600 border-indigo-100',
         PENDING: 'bg-amber-50 text-amber-600 border-amber-100',
         REJECTED: 'bg-red-50 text-red-600 border-red-100',
     };
-    return classes[color] || 'bg-slate-50 text-slate-500 border-slate-100';
+    return classes[status] || 'bg-slate-50 text-slate-500 border-slate-100';
 });
 
 // --- 이벤트 및 액션 ---
@@ -149,19 +167,9 @@ const handleEnrollClick = async () => {
     
     isSubmitting.value = true;
     try {
-        // 부모(Dashboard.vue)의 handleEnrollCourse를 호출합니다.
         await emit('enroll-course', props.course.courseId); 
     } finally {
         isSubmitting.value = false;
-    }
-};
-
-const toggleLike = async () => {
-    if (props.course.courseId) {
-        await courseStore.toggleCourseLike(
-            Number(props.course.courseId),
-            !!props.course.isLiked
-        );
     }
 };
 </script>

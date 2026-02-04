@@ -22,12 +22,16 @@ const isBreakEndModalOpen = ref(false);
 
 // [강의 시작 핸들러]
 const handleStartLive = async () => {
-  // 실제 Janus 연결 및 분석 시작 (startClass에 화면공유+녹음 포함됨)
   const sId = String(route.params.sessionId);
   if (!trainerLiveStore.janus) {
     await trainerLiveStore.initJanus(sId);
   }
-  await trainerLiveStore.startClass();
+  await trainerLiveStore.startSession();
+};
+
+// [분석 시작 핸들러]
+const handleStartAnalysis = async () => {
+  await trainerLiveStore.startAnalysis();
   startRecording();
 };
 
@@ -35,16 +39,6 @@ onMounted(async () => {
   // 컴포넌트 마운트 시 유저 정보 fetch (이 부분이 있어야 프로필이 뜹니다!)
   await userStore.fetchUserInfo();
 });
-
-// [4] 쉬는 시간 종료 감시 (videoRoomStore 미구현으로 임시 주석)
-/*
-watch(timeLeft, (newVal) => {
-if (newVal === 0 && liveStore.isBreakTime) {
-liveStore.isBreakTime = false;
-isBreakEndModalOpen.value = true;
-}
-});
-*/
 </script>
 
 <template>
@@ -69,24 +63,28 @@ isBreakEndModalOpen.value = true;
     </div>
 
     <div class="flex items-center gap-4">
-
-      <!-- 쉬는 시간 (임시 비활성화) -->
-      <!--
-      <Transition name="slide-fade">
-        <div v-if="liveStore.isBreakTime" class="flex items-center gap-2 bg-orange-50 px-4 py-2 rounded-full border border-orange-100 shadow-sm shadow-orange-50">
-          <span class="material-symbols-outlined text-orange-500 text-sm animate-spin-slow">timer</span>
-          <span class="text-sm font-bold text-orange-600">쉬는 시간 {{ formattedTime }}</span>
-        </div>
-      </Transition>
-      -->
-
       <div class="flex items-center gap-3">
-        <button v-if="!trainerLiveStore.isAnalysisStarted" @click="handleStartLive"
+        <!-- 1단계: 강의 시작 전 -->
+        <button v-if="!trainerLiveStore.isSessionStarted" @click="handleStartLive"
           class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-100 flex items-center gap-2">
           <span class="material-symbols-outlined text-sm">play_circle</span>
           강의 시작
         </button>
 
+        <!-- 2단계: 강의는 켰지만 분석 전 -->
+        <template v-else-if="!trainerLiveStore.isAnalysisStarted">
+          <button @click="handleStartAnalysis"
+            class="bg-rose-500 hover:bg-rose-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-rose-100 flex items-center gap-2 active:scale-95">
+            <span class="material-symbols-outlined text-sm">analytics</span>
+            분석 시작
+          </button>
+          <button @click="$emit('end-class')"
+            class="bg-slate-800 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-slate-200 active:scale-95">
+            수업 종료
+          </button>
+        </template>
+
+        <!-- 3단계: 분석 중 -->
         <template v-else>
           <div class="flex items-center gap-2 bg-red-50 px-3 py-2 rounded-xl border border-red-100">
             <div class="size-2 bg-red-500 rounded-full animate-pulse"></div>
