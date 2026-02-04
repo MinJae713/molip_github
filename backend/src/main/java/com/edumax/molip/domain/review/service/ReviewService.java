@@ -7,7 +7,6 @@ import com.edumax.molip.domain.course.repository.CourseLearnerAnalysisRepository
 import com.edumax.molip.domain.course.repository.CourseRepository;
 import com.edumax.molip.domain.review.entity.EmotionGraph;
 import com.edumax.molip.domain.review.entity.LearnerAnalysis;
-import com.edumax.molip.domain.review.entity.Script;
 import com.edumax.molip.domain.review.entity.TimelineElement;
 import com.edumax.molip.domain.review.repository.EmotionGraphRepository;
 import com.edumax.molip.domain.review.repository.LearnerAnalysisRepository;
@@ -27,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -63,6 +61,9 @@ public class ReviewService {
 
   private final StorageService storageService;
   private final ChattingService chattingService;
+
+  private int trainerFeverRate = 50; // 학생중 50% 이상이 열정이면 강사도 타임라인도 열정
+  private int trainerEmptyRate = 50; // 학생중 50% 이상이 부재중이면 강사 타임라인도 부재중
 
   public List<EmotionGraph> getEmotionGraph(Long sessionId, Long memberId) {
     return emotionGraphRepository.findBySessionIdAndMemberId(sessionId, memberId);
@@ -148,7 +149,8 @@ public class ReviewService {
     int attendance = course.getAttendance();
     int endSessionCnt = course.getEndSessionCount() + 1;
 
-    saveScriptToMysql(sessionIdLong);
+    // stt 스크립트 MySQL 저장
+    storageService.saveScriptToMysql(sessionIdLong);
 
     // 1. 몰입도/감정 데이터 Pipeline 실행
     log.info("[Redis] 데이터 추출 파이프라인 가동...");
@@ -178,12 +180,6 @@ public class ReviewService {
                   }
                   return null;
                 });
-
-    Map<Long, Long> attendanceCntList =
-        courseLearnerSessionRepository.findAllBySessionSessionId(sessionIdLong).stream()
-            .filter(CourseLearnerSession::getIsAttendance)
-            .collect(
-                Collectors.groupingBy(CourseLearnerSession::getMemberId, Collectors.counting()));
 
     List<CourseLearnerSession> sessionResultsToSave = new ArrayList<>();
     List<CourseLearnerAnalysis> existingAnalyses =
@@ -282,7 +278,7 @@ public class ReviewService {
                         maxIdx,
                         AnalysisManager.toEmotion(maxIdx));
                   })
-              .filter(Objects::nonNull)
+              //              .filter(Objects::nonNull)
               .toList();
 
       log.info(" - [학생 저장] ID: {}, 타임라인 데이터 수: {}", memberId, mergedList.size());
@@ -295,9 +291,13 @@ public class ReviewService {
         conSum += ele.concentrateValue();
       }
 
-      boolean isAttendance = attCnt * 100 / totalTimeline >= attendance;
+      boolean isAttendance = (attCnt * 100 / totalTimeline) >= attendance;
       float avgCon = conSum / totalTimeline;
       totalSumConcentrate += avgCon;
+
+      if (isAttendance) {
+        totalSumAttendance += 1.0f;
+      }
 
       sessionResultsToSave.add(
           CourseLearnerSession.builder()
@@ -320,10 +320,6 @@ public class ReviewService {
                   .build());
       analysis.updateAnalysis(avgCon, isAttendance, 0.0f);
       courseResultsToSave.add(analysis);
-
-      long totalAttCount = attendanceCntList.getOrDefault(memberId, 0L) + (isAttendance ? 1 : 0);
-      float studentAvgAttendance = (float) totalAttCount / endSessionCnt * 100;
-      totalSumAttendance += studentAvgAttendance;
 
       float[] emoSum = new float[7];
       for (EmotionElement ele : emoList) {
@@ -361,9 +357,9 @@ public class ReviewService {
                   }
                   return new TimelineElement(
                       tl,
-                      agg[2] >= studentSize,
+                      agg[2] >= (studentSize * trainerEmptyRate / 100.0),
                       agg[0] / studentSize,
-                      agg[1] > (studentSize / 2.0),
+                      agg[1] > (studentSize * trainerFeverRate / 100.0),
                       maxIdx,
                       AnalysisManager.toEmotion(maxIdx));
                 })
@@ -373,8 +369,8 @@ public class ReviewService {
     storageService.saveTimelineAnalysis(sessionIdLong, trainerId, trainerMergedList);
 
     // --- 집계 데이터 요약 로그 ---
-    float finalAvgAtt = totalSumAttendance / studentSize;
-    float finalAvgCon = totalSumConcentrate / studentSize;
+    float finalAvgAtt = totalSumAttendance * 100f / studentSize;
+    float finalAvgCon = totalSumConcentrate * 100f / studentSize;
     log.info("[집계 완료] 학생평균 출석률: {}%, 평균 몰입도: {}", finalAvgAtt, finalAvgCon);
 
     LearnerAnalysis learnerAnalysis =
@@ -410,9 +406,11 @@ public class ReviewService {
               .build());
     }
 
-    log.info("[MySQL 저장] 분석 총괄, 감정 그래프({})개 저장 시작...", finalEmotions.size());
+    log.info("[MySQL 저장] 감정 그래프({})개 저장 시작...", finalEmotions.size());
     emotionGraphRepository.saveAll(finalEmotions);
+    log.info("[MySQL 저장] 세션이수정보({})개 저장 시작...", sessionResultsToSave.size());
     courseLearnerSessionRepository.saveAll(sessionResultsToSave);
+    log.info("[MySQL 저장] 강의수강생 분석정보({})개 저장 시작...", sessionResultsToSave.size());
     courseLearnerAnalysisRepository.saveAll(courseResultsToSave);
     courseLearnerAnalysisRepository.flush();
 
@@ -453,43 +451,6 @@ public class ReviewService {
   }
 
   record ConcentrateElement(int timeline, boolean empty, float concentrateValue, boolean fever) {}
-
-  @Transactional
-  public void saveScriptToMysql(Long sessionId) {
-    String key = generateKey(sessionId);
-    Set<String> values = redisTemplate.opsForZSet().range(key, 0, -1);
-
-    if (values == null || values.isEmpty()) {
-      return;
-    }
-
-    // DB를 조회하지 않고도 연관관계를 맺기 위함입니다.
-    LearnerAnalysis learnerAnalysis = LearnerAnalysis.builder().sessionId(sessionId).build();
-
-    List<Script> scriptList =
-        values.stream()
-            .map(
-                val -> {
-                  String[] parts = val.split("\\|", 2);
-
-                  return Script.builder()
-                      .timeline(Integer.parseInt(parts[0]))
-                      .message(parts.length > 1 ? parts[1] : "")
-                      .learnerAnalysis(learnerAnalysis) // 위에서 만든 객체 삽입
-                      .build();
-                })
-            .toList();
-
-    scriptRepository.saveAll(scriptList);
-
-    redisTemplate.delete(key);
-  }
-
-  String QUIZ_STT_FORMAT = "quiz:stt:session-id:%d";
-
-  String generateKey(Long sessionId) {
-    return QUIZ_STT_FORMAT.formatted(sessionId);
-  }
 
   String SESSION_JOIN_FORMAT = "session:join:session-id:%s";
 
