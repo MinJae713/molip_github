@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class FindWorkspaceRegisterResponse {
+  private Long memberId;
   private Long workspaceRegisterId;
   private String profileImageUrl;
   private String name;
@@ -32,6 +33,7 @@ public class FindWorkspaceRegisterResponse {
 
     FindWorkspaceRegisterResponseBuilder builder =
         FindWorkspaceRegisterResponse.builder()
+            .memberId(member.getId())
             .workspaceRegisterId(workspaceRegister.getWorkspaceRegisterId())
             .profileImageUrl(member.getProfileImageUrl())
             .name(member.getName())
