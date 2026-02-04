@@ -7,9 +7,11 @@ import com.edumax.molip.domain.quiz.dto.request.CreateExitQuizRequest.CreateExit
 import com.edumax.molip.domain.quiz.dto.request.SubmitExitQuizListRequest;
 import com.edumax.molip.domain.quiz.dto.response.CreateExitQuizResponse;
 import com.edumax.molip.domain.quiz.dto.response.FindExitQuizResponse;
+import com.edumax.molip.domain.quiz.dto.response.FindExitQuizResponse.FindExitQuizAnswerResponse;
 import com.edumax.molip.domain.quiz.dto.response.SubmitExitQuizListResponse;
 import com.edumax.molip.domain.quiz.entity.ExitQuiz;
 import com.edumax.molip.domain.quiz.entity.ExitQuizAnswer;
+import com.edumax.molip.domain.quiz.exception.InvalidExitQuizAnswerNumberException;
 import com.edumax.molip.domain.quiz.exception.NoCreateExitQuizPermitException;
 import com.edumax.molip.domain.quiz.repository.ExitQuizAnswerRepository;
 import com.edumax.molip.domain.quiz.repository.ExitQuizRepository;
@@ -21,6 +23,7 @@ import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -32,9 +35,9 @@ public class ExitQuizServiceImpl implements ExitQuizService {
   private final SessionRepository sessionRepository;
 
   @Override
+  @Transactional
   public CreateExitQuizResponse createExitQuiz(
       Long sessionId, Long memberId, List<CreateExitQuizRequest> createExitQuizRequest) {
-
     // 권한 체크 - 해당 세션을 만든 강사인지 확인
     Session session = sessionRepository.findById(sessionId).orElseThrow(NoSessionException::new);
     Course course = session.getCourse();
@@ -46,8 +49,12 @@ public class ExitQuizServiceImpl implements ExitQuizService {
     // exit quiz/answer insert
     createExitQuizRequest.forEach(
         exitQuizRequest -> {
+          Integer answerNumber = exitQuizRequest.getAnswerNumber();
           ExitQuiz exitQuiz = exitQuizRepository.save(ExitQuiz.from(exitQuizRequest, session));
           List<CreateExitQuizAnswerRequest> exitQuizAnswers = exitQuizRequest.getExitQuizAnswers();
+          if (answerNumber > exitQuizAnswers.size()) {
+            throw new InvalidExitQuizAnswerNumberException();
+          }
           exitQuizAnswers.forEach(
               exitQuizAnswer ->
                   exitQuizAnswerRepository.save(ExitQuizAnswer.from(exitQuizAnswer, exitQuiz)));
@@ -57,11 +64,44 @@ public class ExitQuizServiceImpl implements ExitQuizService {
 
   @Override
   public List<FindExitQuizResponse> findExitQuizList(Long sessionId) {
-    System.out.println("파인두");
-    return List.of();
+    Session session = sessionRepository.findById(sessionId).orElseThrow(NoSessionException::new);
+    List<ExitQuiz> exitQuizzes = session.getExitQuizzes();
+
+    return exitQuizzes.stream()
+        .map(
+            exitQuiz -> {
+              Long exitQuizId = exitQuiz.getExitQuizId();
+              String question = exitQuiz.getQuestion();
+              Integer answerNumber = exitQuiz.getAnswerNumber();
+
+              List<ExitQuizAnswer> exitQuizAnswersEntity = exitQuiz.getExitQuizAnswers();
+              List<FindExitQuizAnswerResponse> exitQuizAnswers =
+                  exitQuizAnswersEntity.stream()
+                      .map(
+                          exitQuizAnswer -> {
+                            Long exitQuizAnswerId = exitQuizAnswer.getExitQuizAnswerId();
+                            Integer number = exitQuizAnswer.getNumber();
+                            String answer = exitQuizAnswer.getAnswer();
+                            return FindExitQuizAnswerResponse.builder()
+                                .exitQuizAnswerId(exitQuizAnswerId)
+                                .number(number)
+                                .answer(answer)
+                                .build();
+                          })
+                      .toList();
+
+              return FindExitQuizResponse.builder()
+                  .exitQuizId(exitQuizId)
+                  .question(question)
+                  .answerNumber(answerNumber)
+                  .exitQuizAnswers(exitQuizAnswers)
+                  .build();
+            })
+        .toList();
   }
 
   @Override
+  @Transactional
   public SubmitExitQuizListResponse submitExitQuizList(
       Long sessionId, Long memberId, SubmitExitQuizListRequest submitExitQuizListRequest) {
     System.out.println("증답 제출");
