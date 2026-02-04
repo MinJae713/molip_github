@@ -42,7 +42,7 @@
                 v-for="course in displayedCourses" 
                 :key="(course as any).courseId || (course as any).zzimId" 
                 :course="course as any" 
-                :workspace-id="Array.isArray(workspaceId) ? workspaceId[0] : workspaceId"
+                :workspace-id="(Array.isArray(workspaceId) ? workspaceId[0] : (workspaceId || '')) as string | number"
                 @enter-course="handleEnterCourse" />
         </div>
 
@@ -89,7 +89,7 @@ const homeRoute = computed(() => {
     };
 });
 
-// 1. 운영 중인 과정
+// 1. 학습 중인 과정
 const ongoingCourses = computed(() =>
     myEnrolledCourses.value.filter(course =>
         course.status === "PROCEED" || course.status === "INVITE"
@@ -108,7 +108,7 @@ const likedCourses = computed(() => myLikedCourses.value);
 
 // 탭별 동적 카운트
 const tabs = computed(() => [
-    { id: 'ongoing', label: '운영 중인 과정', count: ongoingCourses.value.length },
+    { id: 'ongoing', label: '학습 중인 과정', count: ongoingCourses.value.length },
     { id: 'liked', label: '찜한 과정', count: likedCourses.value.length }, // [수정] count 로직 수정
     { id: 'completed', label: '종료된 과정', count: completedCourses.value.length }
 ]);
@@ -119,7 +119,8 @@ onMounted(async () => {
         // [수정] 찜 목록과 수강 목록을 동시에 로드
         await Promise.all([
             courseStore.fetchMyEnrolledCourses(wsId),
-            courseStore.fetchLikeCourses(wsId)
+            courseStore.fetchLikeCourses(wsId),
+            courseStore.fetchCoursesByWorkspace(wsId)
         ]);
     }
 });
@@ -146,7 +147,10 @@ const handleEnterCourse = (courseId: string | number) => {
 const handleEnrollCourse = async (courseId: string | number) => {
     if (confirm('이 과정을 수강신청하시겠습니까?')) {
         // [수정] 스토어 enrollCourse 인자 순서 보정
-        const success = await courseStore.enrollCourse(courseId, Array.isArray(workspaceId.value) ? workspaceId.value[0] : workspaceId.value);
+        const success = await courseStore.enrollCourse(
+            courseId, 
+            (Array.isArray(workspaceId.value) ? workspaceId.value[0] : (workspaceId.value ?? '')) as string | number
+        );
         if (success) {
             alert('수강신청이 성공적으로 완료되었습니다. 관리자 승인을 기다려주세요.');
             const wsId = Array.isArray(workspaceId.value) ? workspaceId.value[0] : workspaceId.value;

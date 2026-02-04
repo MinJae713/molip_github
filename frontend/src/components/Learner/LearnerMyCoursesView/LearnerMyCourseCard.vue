@@ -123,7 +123,14 @@ const toggleLike = async () => {
     // 2. 만약 찜 목록 탭(zzimId만 있는 상태)이라면 제목이 같은 수강 신청 목록에서 courseId를 매칭
     if (!targetCourseId) {
         const currentTitle = displayCourse('title');
-        const match = courseStore.myEnrolledCourses.find(c => c.title === currentTitle);
+        // 수강 신청 목록에서 찾기
+        let match = courseStore.myEnrolledCourses.find(c => c.title === currentTitle);
+        
+        // 없으면 전체 워크스페이스 목록에서 찾기 (수강 안 한 찜 강의 대응)
+        if (!match) {
+            match = courseStore.workspaceCourses.find(c => c.title === currentTitle);
+        }
+
         if (match) targetCourseId = match.courseId;
     }
 

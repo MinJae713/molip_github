@@ -274,6 +274,7 @@ export interface ChangeRoleRequest {
 ///////////////////////////////////////////////////////
 export interface ZzimCourse {
   zzimId: number;
+  courseId: number;
   title: string;
   description: string;
   subCategory: string;

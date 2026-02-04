@@ -42,9 +42,22 @@
             </div>
 
             <div class="flex flex-col justify-between items-end gap-4 min-w-25">
-                <div class="flex flex-col items-end gap-2">
+                <div class="flex flex-col items-end gap-2 relative">
+                     <!-- 찜하기 버튼 추가 -->
+                    <button @click.prevent.stop="toggleLike" class="transition-colors p-1 group/like absolute -top-1 -right-1"
+                        :class="isHeartFilled ? 'text-red-500 hover:text-red-600' : 'text-slate-300 hover:text-indigo-500'"
+                        title="찜하기">
+                        <span
+                            class="material-symbols-outlined text-2xl transition-transform active:scale-95 group-hover/like:scale-110"
+                            :style="{ 'font-variation-settings': `'FILL' ${isHeartFilled ? 1 : 0}` } as any">
+                            favorite
+                        </span>
+                    </button>
+
+                    <div class="h-8"></div> <!-- 공간 확보용 -->
+
                     <button v-if="courseStatus === '수강중'" @click.stop="$emit('enter-course', course.courseId)"
-                        class="size-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors cursor-pointer">
+                        class="size-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors cursor-pointer mt-2">
                         <span class="material-symbols-outlined">
                             {{ progressRate > 0 ? 'resume' : 'play_arrow' }}
                         </span>
@@ -87,8 +100,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import type { LearnerCourse } from '@/types';
-
-// ★ [수정] 사용하지 않는 courseStore import 제거
+import { useLearnerCourseStore } from '@/stores/learnerCourse';
 
 const props = defineProps<{
     course: LearnerCourse;
@@ -97,6 +109,7 @@ const props = defineProps<{
 
 // --- 상태 및 상수 ---
 const isSubmitting = ref(false);
+const courseStore = useLearnerCourseStore();
 
 // --- 수강 상태 및 UI 로직 ---
 const courseStatus = computed(() => {
@@ -105,6 +118,35 @@ const courseStatus = computed(() => {
     return '신청가능';
 });
 
+// 찜 상태 판별
+const isHeartFilled = computed(() => {
+    // 1. props의 zzimId 확인 (만약 백엔드에서 준다면)
+    if ((props.course as any).zzimId) return true;
+    
+    // 2. 스토어의 찜 목록에서 확인
+    // 타이틀로 비교 (LearnerMyCourseCard와 로직 통일)
+    const currentTitle = props.course.title;
+    return courseStore.myLikedCourses.some(
+        (liked: any) => liked.title === currentTitle
+    );
+});
+
+// 찜 토글
+const toggleLike = async () => {
+    if (!props.workspaceId || !props.course.courseId) return;
+
+    try {
+        await courseStore.toggleCourseLike(
+            props.workspaceId,
+            props.course.courseId,
+            isHeartFilled.value
+        );
+        // 스토어에서 이미 refresh를 수행하지만, 필요하다면 추가 로직 작성
+    } catch (error) {
+        console.error("찜 토글 실패:", error);
+    }
+};
+
 const progressRate = computed(() => {
     if (!props.course.totalLessons) return 0;
     // 단순 계산 로직 유지
@@ -112,7 +154,7 @@ const progressRate = computed(() => {
 });
 
 const badgeColorClass = computed(() => {
-    const status = props.course.applyStatus;
+    const status = props.course.applyStatus || '';
     const classes: Record<string, string> = {
         APPROVED: 'bg-indigo-50 text-indigo-600 border-indigo-100',
         PENDING: 'bg-amber-50 text-amber-600 border-amber-100',
