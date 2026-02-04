@@ -5,7 +5,7 @@
 
         <div ref="scrollContainer" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/30">
 
-            <div v-if="activeTab === 'chat'" class="flex flex-col gap-3">
+            <div v-if="viewType === 'chat'" class="flex flex-col gap-3">
                 <div v-for="(msg, index) in chatList" :key="index" class="flex gap-2"
                     :class="{ 'flex-row-reverse': isMyMessage(msg.senderName || msg.name) }">
 
@@ -91,7 +91,7 @@
         </div>
 
         <div class="p-3 bg-white border-t border-slate-100 shrink-0">
-            <div v-if="activeTab === 'qa' && selectedQuestionId"
+            <div v-if="viewType === 'qa' && selectedQuestionId"
                 class="flex justify-between items-center mb-2 px-3 py-1 bg-indigo-50 rounded text-[10px] text-indigo-600">
                 <span class="font-bold">선택한 질문에 답변하는 중입니다.</span>
                 <button @click.stop="selectedQuestionId = null" class="underline">선택 해제</button>
@@ -111,19 +111,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue';
-import SockJS from 'sockjs-client';
-import { Client } from '@stomp/stompjs';
-import { storeToRefs } from 'pinia';
+import { ref, computed, watch, nextTick } from 'vue';
 import { useUserStore } from '@/stores/user';
-import { useTrainerLiveStore } from '@/stores/trainerlive';
 
 // ... (existing imports)
 
 const userStore = useUserStore();
-const trainerLiveStore = useTrainerLiveStore();
-
-// ... (existing helper functions)
 
 const isMyMessage = (name?: string) => {
     return name === userStore.user.name;
@@ -134,7 +127,7 @@ const isMyMessage = (name?: string) => {
 interface Message {
     id?: number;
     type?: string;
-    questionId: number | string;
+    questionId?: number | string;
     content: string;
     senderName?: string;
     name?: string;
@@ -185,29 +178,23 @@ interface GroupedQa extends Message {
 }
 
 const props = defineProps<{
-    roomId?: string | number,
+    chatList: Message[],
+    qaList: Message[],
     viewType: 'chat' | 'qa'
 }>();
-const socketUrl = import.meta.env.VITE_WEBSOCKET_URL;
 
-const roomId = props.roomId;
-const activeTab = computed(() => props.viewType || 'chat');
-const inputMessage = ref('');
-// const hasNewQa = ref(false); // 관리 방안 필요 (상위로 emit?)
+const emit = defineEmits<{
+    'send-message': [content: string, type: string, questionId?: number | string | null]
+}>();
 const scrollContainer = ref<HTMLDivElement | null>(null);
 const selectedQuestionId = ref<number | string | null>(null); // 클릭된 질문의 ID
-
-// Use store refs with storeToRefs to maintain reactivity
-const { chatList, qaList } = storeToRefs(trainerLiveStore);
 
 // --- 핵심 로직: questionId로 그룹화 ---
 const groupedQaList = computed(() => {
     const groups: Record<string, GroupedQa> = {};
-
     // 1. 모든 QA 메시지를 순회하며 그룹핑
-    qaList.value.forEach((msg) => {
+    props.qaList.forEach((msg: Message) => {
         if (!msg.questionId) return; // 안전장치
-
         const qId = String(msg.questionId);
 
         // 아직 그룹이 없으면 생성 (이게 질문 본문이 됨)
@@ -218,62 +205,22 @@ const groupedQaList = computed(() => {
             groups[qId].replies.push(msg);
         }
     });
-
     // 배열로 변환하여 반환 (최신 질문이 아래로 오게 하려면 순서 유지)
     return Object.values(groups);
 });
 
-// --- 웹소켓 연결 ---
-const stompClient = ref<Client | null>(null);
-
-const connect = () => {
-    console.log(`[Trainer Chat] Connecting to WebSocket. RoomID: ${roomId}`);
-    stompClient.value = new Client({
-        webSocketFactory: () => new SockJS(socketUrl),
-        connectHeaders: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`
-        },
-        debug: (str) => {
-            console.log('[Trainer Chat Stomp Debug]', str);
-        },
-        onConnect: () => {
-            console.log(`[Trainer Chat] Connected to Room: ${roomId} ✅`);
-            // 단일 주소 구독 (동료분 코드 로직 반영)
-            stompClient.value?.subscribe(`/topic/chat-room/${roomId}`, (res) => {
-                console.log(`[Trainer Chat] Message Received for Room ${roomId}:`, res.body);
-                const msg: Message = JSON.parse(res.body);
-                console.log(msg)
-
-                // 분류 로직: questionId 유무로 판단
-                if (!msg.questionId) {
-                    chatList.value.push(msg);
-                    if (activeTab.value === 'chat') scrollToBottom();
-                } else {
-                    qaList.value.push(msg);
-                    // if (activeTab.value !== 'qa') hasNewQa.value = true; // 상위 컴포넌트 처리 필요
-                    if (activeTab.value === 'qa') scrollToBottom();
-                }
-            });
-        },
-        onStompError: (frame) => {
-            console.error('[Chat] Broker reported error: ' + frame.headers['message']);
-            console.error('[Chat] Additional details: ' + frame.body);
-        },
-        onWebSocketClose: () => {
-            console.log('[Chat] Connection Closed ❌');
-        }
-    });
-    stompClient.value.activate();
-};
-
 // --- 메시지 전송 ---
+const inputMessage = ref('');
+
 const sendMessage = () => {
-    if (!inputMessage.value.trim() || !stompClient.value?.connected) return;
+    if (!inputMessage.value.trim()) return;
 
     let finalQuestionId = null;
+    let messageType = 'chat';
 
     // 질문 탭일 경우 ID 계산 로직
-    if (activeTab.value === 'qa') {
+    if (props.viewType === 'qa') {
+        messageType = 'question';
         if (selectedQuestionId.value) {
             // 1. 카드를 선택한 상태 -> 답변 (해당 ID 사용)
             finalQuestionId = selectedQuestionId.value;
@@ -283,34 +230,23 @@ const sendMessage = () => {
         }
     }
 
-    const payload = {
-        type: activeTab.value === 'chat' ? 'chat' : 'question',
-        content: inputMessage.value,
-        questionId: finalQuestionId // 채팅이면 null, 질문/답변이면 숫자값
-    };
-
-    stompClient.value.publish({
-        destination: `/app/chat-room/${roomId}`,
-        body: JSON.stringify(payload),
-    });
-
+    // 부모 컴포넌트로 메시지 전송 요청
+    emit('send-message', inputMessage.value, messageType, finalQuestionId);
     inputMessage.value = '';
-    // 전송 후 선택 상태 유지가 편하면 아래 줄 주석 처리, 풀고 싶으면 주석 해제
-    // selectedQuestionId.value = null; 
 };
 
 // --- UI 헬퍼 함수 ---
-const toggleSelectQuestion = (id: number | string | null) => {
+const toggleSelectQuestion = (id: number | string | null | undefined) => {
     // 이미 선택된 걸 누르면 해제, 아니면 선택
     if (selectedQuestionId.value === id) {
         selectedQuestionId.value = null;
     } else {
-        selectedQuestionId.value = id;
+        selectedQuestionId.value = id || null;
     }
 };
 
 const getPlaceholder = () => {
-    if (activeTab.value === 'chat') return '채팅 메시지를 입력하세요...';
+    if (props.viewType === 'chat') return '채팅 메시지를 입력하세요...';
     if (selectedQuestionId.value) return '선택한 질문에 답변을 입력하세요...';
     return '질문에 대한 답변을 달아주세요...';
 };
@@ -331,11 +267,11 @@ const scrollToBottom = async () => {
     }
 };
 
-watch(activeTab, (newTab) => {
-    // if (newTab === 'qa') hasNewQa.value = false;
+watch(() => props.viewType, () => {
     scrollToBottom();
 });
 
-onMounted(() => connect());
-onUnmounted(() => stompClient.value?.deactivate());
+watch([() => props.chatList, () => props.qaList], () => {
+    scrollToBottom();
+}, { deep: true });
 </script>

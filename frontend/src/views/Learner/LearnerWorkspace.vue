@@ -2,16 +2,14 @@
     <div class="space-y-8">
         <!-- Stats Section -->
         <section class="grid grid-cols-1 md:grid-cols-3 gap-6" v-if="workspaceStats">
-            <StatCard title="나의 학습 진행률" :value="`${workspaceStats.progress.value}%`" icon="donut_large" color="indigo"
-                :trend="workspaceStats.progress.trend" :trendType="workspaceStats.progress.trendType"
-                :trendIcon="workspaceStats.progress.trendType === 'up' ? 'trending_up' : 'trending_down'" />
+            <StatCard title="학습 중인 과정" :value="workspaceStats.learningCourseCount" icon="auto_stories" color="indigo"
+                subText="현재 수강 중인 강의 수" />
 
-            <StatCard title="예정된 세션" :value="workspaceStats.sessions.value" icon="calendar_month" color="blue"
-                :subText="workspaceStats.sessions.nextSession ? `다음: ${workspaceStats.sessions.nextSession}` : '예정된 세션 없음'"
-                :trend="workspaceStats.sessions.value > 0 ? undefined : undefined" />
+            <StatCard title="오늘의 세션" :value="workspaceStats.todaySessionCount" icon="calendar_today" color="blue"
+                :subText="workspaceStats.todaySessionCount > 0 ? '오늘 예정된 세션이 있습니다.' : '오늘 예정된 세션이 없습니다.'" />
 
-            <StatCard title="수료한 과정" :value="workspaceStats.completed.value" icon="emoji_events" color="orange"
-                :subText="`총 ${workspaceStats.completed.total}개 필수 과정 중`" />
+            <StatCard title="수료한 과정" :value="workspaceStats.certificatedCount" icon="emoji_events" color="orange"
+                subText="수료증 발급 완료" />
         </section>
         <!-- Loading State for Stats -->
         <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -59,14 +57,9 @@
             </div>
             <!-- Course Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" v-if="filteredCourses.length > 0">
-                <DashboardCourseCard 
-                    v-for="course in filteredCourses" 
-                    :key="course.courseId" 
-                    :course="course"
-                    :workspace-id="currentWorkspaceId"  @open-curriculum="openCurriculumModal" 
-                    @enroll-course="handleEnrollCourse"
-                    @enter-course="handleEnterCourse(course.courseId)" 
-                />
+                <DashboardCourseCard v-for="course in filteredCourses" :key="course.courseId" :course="course"
+                    :workspace-id="currentWorkspaceId" @open-curriculum="openCurriculumModal"
+                    @enroll-course="handleEnrollCourse" @enter-course="handleEnterCourse(course.courseId)" />
             </div>
             <div v-else class="text-center py-20 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                 <p class="text-slate-500">등록된 강의가 없습니다.</p>
@@ -113,6 +106,7 @@ const isModalOpen = ref(false);
 const selectedCourse = ref<LearnerCourse>({} as LearnerCourse);
 
 const selectedCourseSessions = ref<Session[]>([]);
+
 const openCurriculumModal = async (courseId: string | number) => {
     const course = workspaceCourses.value.find(c => String(c.courseId) === String(courseId));
     if (course) {
@@ -130,10 +124,12 @@ const closeModal = () => {
 };
 
 const handleEnrollCourse = async (courseId: string | number) => {
-    // 1. 워크스페이스 ID
-    const workspaceId = currentWorkspaceId.value;
+    // 1. URL에서 워크스페이스 ID 추출 및 규격화(Normalization)
+    const rawId = route.params.id;
+    const workspaceId = Array.isArray(rawId) ? rawId[0] : rawId;
+
     if (!workspaceId) return;
-    
+
     // 2. 신청할 강의 정보 확인
     const course = workspaceCourses.value.find(c => String(c.courseId) === String(courseId));
     if (!course) return;

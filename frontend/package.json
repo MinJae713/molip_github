@@ -17,6 +17,10 @@
     "mock": "json-server --watch db.json --routes routes.json --port 3000"
   },
   "dependencies": {
+    "@mediapipe/camera_utils": "^0.3.1675466862",
+    "@mediapipe/drawing_utils": "^0.3.1675466124",
+    "@mediapipe/face_mesh": "^0.4.1633559619",
+    "@mediapipe/pose": "^0.5.1675469404",
     "@stomp/stompjs": "^7.2.1",
     "axios": "^1.13.2",
     "dayjs": "^1.11.19",
