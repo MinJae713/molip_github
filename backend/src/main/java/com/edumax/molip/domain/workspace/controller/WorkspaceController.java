@@ -24,6 +24,7 @@ import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.workspace_member_stat_box.FindWorkspaceMemberStatBoxResponse;
 import com.edumax.molip.domain.workspace.service.WorkspaceService;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -58,7 +59,7 @@ public class WorkspaceController {
 
   @PostMapping("/join")
   public ResponseEntity<JoinWorkspaceResponse> joinWorkspace(
-      @RequestBody JoinWorkspaceRequest joinWorkspaceRequest,
+      @Valid @RequestBody JoinWorkspaceRequest joinWorkspaceRequest,
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(workspaceService.joinWorkspace(joinWorkspaceRequest));
   }
@@ -93,7 +94,7 @@ public class WorkspaceController {
 
   @PostMapping
   public ResponseEntity<CreateWorkspaceResponse> createWorkspace(
-      @RequestBody CreateWorkspaceRequest createWorkspaceRequest,
+      @Valid @RequestBody CreateWorkspaceRequest createWorkspaceRequest,
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(
         workspaceService.createWorkspace(createWorkspaceRequest, member.getMemberId()));
@@ -101,7 +102,7 @@ public class WorkspaceController {
 
   @PatchMapping
   public ResponseEntity<UpdateWorkspaceResponse> updateWorkspace(
-      @RequestBody UpdateWorkspaceRequest updateWorkspaceRequest,
+      @Valid @RequestBody UpdateWorkspaceRequest updateWorkspaceRequest,
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(workspaceService.updateWorkspace(updateWorkspaceRequest));
   }
@@ -115,7 +116,7 @@ public class WorkspaceController {
 
   @PatchMapping("/inactive")
   public ResponseEntity<InactiveWorkspaceMemberResponse> inactiveWorkspaceMember(
-      @RequestBody InactiveWorkspaceMemberRequest inactiveWorkspaceMemberRequest,
+      @Valid @RequestBody InactiveWorkspaceMemberRequest inactiveWorkspaceMemberRequest,
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(
         workspaceService.inactiveWorkspaceMember(
@@ -124,7 +125,7 @@ public class WorkspaceController {
 
   @PatchMapping("/changeRole")
   public ResponseEntity<ChangeWorkspaceMemberRoleResponse> changeWorkspaceMemberRole(
-      @RequestBody ChangeWorkspaceMemberRoleRequest changeWorkspaceMemberRoleRequest,
+      @Valid @RequestBody ChangeWorkspaceMemberRoleRequest changeWorkspaceMemberRoleRequest,
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(
         workspaceService.changeWorkspaceMemberRole(
@@ -133,7 +134,7 @@ public class WorkspaceController {
 
   @PostMapping("/joinCode")
   public ResponseEntity<CreateJoinCodeResponse> createJoinCode(
-      @RequestBody CreateJoinCodeRequest createJoinCodeRequest,
+      @Valid @RequestBody CreateJoinCodeRequest createJoinCodeRequest,
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(
         workspaceService.createJoinCode(createJoinCodeRequest, member.getMemberId()));

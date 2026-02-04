@@ -12,6 +12,7 @@ import com.edumax.molip.domain.course.dto.response.GetTrainerCourseResponse;
 import com.edumax.molip.domain.course.dto.response.GetZzimCourseResponse;
 import com.edumax.molip.domain.course.dto.response.ZzimCourseResponse;
 import com.edumax.molip.domain.course.service.CourseService;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -117,7 +118,7 @@ public class CourseController {
   @PostMapping("/{workspaceId}/zzim")
   public ResponseEntity<ZzimCourseResponse> toggleZzimCourse(
       @PathVariable Long workspaceId,
-      @RequestBody ToggleZzimCourseRequest toggleZzimCourseRequest,
+      @Valid @RequestBody ToggleZzimCourseRequest toggleZzimCourseRequest,
       @AuthenticationPrincipal MemberUserDetails memberDetails) {
     return ResponseEntity.ok(
         courseService.toggleZzimCourse(
