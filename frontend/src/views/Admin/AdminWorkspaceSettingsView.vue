@@ -23,8 +23,8 @@ onMounted(async () => {
   if (workspaceId) {
     await store.setCurrentWorkspaceById(workspaceId);
     if (store.currentWorkspace) {
-      const { name, description, logo_url } = store.currentWorkspace;
-      form.value = { name: name || '', description: description || '', logo_url: logo_url || '' };
+      const { name, description, logoUrl } = store.currentWorkspace;
+      form.value = { name: name || '', description: description || '', logo_url: logoUrl || '' };
       originalData.value = { ...form.value };
     }
   }
@@ -39,7 +39,12 @@ const isDirty = computed(() => {
 const handleSave = async () => {
   if (!isDirty.value) return;
   try {
-    const success = await store.updateWorkspace(workspaceId, form.value);
+    const payload = {
+      name: form.value.name,
+      description: form.value.description,
+      logoUrl: form.value.logo_url
+    };
+    const success = await store.updateWorkspace(Number(workspaceId), payload);
     if (success) {
       originalData.value = { ...form.value };
       alert('변경사항이 저장되었습니다.');
@@ -59,7 +64,7 @@ const handleDelete = async () => {
   if (confirm('정말로 이 워크스페이스를 삭제하시겠습니까? 모든 데이터가 영구 삭제됩니다.')) {
     const success = await store.deleteWorkspace(workspaceId);
     if (success) {
-      router.push('/dashboard');
+      router.push('/workspaces');
     }
   }
 };

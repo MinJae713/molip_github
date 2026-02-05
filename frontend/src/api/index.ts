@@ -1,5 +1,6 @@
 // src/api/index.ts
 import axios from "axios";
+import { toast } from 'vue3-toastify'; // toast 불러오기
 
 const api = axios.create({
   // .env 파일의 VITE_API_BASE_URL 값
@@ -26,8 +27,21 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // 404 에러 등을 콘솔에 찍기
-    console.error("API 인터셉터 에러:", error.response?.status, error.message);
+    const serverDetail = error.response?.data?.body?.detail;
+    const status = error.response?.status;
+
+    if (serverDetail) {
+      // 💡 alert 대신 toast 사용!
+      toast.error(`[${status}] ${serverDetail}`, {
+        transition: toast.TRANSITIONS.BOUNCE, // 애니메이션 효과 추가
+      });
+      
+      error.message = serverDetail;
+    } else {
+      // 서버 메시지가 없는 일반적인 에러 처리
+      toast.warning(error.message || "연결이 원활하지 않습니다.");
+    }
+
     return Promise.reject(error);
   },
 );

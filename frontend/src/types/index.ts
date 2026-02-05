@@ -7,6 +7,7 @@ export interface Workspace {
   courseCount: number;
   myStatus: number | null; // 0: 미가입, 1: 대기, 2: 활동중
   myRole: string | null;
+  createdAt?: string; // 워크스페이스 생성일 (Admin API)
 }
 
 export interface CreateCourse {
@@ -35,6 +36,24 @@ export interface TrainerCourse {
   category?: string;
   description?: string;
   status?: string;
+}
+
+export interface AdminCourse {
+  category: string;
+  courseId: number;
+  currentLessons: number;
+  dDay: string;
+  description: string;
+  isOwn: boolean;
+  learnersCount: number;
+  progressRate: number | null;
+  startDate: string;
+  status: string;
+  subCategory: string;
+  title: string;
+  totalLessons: number;
+  trainerName: string;
+  workspaceId: number;
 }
 
 export interface LearnerCourse {
@@ -239,7 +258,9 @@ export interface JoinRequest {
   createdAt: string; // 생성일 (신청일)
   updatedAt?: string; // 수정일 (처리일)
   status: "PENDING" | "APPROVE" | "REJECTED";
+  role?: string; // 신청 시 역할
   approvedAt?: string; // 승인일
+  rejectedAt?: string; // 반려일
   rejectReason?: string; // 반려 사유
   rejectType?:
   | "AFFLIATION_MISMATCH"
@@ -249,19 +270,18 @@ export interface JoinRequest {
 }
 
 /** 3. 워크스페이스 멤버 (Member) */
-export interface WorkspaceMember extends User {
-  workspaceMemberId: number; // 워크스페이스-멤버 관계의 PK - 백엔드 요청하기
-  workspaceId: number | string;
-
-  // 역할 및 상태 (백엔드 Enum 통일)
+export interface WorkspaceMember {
+  workspaceMemberId: number;
+  email: string;
+  name: string;
+  profileImageUrl: string | null;
   role: "TRAINER" | "LEARNER";
   status: "ACTIVE" | "INACTIVE";
+  createdAt: string;
+  connectedAt: string | null;
 
-  // 날짜 정보 (백엔드 명세서 필드명 준수)
-  createdAt: string; // 워크스페이스 가입일
-  connectedAt?: string | null; // 최근 접속일 (없을 수 있음)
-
-  // 추가 통계 정보 (선택적)
+  // UI용 추가 필드 (API 미포함 시 optional)
+  workspaceId?: number | string;
   courses?: string[];
   stats?: {
     progress: number;
@@ -285,4 +305,20 @@ export interface ZzimCourse {
   courseTime: number;
   learnerCount: number;
   isApplied: boolean;
+}
+export interface MemberCourse {
+  courseId: number; // [Added] API spec update
+  title: string;
+  totalCount: number;
+  finishedCount: number;
+  status: 'PROCEED' | 'FINISH' | 'PREPARING';
+}
+
+export interface MemberDetail {
+  profileImageUrl: string | null;
+  name: string;
+  role: 'LEARNER' | 'TRAINER';
+  status: 'ACTIVE' | 'INACTIVE';
+  finishedCourse: number;
+  courses: MemberCourse[];
 }

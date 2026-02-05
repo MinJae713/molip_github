@@ -81,6 +81,7 @@ export const useUserStore = defineStore("user", () => {
         name: userData.name,
         email: userData.email,
         profileImageUrl: userData.profileImageUrl,
+        role: userData.role, // role 추가 매핑
       };
 
       isLoaded.value = true;
@@ -114,6 +115,7 @@ export const useUserStore = defineStore("user", () => {
         displayName,
         email: userEmail,
         profileImageUrl,
+        role,
       } = response.data;
       // LocalStorage 저장
       token.value = accessToken;
@@ -126,9 +128,15 @@ export const useUserStore = defineStore("user", () => {
         name: displayName,
         email: userEmail,
         profileImageUrl: profileImageUrl || "", // null일 경우 빈 문자열
+        role: role,
       };
 
-      isLoaded.value = true;
+      // role 정보가 없으면 전체 정보 재요청
+      if (!role) {
+        await fetchUserInfo();
+      } else {
+        isLoaded.value = true;
+      }
       return true;
     } catch (error) {
       console.error("Login Failed:", error);

@@ -4,7 +4,7 @@
  */
 interface Props {
   // 기존 variant + 신규 상태 추가
-  variant: 'ongoing' | 'completed' | 'upcoming' | 'active' | 'inactive' | 'admin' | 'instructor' | 'learner';
+  variant: 'ongoing' | 'completed' | 'upcoming' | 'active' | 'inactive' | 'admin' | 'trainer' | 'learner';
   showDot?: boolean; // 점(dot) 표시 여부 선택 옵션
 }
 
@@ -24,7 +24,7 @@ const statusConfig = {
 
   // 3. 사용자 역할 (Role)
   admin: { bg: 'bg-indigo-50 text-indigo-600 border-indigo-100', dot: 'bg-indigo-500', text: 'Admin' },
-  instructor: { bg: 'bg-cyan-50 text-cyan-600 border-cyan-100', dot: 'bg-cyan-500', text: 'Instructor' },
+  trainer: { bg: 'bg-cyan-50 text-cyan-600 border-cyan-100', dot: 'bg-cyan-500', text: 'Trainer' },
   learner: { bg: 'bg-slate-50 text-slate-600 border-slate-100', dot: 'bg-slate-400', text: 'Learner' },
 };
 </script>

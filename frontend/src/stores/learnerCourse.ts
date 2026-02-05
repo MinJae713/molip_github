@@ -27,6 +27,8 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
     workspaceId: string | number,
     forceRefresh = false,
   ) {
+    if (!workspaceId) return;
+
     if (
       !forceRefresh &&
       lastWorkspaceId.value === workspaceId &&

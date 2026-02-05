@@ -3,7 +3,7 @@ interface Props {
   title: string;
   value: string | number;
   icon: string;
-  variant?: 'indigo' | 'blue' | 'amber';
+  variant?: 'indigo' | 'blue' | 'amber' | 'emerald';
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -14,6 +14,7 @@ const variantClasses = {
   indigo: 'bg-indigo-50 text-indigo-600',
   blue: 'bg-blue-50 text-blue-600',
   amber: 'bg-amber-50 text-amber-600',
+  emerald: 'bg-emerald-50 text-emerald-600',
 } as const;
 </script>
 

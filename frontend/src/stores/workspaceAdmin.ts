@@ -1,12 +1,13 @@
 import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
 import api from "@/api";
-import type { 
-  JoinCode, 
-  CreateJoinCodePayload, 
-  CreateJoinCodeResponse, 
-  JoinRequest, 
-  WorkspaceMember 
+import type {
+  JoinCode,
+  CreateJoinCodePayload,
+  CreateJoinCodeResponse,
+  JoinRequest,
+  WorkspaceMember,
+  MemberDetail
 } from '@/types';
 
 export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
@@ -39,15 +40,15 @@ export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
 
     return joinCodes.value.filter(code => {
       if (!code.endedDate) return false;
-      
+
       // 2. 만료일을 Date 객체로 변환
       const expirationDate = new Date(code.endedDate);
-      
+
       // 3. 만료일이 오늘 00:00:00 이후라면 활성 상태로 간주
       return expirationDate >= today;
     });
   });
-  
+
   /* ==========================================================
    * ACTIONS
    * ========================================================== */
@@ -111,9 +112,12 @@ export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
     error.value = null;
     try {
       const { data } = await api.delete<{ apiResult: boolean }>(`/workspaces/joinCode/${joinCodeId}`);
-      
+
       if (data.apiResult) {
-        // 삭제 성공 시 목록 갱신
+        // [UI 즉시 반영] 로컬 상태에서 제거
+        joinCodes.value = joinCodes.value.filter(code => code.joinCodeId !== joinCodeId);
+
+        // 삭제 성공 시 목록 갱신 (서버 동기화)
         await fetchJoinCodes(workspaceId);
       } else {
         throw new Error("삭제 처리에 실패했습니다.");
@@ -154,21 +158,34 @@ export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
   const updateJoinRequestStatus = async (
     workspaceId: number,
     workspaceRegisterId: number,
-    status: 'APPROVE' | 'REJECTED',
-    rejectReason: string = "" // 사유만 받도록 단순화
+    status: 'APPROVE' | 'REJECTED'
   ) => {
     if (isLoading.value) return;
     isLoading.value = true; // 로딩 추가
     error.value = null;
     try {
-      await api.patch(`/workspaces/register`, {
-        workspaceRegisterId,
-        status,
-        rejectReason: status === 'REJECTED' ? rejectReason : ""
-      });
+      // 해당 요청 정보 찾기 (payload 구성을 위해)
+      const targetRequest = joinRequests.value.find(req => req.workspaceRegisterId === workspaceRegisterId);
+      console.log('Target Request:', targetRequest); // 디버깅용 로그
 
-      // 처리 후 목록 갱신
+      if (!targetRequest) {
+        throw new Error("요청 정보를 찾을 수 없습니다.");
+      }
+
+      const payload = {
+        workspaceId: workspaceId,
+        memberId: targetRequest.memberId,
+        role: targetRequest.role || 'LEARNER',
+        status: status, // 'APPROVE' 또는 'REJECTED'
+        appliedAt: targetRequest.createdAt // createdAt을 appliedAt으로 매핑
+      };
+
+      // 3. POST 요청 전송
+      await api.post(`/workspaces/join`, payload);
+
+      // 4. 처리 성공 후 목록 다시 불러오기
       await fetchJoinRequests(workspaceId);
+
     } catch (e) {
       console.error(`가입 신청 상태 변경 실패 (${status})`, e);
       error.value = `가입 신청 처리에 실패했습니다.`;
@@ -200,63 +217,114 @@ export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
     }
   };
 
+  /** 멤버 상세 정보 조회 */
+  const fetchMemberDetail = async (workspaceId: number, workspaceMemberId: number): Promise<MemberDetail> => {
+    // API Call
+    try {
+      const { data } = await api.get<MemberDetail>(`/workspaces/${workspaceId}/member/${workspaceMemberId}`);
+      return data;
+    } catch (e) {
+      console.error("멤버 상세 조회 실패", e);
+      throw e;
+    }
+  };
+
   /** 멤버 역할 변경 */
   const changeMemberRole = async (workspaceMemberId: number, newRole: 'TRAINER' | 'LEARNER') => {
+    try {
+      // API 명세서 규격에 맞게 요청
+      const { data } = await api.patch<{ apiResult: boolean }>('/workspaces/member/role', {
+        workspaceMemberId,
+        role: newRole
+      });
+
+      if (data.apiResult) {
+        // 성공 시 로컬 상태 업데이트
+        const member = members.value.find(m => m.workspaceMemberId === workspaceMemberId);
+        if (member) {
+          member.role = newRole;
+        }
+        console.log(`${workspaceMemberId}번 멤버 역할이 ${newRole}로 변경되었습니다.`);
+      } else {
+        throw new Error("역할 변경 처리에 실패했습니다.");
+      }
+    } catch (e) {
+      console.error("멤버 역할 변경 실패:", e);
+      error.value = "멤버 역할 변경 중 오류가 발생했습니다.";
+      throw e; // 컴포넌트에서 알림(Toast 등)을 띄울 수 있도록 에러 토스
+    }
+  };
+
+  /** 멤버 역할 일괄 변경 (Bulk Action) */
+  const changeMembersRole = async (workspaceMemberIds: number[], newRole: 'TRAINER' | 'LEARNER') => {
     if (isLoading.value) return;
     isLoading.value = true;
     error.value = null;
 
     try {
-      // API 명세서 규격에 맞게 요청
-      const { data } = await api.patch<{ apiResult: boolean }>('/workspaces/changeRole', {
-        workspaceMemberId,
-        workspaceMemberRole: newRole
-      });
+      // 병렬 처리
+      const promises = workspaceMemberIds.map(id => changeMemberRole(id, newRole));
+      const results = await Promise.allSettled(promises);
 
-      if (data.apiResult) {
-        // 💡 꿀팁: 성공 시 서버에서 다시 목록을 안 불러와도 되게 로컬 state 업데이트
-        const member = members.value.find(m => m.workspaceMemberId === workspaceMemberId);
-        if (member) {
-          member.role = newRole;
-        }
-        console.log(`${workspaceMemberId}번 멤버의 역할이 ${newRole}로 변경되었습니다.`);
-      } else {
-        throw new Error("서버 처리 결과가 실패로 돌아왔습니다.");
+      // 실패한 요청이 있는지 확인
+      const failed = results.filter(r => r.status === 'rejected');
+      if (failed.length > 0) {
+        console.error(`${failed.length}건의 요청이 실패했습니다.`);
+        throw new Error("일부 멤버의 역할 변경 처리에 실패했습니다.");
       }
     } catch (e) {
-      console.error("멤버 역할 변경 실패:", e);
-      error.value = "역할을 변경하는 중 오류가 발생했습니다.";
-      throw e; // 컴포넌트에서 알림(Toast 등)을 띄울 수 있도록 에러 토스
+      console.error("일괄 역할 변경 실패:", e);
+      error.value = "멤버 일괄 역할 변경 중 오류가 발생했습니다.";
+      throw e;
     } finally {
       isLoading.value = false;
     }
   };
 
-  /** 멤버 비활성화 (추방/탈퇴 처리) */
-  const inactiveMember = async (workspaceMemberId: number, isSendMail: boolean = false) => {
+  /** 멤버 상태 변경 (활성/비활성) - 단건 */
+  const updateMemberStatus = async (workspaceMemberId: number, status: 'ACTIVE' | 'INACTIVE', isSendMail: boolean = false) => {
+    try {
+      const { data } = await api.patch<{ apiResult: boolean }>('/workspaces/activate', {
+        workspaceMemberId,
+        isSendMail,
+        status
+      });
+
+      if (data.apiResult) {
+        const member = members.value.find(m => m.workspaceMemberId === workspaceMemberId);
+        if (member) {
+          member.status = status;
+        }
+        console.log(`${workspaceMemberId}번 멤버 상태가 ${status}(으)로 변경되었습니다.`);
+      } else {
+        throw new Error("상태 변경 처리에 실패했습니다.");
+      }
+    } catch (e) {
+      console.error("멤버 상태 변경 실패:", e);
+      throw e;
+    }
+  };
+
+  /** 멤버 상태 일괄 변경 (활성/비활성) */
+  const updateMembersStatus = async (workspaceMemberIds: number[], status: 'ACTIVE' | 'INACTIVE', isSendMail: boolean = false) => {
     if (isLoading.value) return;
     isLoading.value = true;
     error.value = null;
 
     try {
-      const { data } = await api.patch<{ apiResult: boolean }>('/workspaces/inactive', {
-        workspaceMemberId,
-        isSendMail
-      });
+      // 병렬 처리
+      const promises = workspaceMemberIds.map(id => updateMemberStatus(id, status, isSendMail));
+      const results = await Promise.allSettled(promises);
 
-      if (data.apiResult) {
-        // 💡 삭제 대신 상태값만 업데이트
-        const member = members.value.find(m => m.workspaceMemberId === workspaceMemberId);
-        if (member) {
-          member.status = 'INACTIVE'; // 상태를 INACTIVE로 변경
-        }
-        console.log(`${workspaceMemberId}번 멤버 상태가 비활성으로 변경되었습니다.`);
-      } else {
-        throw new Error("비활성화 처리에 실패했습니다.");
+      // 실패한 요청이 있는지 확인
+      const failed = results.filter(r => r.status === 'rejected');
+      if (failed.length > 0) {
+        console.error(`${failed.length}건의 요청이 실패했습니다.`);
+        throw new Error("일부 멤버의 상태 변경 처리에 실패했습니다.");
       }
     } catch (e) {
-      console.error("멤버 비활성화 실패:", e);
-      error.value = "멤버 상태 변경 중 오류가 발생했습니다.";
+      console.error("일괄 상태 변경 실패:", e);
+      error.value = "멤버 일괄 상태 변경 중 오류가 발생했습니다.";
       throw e;
     } finally {
       isLoading.value = false;
@@ -295,8 +363,11 @@ export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
     updateJoinRequestStatus,
 
     fetchMembers,
+    fetchMemberDetail,
     changeMemberRole,
-    inactiveMember,
+    changeMembersRole,
+    updateMemberStatus,
+    updateMembersStatus,
 
     clear
   };
