@@ -31,7 +31,8 @@ public interface WorkspaceService {
 
   FindWorkspaceResponse findWorkspaceById(Long workspaceId, Long memberId); // 워크스페이스 상세 조회
 
-  JoinWorkspaceResponse joinWorkspace(JoinWorkspaceRequest joinWorkspaceRequest); // 워크스페이스 참여 신청
+  JoinWorkspaceResponse joinWorkspace(
+      JoinWorkspaceRequest joinWorkspaceRequest, Long memberId); // 워크스페이스 참여 신청
 
   FindMyStatsResponse findMyStats(Long workspaceId); // 내 워크스페이스 통계 조회
 

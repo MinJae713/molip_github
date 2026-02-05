@@ -50,6 +50,7 @@ import com.edumax.molip.domain.workspace.entity.InviteCode;
 import com.edumax.molip.domain.workspace.entity.Workspace;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import com.edumax.molip.domain.workspace.entity.WorkspaceRegister;
+import com.edumax.molip.domain.workspace.exception.AlreadyWorkspaceRegisterException;
 import com.edumax.molip.domain.workspace.exception.ExpiredInviteCodeException;
 import com.edumax.molip.domain.workspace.exception.IncorrectWorkspaceMemberException;
 import com.edumax.molip.domain.workspace.exception.InviteCodeExistException;
@@ -167,16 +168,24 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
   @Override
   @Transactional
-  public JoinWorkspaceResponse joinWorkspace(JoinWorkspaceRequest joinWorkspaceRequest) {
+  public JoinWorkspaceResponse joinWorkspace(
+      JoinWorkspaceRequest joinWorkspaceRequest, Long memberId) {
+    Member member =
+        memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
+    if (member.getRole() != Member.Role.ADMIN) {
+      throw new NoAdminException();
+    }
     Long workspaceId = joinWorkspaceRequest.getWorkspaceId();
     Workspace workspace =
         workspaceRepository
             .findById(workspaceId)
             .orElseThrow(NoWorkspaceException::new); // GlobalExceptionHandler
     WorkspaceMemberRole role = joinWorkspaceRequest.getRole();
-    Long memberId = joinWorkspaceRequest.getMemberId();
-    Member member =
-        memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
+    Long targetMemberId = joinWorkspaceRequest.getMemberId();
+    Member targetMember =
+        memberRepository
+            .findByIdAndDeletedAtIsNull(targetMemberId)
+            .orElseThrow(NoMemberException::new);
     WorkspaceRegisterStatus status = joinWorkspaceRequest.getStatus();
     // PENDING, APPROVE, REJECTED
     LocalDateTime appliedAt = joinWorkspaceRequest.getAppliedAt();
@@ -186,15 +195,26 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         {
           // 사용자 워크스페이스 가입 신청
           // 워크 스페이스 가입 대기에 추가 (PENDING)
-          if (workspaceRegisterRepository.findByMemberAndWorkspace(member, workspace).isPresent()) {
-            throw new WorkspaceRegisterExistException();
+          // 이미 REJECT 된 상태라면 수정 로직
+          Optional<WorkspaceRegister> workspaceRegister =
+              workspaceRegisterRepository.findByMemberAndWorkspace(targetMember, workspace);
+          if (workspaceRegister.isPresent()) {
+            WorkspaceRegister currentWorkspaceRegister = workspaceRegister.orElse(null);
+            if (currentWorkspaceRegister.getStatus() == WorkspaceRegisterStatus.REJECTED) {
+              currentWorkspaceRegister.setApprovedAt(null);
+              currentWorkspaceRegister.setStatus(WorkspaceRegisterStatus.PENDING);
+              workspaceRegisterRepository.save(currentWorkspaceRegister);
+            } else {
+              throw new WorkspaceRegisterExistException();
+            }
+          } else {
+            workspaceRegisterRepository.save(
+                WorkspaceRegister.builder()
+                    .status(WorkspaceRegisterStatus.PENDING)
+                    .member(targetMember)
+                    .workspace(workspace)
+                    .build());
           }
-          workspaceRegisterRepository.save(
-              WorkspaceRegister.builder()
-                  .status(WorkspaceRegisterStatus.PENDING)
-                  .member(member)
-                  .workspace(workspace)
-                  .build());
           break;
         }
       case APPROVE:
@@ -207,40 +227,48 @@ public class WorkspaceServiceImpl implements WorkspaceService {
           }
           WorkspaceRegister workspaceRegister =
               workspaceRegisterRepository
-                  .findByMemberAndWorkspace(member, workspace)
+                  .findByMemberAndWorkspace(targetMember, workspace)
                   .orElseThrow(NoWorkspaceRegisterException::new);
           // 워크 스페이스 가입 대기 수정 (APPROVE)
           workspaceRegister.setApprovedAt(appliedAt);
-          workspaceRegister.setStatus(WorkspaceRegisterStatus.APPROVE);
+          workspaceRegister.setStatus(status);
           workspaceRegisterRepository.save(workspaceRegister);
           // 워크 스페이스 참여자에 추가
-          if (workspaceMemberRepository.findByMemberAndWorkspace(member, workspace).isPresent()) {
+          if (workspaceMemberRepository
+              .findByMemberAndWorkspace(targetMember, workspace)
+              .isPresent()) {
             throw new WorkspaceMemberExistException();
           }
           workspaceMemberRepository.save(
               WorkspaceMember.builder()
                   .status(WorkspaceMemberStatus.ACTIVE)
                   .role(role)
-                  .member(member)
+                  .member(targetMember)
                   .workspace(workspace)
                   .build());
           break;
         }
       case REJECTED:
         {
+          if (appliedAt == null) {
+            throw new NoWorkspaceAppliedAtException();
+          }
+          // 워크 스페이스 참여자에서 삭제
+          Optional<WorkspaceMember> workspaceMember =
+              workspaceMemberRepository.findByMemberAndWorkspace(targetMember, workspace);
+          if (workspaceMember.isPresent()) {
+            // 이미 참여자로 등록되었다면? - 반려 못함
+            throw new AlreadyWorkspaceRegisterException();
+          }
           // 관리자 워크스페이스 가입 반려
           WorkspaceRegister workspaceRegister =
               workspaceRegisterRepository
-                  .findByMemberAndWorkspace(member, workspace)
+                  .findByMemberAndWorkspace(targetMember, workspace)
                   .orElseThrow(NoWorkspaceRegisterException::new);
-          // 워크 스페이스 가입 대기에서 삭제
-          workspaceRegisterRepository.delete(workspaceRegister);
-          // 워크 스페이스 참여자에서 삭제
-          Optional<WorkspaceMember> workspaceMember =
-              workspaceMemberRepository.findByMemberAndWorkspace(member, workspace);
-          if (workspaceMember.isPresent()) {
-            workspaceMemberRepository.delete(workspaceMember.orElse(null));
-          }
+          // 워크 스페이스 가입 대기 수정
+          workspaceRegister.setApprovedAt(appliedAt);
+          workspaceRegister.setStatus(status);
+          workspaceRegisterRepository.save(workspaceRegister);
           break;
         }
       default:

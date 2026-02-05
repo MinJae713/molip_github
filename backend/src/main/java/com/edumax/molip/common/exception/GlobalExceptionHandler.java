@@ -17,6 +17,7 @@ import com.edumax.molip.domain.quiz.exception.NoExitQuizException;
 import com.edumax.molip.domain.quiz.exception.NoExitQuizResultException;
 import com.edumax.molip.domain.session.exception.NoCourseLearnerException;
 import com.edumax.molip.domain.session.exception.NoSessionException;
+import com.edumax.molip.domain.workspace.exception.AlreadyWorkspaceRegisterException;
 import com.edumax.molip.domain.workspace.exception.ExpiredInviteCodeException;
 import com.edumax.molip.domain.workspace.exception.IncorrectWorkspaceMemberException;
 import com.edumax.molip.domain.workspace.exception.InviteCodeExistException;
@@ -66,7 +67,8 @@ public class GlobalExceptionHandler {
     InviteCodeExistException.class,
     NoInviteCodeException.class,
     NoTrainerException.class,
-    IncorrectWorkspaceMemberException.class
+    IncorrectWorkspaceMemberException.class,
+    AlreadyWorkspaceRegisterException.class
   })
   public ResponseEntity<ErrorResponse> handleWorkspaceBadRequestException(RuntimeException e) {
     ErrorResponse body = ErrorResponse.create(e, HttpStatus.BAD_REQUEST, e.getMessage());

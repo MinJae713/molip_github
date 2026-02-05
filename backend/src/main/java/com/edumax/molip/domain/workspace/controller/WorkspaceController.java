@@ -63,7 +63,8 @@ public class WorkspaceController {
   public ResponseEntity<JoinWorkspaceResponse> joinWorkspace(
       @Valid @RequestBody JoinWorkspaceRequest joinWorkspaceRequest,
       @AuthenticationPrincipal MemberUserDetails member) {
-    return ResponseEntity.ok(workspaceService.joinWorkspace(joinWorkspaceRequest));
+    return ResponseEntity.ok(
+        workspaceService.joinWorkspace(joinWorkspaceRequest, member.getMemberId()));
   }
 
   @GetMapping("/{workspace_id}/my-stats")
