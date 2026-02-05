@@ -413,7 +413,7 @@ const disconnectAll = () => {
 watch(
     () => videoStore.localStream,
     (newStream) => {
-        if (newStream && isSetupComplete.value) {
+        if (newStream) {
             startMediaPipe();
         } else {
             stopMediaPipe();
@@ -455,12 +455,15 @@ const handleAnalysisResult = (focusData: GazeResult) => {
 
     if (!stompClient.value || !stompClient.value.connected) return;
 
-    // 타임라인 계산: 동기화된 시간 기준
-    let currentDiff = 0;
-    if (isSynced.value && lectureStartTime.value) {
-        const elapsed = Date.now() - lectureStartTime.value.getTime() - timeOffset.value;
-        currentDiff = Math.max(0, Math.round(elapsed / 1000));
+    // ✅ 강사가 강의 시작하지 않았으면 전송하지 않음
+    if (!isSynced.value || !lectureStartTime.value) {
+        console.log('[Analysis] 강의 시작 대기 중... (분석은 계속, 전송 안 함)');
+        return;
     }
+
+    // 타임라인 계산: 동기화된 시간 기준
+    const elapsed = Date.now() - lectureStartTime.value.getTime() - timeOffset.value;
+    const currentDiff = Math.max(0, Math.round(elapsed / 1000));
 
     const payload = {
         timeline: currentDiff,
