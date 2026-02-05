@@ -49,13 +49,9 @@
 
             <!-- 반려일 -->
             <template v-else-if="col.key === 'rejected_at'">
-              <span class="text-sm text-slate-500">{{ formatDate(req.updatedAt) }}</span>
+              <span class="text-sm text-slate-500">{{ formatDate(req.approvedAt) }}</span>
             </template>
 
-            <!-- 반려 사유 -->
-             <template v-else-if="col.key === 'reject_reason'">
-              <span class="text-sm text-slate-500">{{ req.rejectReason || '-' }}</span> 
-            </template>
 
             <!-- 상태 -->
             <template v-else-if="col.key === 'status'">
@@ -66,16 +62,19 @@
 
             <!-- 관리 -->
             <template v-else-if="col.key === 'manage'">
-              <div v-if="req.status === 'PENDING'" class="flex items-center justify-center gap-2">
+              <div v-if="req.status === 'PENDING' || req.status === 'REJECTED'" class="flex items-center justify-center gap-2">
                 <button 
-                  @click="$emit('approve', req.workspaceRegisterId)" 
-                  class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors text-xs font-bold"
+                  @click="$emit('approve', req)" 
+                  :disabled="isLoading"
+                  class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-bold"
                 >
-                  승인
+                  {{ isLoading ? '처리중' : '승인' }}
                 </button>
                 <button 
-                  @click="$emit('reject', req.workspaceRegisterId)" 
-                  class="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors text-xs font-bold"
+                  v-if="req.status === 'PENDING'"
+                  @click="$emit('reject', req)" 
+                  :disabled="isLoading"
+                  class="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-bold"
                 >
                   반려
                 </button>
@@ -89,19 +88,20 @@
 </template>
 
 <script setup lang="ts">
-import type { JoinRequest } from '@/stores/workspaceAdmin';
+import type { JoinRequest } from '@/types';
 
 interface Props {
   requests: JoinRequest[];
   columns?: any[];
   statusStyles?: Record<string, { label: string; bgClass: string }>;
+  isLoading?: boolean;
 }
 
 const props = defineProps<Props>();
 
 defineEmits<{
-  (e: 'approve', id: number): void;
-  (e: 'reject', id: number): void;
+  (e: 'approve', request: JoinRequest): void; // id 대신 객체 전달
+  (e: 'reject', request: JoinRequest): void;
 }>();
 
 // 날짜 포맷팅 (YYYY-MM-DD HH:mm:ss)

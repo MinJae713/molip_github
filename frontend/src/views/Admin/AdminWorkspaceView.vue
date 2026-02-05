@@ -4,16 +4,41 @@ import InviteBanner from '@/components/Admin/AdminWorkspaceView/InviteCodeBanner
 import AdminStatTable from '@/components/Admin/AdminWorkspaceView/AdminStatTable.vue';
 import CourseDetailModal from '@/components/Admin/AdminWorkspaceView/CourseDetailModal.vue';
 import CreateCodeModal from '@/components/Admin/InviteCodeView/CreateCodeModal.vue';
+import { useWorkspaceStore } from '@/stores/workspace';
 import { useWorkspaceAdminStore } from '@/stores/workspaceAdmin';
-import { ref } from 'vue';
 import { useRoute } from 'vue-router';
+import { ref, computed, onMounted } from 'vue';
 
 const route = useRoute();
 const adminStore = useWorkspaceAdminStore();
+const workspaceStore = useWorkspaceStore(); // Added store instance
+
+// 날짜 포맷 함수
+const formatDate = (dateString?: string) => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+};
 
 // 모달 상태
 const isCreateModalOpen = ref(false);
 const newlyCreatedCode = ref<string | null>(null);
+
+// 워크스페이스 정보 로드
+onMounted(async () => {
+    const wId = route.params.id;
+    if (wId) {
+        await workspaceStore.setCurrentWorkspaceById(Number(wId));
+        
+        // [Fix] 생성일(createdAt)이 없는 경우 (User API 캐시 사용 시 발생)
+        // Admin API 리스트를 호출하여 정보를 보강함
+        if (!workspaceStore.currentWorkspace?.createdAt) {
+            console.log("생성일 정보 누락 -> 관리자 목록 조회 시도");
+            await workspaceStore.fetchAllWorkspaces();
+            await workspaceStore.setCurrentWorkspaceById(Number(wId));
+        }
+    }
+});
 
 // 코드 생성 핸들러
 const onCreateCode = async (newData: { joinCodeName: string; endedDate: string }) => {
@@ -39,34 +64,37 @@ const closeCreateModal = () => {
 };
 
 /**
- * 관리자 대시보드용 요약 통계 데이터
+ * 관리자 대시보드용 요약 통계 데이터 (실제 데이터 연동)
  */
-const adminStats = [
-  {
-    id: 'ongoing',
-    title: '진행중인 강의',
-    value: 42,
-    icon: 'menu_book',
-    variant: 'indigo',
-    trend: '+12%'
-  },
-  {
-    id: 'members',
-    title: '워크스페이스 멤버',
-    value: '1,284',
-    icon: 'groups',
-    variant: 'blue',
-    trend: '+48'
-  },
-  {
-    id: 'rate',
-    title: '평균 수료율',
-    value: '87.5%',
-    icon: 'verified_user',
-    variant: 'amber',
-    trend: '평균'
-  }
-] as const;
+const adminStats = computed(() => {
+    const ws = workspaceStore.currentWorkspace;
+    return [
+    {
+        id: 'members', // ID 변경 (순서상 멤버 먼저)
+        title: '워크스페이스 멤버',
+        value: ws?.memberCount ? `${ws.memberCount.toLocaleString()}명` : '0명',
+        icon: 'groups',
+        variant: 'blue' as const,
+        trend: '전체'
+    },
+    {
+        id: 'ongoing',
+        title: '진행 중인 강의', // 이름 변경
+        value: ws?.courseCount ? `${ws.courseCount}개` : '0개',
+        icon: 'menu_book',
+        variant: 'indigo' as const,
+        trend: '전체'
+    },
+    {
+        id: 'created',
+        title: '워크스페이스 생성일', // 지표 변경
+        value: formatDate(ws?.createdAt),
+        icon: 'calendar_today', // 아이콘 변경
+        variant: 'emerald' as const, // 색상 변경
+        trend: '생성일'
+    }
+    ];
+});
 </script>
 
 <template>

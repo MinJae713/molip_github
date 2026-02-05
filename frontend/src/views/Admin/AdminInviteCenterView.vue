@@ -178,6 +178,9 @@ const handleDelete = async () => {
   const workspaceId = Number(route.params.id);
   try {
     await adminStore.deleteJoinCode(targetDeleteId.value, workspaceId);
+    alert('초대코드가 삭제되었습니다.');
+  } catch (e) {
+    alert('삭제에 실패했습니다.');
   } finally {
     isDeleteModalOpen.value = false;
     targetDeleteId.value = null;
@@ -197,8 +200,16 @@ const onCreateCode = async (newData: { joinCodeName: string; endedDate: string }
     // 성공 시 모달에 결과 전달 (모달은 닫히지 않음)
     newlyCreatedCode.value = response.identifyValue;
     
-  } catch (e) {
-    alert('코드 생성 중 오류가 발생했습니다.');
+    // 목록 즉시 갱신 (스토어 내부 호출이 UI 반응성을 보장하지 못할 경우를 대비해 명시적 호출)
+    await adminStore.fetchJoinCodes(workspaceId);
+    
+  } catch (e: any) {
+    if (e.response && (e.response.status === 409 || e.response.status === 400)) {
+      // 409 Conflict 또는 400 Bad Request(중복)인 경우
+      alert('이미 존재하는 코드명입니다. 다른 이름을 입력해주세요.');
+    } else {
+      alert('코드 생성 중 오류가 발생했습니다.');
+    }
   }
 };
 
