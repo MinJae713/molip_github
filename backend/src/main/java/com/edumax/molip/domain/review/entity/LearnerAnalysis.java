@@ -49,6 +49,10 @@ public class LearnerAnalysis {
   @Column(name = "avg_concentrate", nullable = false)
   private Float avgConcentrate;
 
+  @Builder.Default
+  @Column(name = "pause_time", nullable = true)
+  private String pauseTime = "[]";
+
   /** AI 데드존 퀴즈 */
   @OneToMany(mappedBy = "learnerAnalysis")
   private List<AiDeadzoneQuiz> aiDeadzoneQuizzes;

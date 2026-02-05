@@ -1,15 +1,19 @@
 package com.edumax.molip.domain.review.controller;
 
 import com.edumax.molip.common.model.MemberUserDetails;
+import com.edumax.molip.common.util.JacksonUtil;
 import com.edumax.molip.domain.quiz.service.QuizService;
 import com.edumax.molip.domain.review.dto.response.ScriptResponse;
 import com.edumax.molip.domain.review.entity.EmotionGraph;
+import com.edumax.molip.domain.review.entity.LearnerAnalysis;
 import com.edumax.molip.domain.review.entity.TimelineElement;
 import com.edumax.molip.domain.review.service.ReviewService;
 import com.edumax.molip.domain.review.service.StorageService;
 import com.edumax.molip.domain.session.dto.request.EndAnalysisRequest;
+import com.edumax.molip.domain.session.dto.request.PauseElement;
 import com.edumax.molip.domain.session.dto.response.AnalysisSignalMessage;
 import com.edumax.molip.domain.session.dto.response.SessionDetailResponse;
+import com.edumax.molip.domain.session.entity.CourseLearnerSession;
 import com.edumax.molip.domain.session.handler.AnalysisManager;
 import com.edumax.molip.domain.session.service.SessionService;
 import java.util.ArrayList;
@@ -28,6 +32,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.core.type.TypeReference;
 
 @Slf4j
 @RestController
@@ -38,6 +43,8 @@ public class ReviewController {
   private final ReviewService reviewService;
   private final StorageService storageService;
   private final SessionService sessionService;
+
+  private float deadzoneScale = 0.75f;
 
   public static List<TimelineElement> generateData(int count) {
     List<TimelineElement> list = new ArrayList<>();
@@ -108,7 +115,12 @@ public class ReviewController {
         storageService.getTimelineAnalysis(sessionId, memberId);
     List<TimelineElement> trainerTimelineData = storageService.getTimelineAnalysis(10001L, 10001L);
     return ResponseEntity.status(HttpStatus.OK)
-        .body(new LearnerTimelineResponse(learnerTimelineData, trainerTimelineData));
+        .body(
+            new LearnerTimelineResponse(
+                30f,
+                List.of(new PauseElement(1000, 1100), new PauseElement(2000, 2100)),
+                learnerTimelineData,
+                trainerTimelineData));
   }
 
   @PostMapping("/start/analysis/{sessionId}")
@@ -132,29 +144,68 @@ public class ReviewController {
       @PathVariable Long sessionId, @AuthenticationPrincipal MemberUserDetails userDetails) {
     SessionDetailResponse sessionDetail =
         sessionService.getSessionDetail(sessionId, userDetails.getMemberId());
+
+    LearnerAnalysis sessionAnalysis = reviewService.getLearnerAnalysis(sessionId);
+    List<PauseElement> pauseElementList =
+        JacksonUtil.fromJson(
+            sessionAnalysis.getPauseTime(), new TypeReference<List<PauseElement>>() {});
+
+    CourseLearnerSession learnerAnalysis =
+        reviewService.getLearnerSessionAnalysis(sessionId, userDetails.getMemberId());
+
     List<TimelineElement> learnerTimelineData =
         storageService.getTimelineAnalysis(sessionId, userDetails.getMemberId());
     List<TimelineElement> trainerTimelineData =
         storageService.getTimelineAnalysis(sessionId, sessionDetail.getTrainerId());
+
+    if (learnerAnalysis == null) {
+      return ResponseEntity.status(HttpStatus.OK)
+          .body(
+              new LearnerTimelineResponse(
+                  30f * deadzoneScale, pauseElementList, learnerTimelineData, trainerTimelineData));
+    }
+
     return ResponseEntity.status(HttpStatus.OK)
-        .body(new LearnerTimelineResponse(learnerTimelineData, trainerTimelineData));
+        .body(
+            new LearnerTimelineResponse(
+                learnerAnalysis.getAvgConcentrate() * deadzoneScale,
+                pauseElementList,
+                learnerTimelineData,
+                trainerTimelineData));
   }
 
   record LearnerTimelineResponse(
-      List<TimelineElement> learnerTimelineData, List<TimelineElement> TrainerTimelineData) {}
+      float deadzonePercent,
+      List<PauseElement> pauseElementList,
+      List<TimelineElement> learnerTimelineData,
+      List<TimelineElement> trainerTimelineData) {}
 
   @GetMapping("/timeline/trainer/{sessionId}")
   public ResponseEntity<TrainerTimelineResponse> getTeacherTimelineAnalysis(
       @PathVariable Long sessionId, @AuthenticationPrincipal MemberUserDetails userDetails) {
+
+    LearnerAnalysis learnerAnalysis = reviewService.getLearnerAnalysis(sessionId);
+    List<PauseElement> pauseElementList =
+        JacksonUtil.fromJson(
+            learnerAnalysis.getPauseTime(), new TypeReference<List<PauseElement>>() {});
+
     SessionDetailResponse sessionDetail =
         sessionService.getSessionDetail(sessionId, userDetails.getMemberId());
     List<TimelineElement> trainerTimelineData =
         storageService.getTimelineAnalysis(sessionId, sessionDetail.getTrainerId());
+
     return ResponseEntity.status(HttpStatus.OK)
-        .body(new TrainerTimelineResponse(trainerTimelineData));
+        .body(
+            new TrainerTimelineResponse(
+                learnerAnalysis.getAvgConcentrate() * deadzoneScale,
+                pauseElementList,
+                trainerTimelineData));
   }
 
-  record TrainerTimelineResponse(List<TimelineElement> TrainerTimelineData) {}
+  record TrainerTimelineResponse(
+      float deadzonePercent,
+      List<PauseElement> pauseElementList,
+      List<TimelineElement> trainerTimelineData) {}
 
   @GetMapping("/emotion-graph/learner/{sessionId}")
   public ResponseEntity<LearnerEmotionGraphResponse> getLearnerEmotionGraphData(
