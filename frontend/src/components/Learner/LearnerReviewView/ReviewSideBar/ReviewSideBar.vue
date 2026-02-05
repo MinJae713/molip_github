@@ -37,7 +37,10 @@
                 :quiz-list="quizList"
                 @update:quizList="(newList) => quizList = newList"
             />
-            <SidebarScript v-else-if="currentTab === 'script'" />
+            <SidebarScript v-else-if="currentTab === 'script'" 
+                :script-list="scriptData"
+                @jump-to-time="$emit('jump-to-time', $event)"
+            />
         </div>
 
         <!-- 3. 채팅창 -->
@@ -63,10 +66,18 @@ import SidebarScript from './SidebarScript.vue';
 import SidebarChat from './SidebarChat.vue';
 
 // Props 정의 (상위에서 데이터 받음)
+interface ScriptItem {
+    timeline: number; 
+    message: string;
+}
+
 const props = defineProps<{
     personalMoodData?: number[];
     classMoodData?: number[];
+    scriptData?: ScriptItem[];
 }>();
+
+const emit = defineEmits(['jump-to-time']);
 
 const currentTab = ref('mood');
 

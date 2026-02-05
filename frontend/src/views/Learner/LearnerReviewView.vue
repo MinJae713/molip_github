@@ -21,6 +21,8 @@
                 <ReviewSideBar class="w-full lg:w-[340px] xl:w-[380px]" 
                     :personal-mood-data="mockPersonalMood"
                     :class-mood-data="mockClassMood"
+                    :script-data="mockScriptData"
+                    @jump-to-time="handleJumpToTime"
                 />
             </div>
         </main>
@@ -42,6 +44,10 @@ import { useRoute } from 'vue-router';
 import { useLearnerSessionStore } from '@/stores/learnerSession';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { useUserStore } from '@/stores/user';
+
+// Mock Data Load & Processing
+// import apiResponse from '../../../mockupdata/mockup_data.json';
+import { fetchReviewData, fetchMoodData, fetchScriptData, type MockDataItem, type MoodGraphDataItem, type MockScriptDataItem } from '@/api/review';
 
 // 라우터
 const route = useRoute();
@@ -74,6 +80,9 @@ const mockPersonalMood = ref([0, 0, 0, 0, 0, 0, 0]);
 // 무드 차트용 클래스 데이터
 const mockClassMood = ref([0, 0, 0, 0, 0, 0, 0]);
 
+// 스크립트 데이터
+const mockScriptData = ref<MockScriptDataItem[]>([]);
+
 // 타임라인 점프 핸들러
 const handleJumpToTime = (timeInSeconds: number) => {
     if (playerRef.value) {
@@ -89,10 +98,6 @@ onMounted(async () => {
         await loadReviewData("10002");
     }
 });
-
-// Mock Data Load & Processing
-// import apiResponse from '../../../mockupdata/mockup_data.json';
-import { fetchReviewData, type MockDataItem } from '@/api/review';
 
 const mockEmotionData = ref<{ start: number, end: number, type: 'happy' | 'surprise' | 'fear' | 'disgust' | 'sad' | 'anger' | 'neutral' }[]>([]);
 
@@ -138,7 +143,7 @@ function processTimelineData(data: MockDataItem[]) {
 
 // 2. Process Mood Graph Data (Radar Chart)
 // Helper to normalize emotion graph data to [happy, surprise, fear, disgust, sad, anger, neutral] order
-function processMoodGraphData(graphData: any[]): number[] {
+function processMoodGraphData(graphData: MoodGraphDataItem[]): number[] {
     if (!graphData || graphData.length === 0) return [0, 0, 0, 0, 0, 0, 0];
 
     // Initialize map
@@ -153,31 +158,12 @@ function processMoodGraphData(graphData: any[]): number[] {
         neutral: 0
     };
 
-    // Sum values (if multiple entries exist per emotion) or take max?
-    // User sample shows multiple entries for same emotion (index 0, 1 etc). 
-    // Assuming we should average them or sum them?
-    // Wait, the user sample shows:
-    // { index: 0, name: "happy", value: 60.5 }, { index: 0, name: "happy", value: 15.0 }...
-    // This looks like time-series data or something. But for a single radar chart, we usually need AGGREGATED values.
-    // However, looking at the sample values (60.5, 15.0), they sum up to > 1. 
-    // The chart expects 0~1 normalized values.
-    // If the values are percentages (0-100), we need to divide by 100.
-    
-    // Strategy: Sum up values per emotion and then normalize if needed.
-    // If it's percentage, divide by 100.
-
     graphData.forEach(item => {
+        // Safety check
+        if (!item || !item.name) return;
+
         const name = item.name.toLowerCase();
         if (emotionMap[name] !== undefined) {
-            // Use maximum value or sum? 
-            // If it's distinct occurrences, maybe sum triggers larger area?
-            // Let's assume average for now if multiple, or just Sum if they form parts.
-            // Actually, if input is {happy: 60.5, happy: 15.0}, maybe it's just raw data points.
-            // Let's take the MAX for now to show peak intensity, or AVERAGE.
-            // Let's go with Average for the session summary.
-            // BUT wait, simple approach: Map specific keys to specific indices.
-            
-            // Let's just accumulate for now.
              emotionMap[name] += item.value;
         }
     });
@@ -187,7 +173,8 @@ function processMoodGraphData(graphData: any[]): number[] {
 
     // Normalize to 0~1 range if values are > 1 (assuming percentage like 60.5)
     // We will cap at 100 for normalization base.
-    const normalize = (val: number) => Math.min(val / 100, 1);
+    // Adjusted: Divide by 60 instead of 100 to make the shape appear larger (zoom in)
+    const normalize = (val: number) => Math.min(val / 60, 1);
 
     return [
         normalize(emotionMap.happy || 0),
@@ -301,7 +288,7 @@ async function loadReviewData(sessionId: string) {
             console.warn("[Review] No TrainerTimelineData found.");
         }
 
-        const moodData = await fetchMoodData(sessionId);
+        const moodData = await fetchMoodData(1);
         console.log("[Review] Mood Data:", moodData);
 
         if (moodData) {
@@ -318,6 +305,44 @@ async function loadReviewData(sessionId: string) {
                 console.log("[Review] Processed Class Mood:", mockClassMood.value);
             }
         }
+
+        // Script Data 
+        const scriptData = await fetchScriptData(1);
+        console.log("[Review] Script Data:", scriptData);
+
+        if (scriptData) {
+            let rawList: any[] = [];
+            
+            // Case 1: scriptData has 'scriptData' property
+            if (scriptData.scriptData && Array.isArray(scriptData.scriptData)) {
+                console.log("[Review] Found scriptData inside response object");
+                rawList = scriptData.scriptData;
+            } 
+            // Case 2: scriptData itself is an array
+            else if (Array.isArray(scriptData)) {
+                 console.log("[Review] Response is an array");
+                 rawList = scriptData;
+            }
+            // Case 3: Try to find any array property
+            else if (typeof scriptData === 'object') {
+                 const keys = Object.keys(scriptData);
+                 console.log("[Review] Response keys:", keys);
+                 // maybe it's under 'data' or 'result' or something else?
+                 // For now, let's stick to known patterns or empty
+            }
+
+            if (rawList.length > 0) {
+                 mockScriptData.value = rawList.map((item: any) => ({
+                    timeline: item.timeline || 0,
+                    message: item.message || item.script || item.content || "내용 없음"
+                }));
+                console.log("[Review] Final Processed Script Data (Length):", mockScriptData.value.length);
+                console.log("[Review] Sample Item:", mockScriptData.value[0]);
+            } else {
+                console.warn("[Review] No script list found in response:", scriptData);
+            }
+        }
+
 
     } catch (error) {
         console.error("[Review] Failed to load review data:", error);

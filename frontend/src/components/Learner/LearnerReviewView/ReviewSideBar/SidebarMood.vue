@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-const radius = 65; // 차트 반지름
+const radius = 80; // 차트 반지름 (Increased from 65 to 80 for better visibility)
 const centerX = 120; // 중심 X
 const centerY = 120; // 중심 Y
 
