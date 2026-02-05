@@ -51,6 +51,7 @@ import com.edumax.molip.domain.workspace.entity.Workspace;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import com.edumax.molip.domain.workspace.entity.WorkspaceRegister;
 import com.edumax.molip.domain.workspace.exception.ExpiredInviteCodeException;
+import com.edumax.molip.domain.workspace.exception.IncorrectWorkspaceMemberException;
 import com.edumax.molip.domain.workspace.exception.InviteCodeExistException;
 import com.edumax.molip.domain.workspace.exception.NoInviteCodeException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceAppliedAtException;
@@ -615,43 +616,83 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         workspaceMemberRepository
             .findById(workspaceMemberId)
             .orElseThrow(NoWorkspaceMemberException::new);
+    if (!workspace.getWorkspaceId().equals(workspaceMember.getWorkspace().getWorkspaceId())) {
+      throw new IncorrectWorkspaceMemberException();
+    }
     Member member = workspaceMember.getMember();
     String profileImageUrl = member.getProfileImageUrl();
     String name = member.getName();
     WorkspaceMemberRole role = workspaceMember.getRole();
     WorkspaceMemberStatus status = workspaceMember.getStatus();
-    List<Course> courses = workspace.getCourses(); // 워크스페이스 강의 목록
     Integer finishedCourse = workspaceMember.getCourseCertificateds().size();
     List<FindWorkspaceMemberByIdCourse> coursesResult = new ArrayList<>();
-    courses.stream()
-        .filter(
-            course -> {
-              Optional<CourseLearner> courseLearner =
-                  courseLearnerRepository.findByCourseAndWorkspaceMember(course, workspaceMember);
-              return courseLearner.isPresent(); // 강의 수강생인 경우만 필터링
-            })
-        .map(
-            course -> {
-              String title = course.getTitle();
-              Integer totalCount = course.getSessions().size();
-              CourseLearner courseLearner =
-                  courseLearnerRepository
-                      .findByCourseAndWorkspaceMember(course, workspaceMember)
-                      .orElse(null);
-              List<CourseLearnerSession> courseLearnerSessions =
-                  courseLearner.getCourseLearnerSessions();
-              Integer finishedCount =
-                  courseLearnerSessions == null ? 0 : courseLearnerSessions.size();
-              CourseStatus courseStatus = course.getStatus();
-              return FindWorkspaceMemberByIdCourse.builder()
-                  .title(title)
-                  .totalCount(totalCount)
-                  .finishedCount(finishedCount)
-                  .status(courseStatus)
-                  .build();
-            })
-        .forEach(coursesResult::add);
-
+    // 교육생인 경우 course 처리 방식 -> 그 멤버가 수강하는 강의
+    if (role == WorkspaceMemberRole.TRAINER) {
+      List<Course> courses = workspaceMember.getCourses();
+      courses.stream()
+          .map(
+              course -> {
+                String title = course.getTitle();
+                Integer totalCount = course.getSessionCount();
+                List<Session> sessions = course.getSessions();
+                int finishedCount =
+                    sessions.stream()
+                        .filter(
+                            session ->
+                                learnerAnalysisRepository
+                                    .findById(session.getSessionId())
+                                    .isPresent())
+                        .toList()
+                        .size();
+                CourseStatus courseStatus = course.getStatus();
+                return FindWorkspaceMemberByIdCourse.builder()
+                    .courseId(course.getCourseId())
+                    .title(title)
+                    .totalCount(totalCount)
+                    .finishedCount(finishedCount)
+                    .status(courseStatus)
+                    .build();
+              })
+          .forEach(coursesResult::add);
+    } else {
+      List<Course> courses = workspace.getCourses(); // 워크스페이스 강의 목록
+      courses.stream()
+          .filter(
+              course -> {
+                Optional<CourseLearner> courseLearner =
+                    courseLearnerRepository.findByCourseAndWorkspaceMember(course, workspaceMember);
+                return courseLearner.isPresent(); // 강의 수강생인 경우만 필터링
+              })
+          .map(
+              course -> {
+                String title = course.getTitle();
+                Integer totalCount = course.getSessionCount();
+                Optional<CourseLearner> courseLearner =
+                    courseLearnerRepository.findByCourseAndWorkspaceMember(course, workspaceMember);
+                int finishedCount = 0;
+                if (courseLearner.isPresent()) {
+                  CourseLearner currentCourseLearner = courseLearner.orElse(null);
+                  List<CourseLearnerSession> courseLearnerSessions =
+                      currentCourseLearner.getCourseLearnerSessions();
+                  finishedCount =
+                      courseLearnerSessions == null
+                          ? 0
+                          : courseLearnerSessions.stream()
+                              .filter(CourseLearnerSession::getIsAttendance)
+                              .toList()
+                              .size();
+                }
+                CourseStatus courseStatus = course.getStatus();
+                return FindWorkspaceMemberByIdCourse.builder()
+                    .courseId(course.getCourseId())
+                    .title(title)
+                    .totalCount(totalCount)
+                    .finishedCount(finishedCount)
+                    .status(courseStatus)
+                    .build();
+              })
+          .forEach(coursesResult::add);
+    }
     return FindWorkspaceMemberByIdResponse.builder()
         .profileImageUrl(profileImageUrl)
         .name(name)

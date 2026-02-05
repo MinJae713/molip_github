@@ -27,6 +27,7 @@ public class FindWorkspaceMemberByIdResponse {
   @AllArgsConstructor
   @Builder
   public static class FindWorkspaceMemberByIdCourse {
+    private Long courseId;
     private String title;
     private Integer totalCount;
     private Integer finishedCount;
