@@ -6,6 +6,7 @@ import com.edumax.molip.domain.workspace.dto.request.ChangeWorkspaceMemberRoleRe
 import com.edumax.molip.domain.workspace.dto.request.CreateJoinCodeRequest;
 import com.edumax.molip.domain.workspace.dto.request.CreateWorkspaceRequest;
 import com.edumax.molip.domain.workspace.dto.request.JoinWorkspaceRequest;
+import com.edumax.molip.domain.workspace.dto.request.UpdateWorkspaceMemberRoleRequest;
 import com.edumax.molip.domain.workspace.dto.request.UpdateWorkspaceRequest;
 import com.edumax.molip.domain.workspace.dto.response.ActivateWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.ChangeWorkspaceMemberRoleResponse;
@@ -19,6 +20,7 @@ import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdRes
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegisterResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceMemberRoleResponse;
 import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.find_workspace_response.FindWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdResponse;
@@ -183,5 +185,14 @@ public class WorkspaceController {
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(
         workspaceService.findWorkspaceMemberStatBox(workspaceId, member.getMemberId()));
+  }
+
+  @PatchMapping("/member/role")
+  public ResponseEntity<UpdateWorkspaceMemberRoleResponse> updateWorkspaceMemberRole(
+      @Valid @RequestBody UpdateWorkspaceMemberRoleRequest updateWorkspaceMemberRoleRequest,
+      @AuthenticationPrincipal MemberUserDetails member) {
+    return ResponseEntity.ok(
+        workspaceService.updateWorkspaceMemberRole(
+            updateWorkspaceMemberRoleRequest, member.getMemberId()));
   }
 }

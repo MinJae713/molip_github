@@ -20,6 +20,7 @@ import com.edumax.molip.domain.workspace.dto.request.ChangeWorkspaceMemberRoleRe
 import com.edumax.molip.domain.workspace.dto.request.CreateJoinCodeRequest;
 import com.edumax.molip.domain.workspace.dto.request.CreateWorkspaceRequest;
 import com.edumax.molip.domain.workspace.dto.request.JoinWorkspaceRequest;
+import com.edumax.molip.domain.workspace.dto.request.UpdateWorkspaceMemberRoleRequest;
 import com.edumax.molip.domain.workspace.dto.request.UpdateWorkspaceRequest;
 import com.edumax.molip.domain.workspace.dto.response.ActivateWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.ChangeWorkspaceMemberRoleResponse;
@@ -34,6 +35,7 @@ import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdRes
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegisterResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceMemberRoleResponse;
 import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.find_workspace_response.FindWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.find_workspace_response.FindWorkspaceResponseAdmin;
@@ -744,5 +746,24 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         .learningCourseCount(learningCourseCount)
         .certificatedCount(certificatedCount)
         .build();
+  }
+
+  @Override
+  @Transactional
+  public UpdateWorkspaceMemberRoleResponse updateWorkspaceMemberRole(
+      UpdateWorkspaceMemberRoleRequest updateWorkspaceMemberRoleRequest, Long memberId) {
+    Member member = memberRepository.findById(memberId).orElseThrow(NoMemberException::new);
+    if (member.getRole() != Member.Role.ADMIN) {
+      throw new NoAdminException();
+    }
+    Long workspaceMemberId = updateWorkspaceMemberRoleRequest.getWorkspaceMemberId();
+    WorkspaceMember workspaceMember =
+        workspaceMemberRepository
+            .findById(workspaceMemberId)
+            .orElseThrow(NoWorkspaceMemberException::new);
+    WorkspaceMemberRole role = updateWorkspaceMemberRoleRequest.getRole();
+    workspaceMember.setRole(role);
+    workspaceMemberRepository.save(workspaceMember);
+    return UpdateWorkspaceMemberRoleResponse.builder().apiResult(true).build();
   }
 }
