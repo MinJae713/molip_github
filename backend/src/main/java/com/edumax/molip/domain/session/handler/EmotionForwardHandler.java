@@ -62,17 +62,19 @@ public class EmotionForwardHandler extends BinaryWebSocketHandler {
             Long memberId = (Long) attributes.get("memberId");
             int timeline = response.getTimeline();
 
-            eventPublisher.publishEvent(
-                new EmotionSaveEvent(
-                    memberId,
-                    sessionId,
-                    timeline,
-                    response.getEmotion1(),
-                    response.getConfidence1(),
-                    response.getEmotion2(),
-                    response.getConfidence2(),
-                    response.getEmotion3(),
-                    response.getConfidence3()));
+            if ("fear".equals(response.getEmotion1()) || response.getConfidence1() < 99f) {
+              eventPublisher.publishEvent(
+                  new EmotionSaveEvent(
+                      memberId,
+                      sessionId,
+                      timeline,
+                      response.getEmotion1(),
+                      response.getConfidence1(),
+                      response.getEmotion2(),
+                      response.getConfidence2(),
+                      response.getEmotion3(),
+                      response.getConfidence3()));
+            }
 
             StudentEmotionMessage message =
                 new StudentEmotionMessage(

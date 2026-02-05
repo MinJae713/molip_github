@@ -26,6 +26,7 @@ import com.edumax.molip.domain.session.repository.SessionRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -122,7 +123,7 @@ public class ReviewService {
 
   @Transactional
   public void endAnalysis(String sessionId, EndAnalysisRequest request, Long trainerId) {
-    log.info("[분석 종료 시작] SessionId: {}, TrainerId: {}", sessionId, trainerId);
+    log.info("@@@[분석 종료 시작] SessionId: {}, TrainerId: {}", sessionId, trainerId);
 
     emotionSaveListener.stopLecture(sessionId);
     analysisManagerRegistry.removeManager(sessionId);
@@ -136,7 +137,7 @@ public class ReviewService {
             .filter(memberId -> !trainerId.equals(memberId))
             .toList();
 
-    log.info("[분석 대상] 학생 수: {}명, 대상 ID: {}", memberIdList.size(), memberIdList);
+    log.info("@@@[분석 대상] 학생 수: {}명, 대상 ID: {}", memberIdList.size(), memberIdList);
 
     boolean studentZero = false;
     Long studentSizeTmp = redisTemplate.opsForSet().size(joinKey) - 1;
@@ -162,11 +163,54 @@ public class ReviewService {
     int attendance = course.getAttendance();
     int endSessionCnt = course.getEndSessionCount() + 1;
 
-    // stt 스크립트 MySQL 저장
-    storageService.saveScriptToMysql(sessionIdLong);
-
     // 1. 몰입도/감정 데이터 Pipeline 실행
-    log.info("[Redis] 데이터 추출 파이프라인 가동...");
+    log.info("@@@[Redis] 데이터 추출 파이프라인 가동...");
+
+    // 1. Pipeline 실행하여 각 리스트의 길이를 한 번에 가져옴
+    List<Object> conSizeResults =
+        redisTemplate.executePipelined(
+            (RedisCallback<?>)
+                connection -> {
+                  for (Long memberId : memberIdList) {
+                    String concentrateKey =
+                        "review:concentrate:session-id:%s:member-id:%d"
+                            .formatted(sessionId, memberId);
+                    connection.listCommands().lLen(concentrateKey.getBytes());
+                  }
+                  return null;
+                });
+
+    Map<Long, Integer> conSizeMap = new HashMap<>();
+    for (int i = 0; i < memberIdList.size(); i++) {
+      Long memberId = memberIdList.get(i);
+      Object sizeResult = conSizeResults.get(i);
+      int size = (sizeResult instanceof Number) ? ((Number) sizeResult).intValue() : 0;
+
+      conSizeMap.put(memberId, size);
+    }
+
+    // 1. Pipeline 실행하여 각 리스트의 길이를 한 번에 가져옴
+    List<Object> emoSizeResults =
+        redisTemplate.executePipelined(
+            (RedisCallback<?>)
+                connection -> {
+                  for (Long memberId : memberIdList) {
+                    String emoKey =
+                        "review:emotion:session-id:%s:member-id:%d".formatted(sessionId, memberId);
+                    connection.listCommands().lLen(emoKey.getBytes());
+                  }
+                  return null;
+                });
+
+    Map<Long, Integer> emoSizeMap = new HashMap<>();
+    for (int i = 0; i < memberIdList.size(); i++) {
+      Long memberId = memberIdList.get(i);
+      Object sizeResult = emoSizeResults.get(i);
+      int size = (sizeResult instanceof Number) ? ((Number) sizeResult).intValue() : 0;
+
+      emoSizeMap.put(memberId, size);
+    }
+
     List<Object> redisConResult =
         redisTemplate.executePipelined(
             (RedisCallback<?>)
@@ -194,6 +238,11 @@ public class ReviewService {
                   return null;
                 });
 
+    log.info(
+        "@@@[Redis] 데이터 추출 파이프라인 완료. : con개수:{} - emo개수:{}",
+        redisConResult.size(),
+        redisEmoResult.size());
+
     List<CourseLearnerSession> sessionResultsToSave = new ArrayList<>();
     List<CourseLearnerAnalysis> existingAnalyses =
         courseLearnerAnalysisRepository.findAllByCourseAndMemberIdList(course, memberIdList);
@@ -210,7 +259,7 @@ public class ReviewService {
 
     Map<Integer, float[]> trainerAggregationMap = new TreeMap<>();
 
-    log.info("[분석 시작] 멤버별 데이터 집계 및 MongoDB 저장 프로세스 실행...");
+    log.info("@@@[분석 시작] 멤버별 데이터 집계 및 MongoDB 저장 프로세스 실행...");
     for (int i = 0; i < memberIdList.size(); i++) {
       Long memberId = memberIdList.get(i);
       List<String> rawConList = (List<String>) redisConResult.get(i * 2);
@@ -294,7 +343,7 @@ public class ReviewService {
               //              .filter(Objects::nonNull)
               .toList();
 
-      log.info(" - [학생 저장] ID: {}, 타임라인 데이터 수: {}", memberId, mergedList.size());
+      log.info("@@@ - [학생 저장] ID: {}, 타임라인 데이터 수: {}", memberId, mergedList.size());
       storageService.saveTimelineAnalysis(sessionIdLong, memberId, mergedList);
 
       int attCnt = 0;
@@ -304,8 +353,9 @@ public class ReviewService {
         conSum += ele.concentrateValue();
       }
 
-      boolean isAttendance = (attCnt * 100 / totalTimeline) >= attendance;
-      float avgCon = conSum / totalTimeline;
+      boolean isAttendance =
+          (attCnt * 100 / conSizeMap.getOrDefault(memberId, totalTimeline)) >= attendance;
+      float avgCon = conSum / emoSizeMap.getOrDefault(memberId, totalTimeline);
       totalSumConcentrate += avgCon;
 
       if (isAttendance) {
@@ -352,6 +402,7 @@ public class ReviewService {
                 .build());
       }
     }
+    log.info("@@@[분석 종료] 멤버별 데이터 집계 및 MongoDB 저장 프로세스 실행...");
 
     // --- 강사 데이터 생성 및 로그 ---
     List<TimelineElement> trainerMergedList =
@@ -378,13 +429,13 @@ public class ReviewService {
                 })
             .toList();
 
-    log.info("[강사 데이터 저장] ID: {}, 종합 타임라인 수: {}", trainerId, trainerMergedList.size());
+    log.info("@@@[강사 데이터 저장] ID: {}, 종합 타임라인 수: {}", trainerId, trainerMergedList.size());
     storageService.saveTimelineAnalysis(sessionIdLong, trainerId, trainerMergedList);
 
     // --- 집계 데이터 요약 로그 ---
     float finalAvgAtt = totalSumAttendance * 100f / studentSize;
     float finalAvgCon = totalSumConcentrate * 100f / studentSize;
-    log.info("[집계 완료] 학생평균 출석률: {}%, 평균 몰입도: {}", finalAvgAtt, finalAvgCon);
+    log.info("@@@[집계 완료] 학생평균 출석률: {}%, 평균 몰입도: {}", finalAvgAtt, finalAvgCon);
 
     LearnerAnalysis learnerAnalysis =
         learnerAnalysisRepository.save(
@@ -420,17 +471,20 @@ public class ReviewService {
               .build());
     }
 
-    log.info("[MySQL 저장] 감정 그래프({})개 저장 시작...", finalEmotions.size());
+    log.info("@@@[MySQL 저장] stt 스크립트 MySQL 저장...");
+    storageService.saveScriptToMysql(sessionIdLong);
+
+    log.info("@@@[MySQL 저장] 감정 그래프({})개 저장 시작...", finalEmotions.size());
     emotionGraphRepository.saveAll(finalEmotions);
-    log.info("[MySQL 저장] 세션이수정보({})개 저장 시작...", sessionResultsToSave.size());
+    log.info("@@@[MySQL 저장] 세션이수정보({})개 저장 시작...", sessionResultsToSave.size());
     courseLearnerSessionRepository.saveAll(sessionResultsToSave);
-    log.info("[MySQL 저장] 강의수강생 분석정보({})개 저장 시작...", sessionResultsToSave.size());
+    log.info("@@@[MySQL 저장] 강의수강생 분석정보({})개 저장 시작...", sessionResultsToSave.size());
     courseLearnerAnalysisRepository.saveAll(courseResultsToSave);
     courseLearnerAnalysisRepository.flush();
 
-    log.info("[코스 통계 업데이트] 과목명: {}, 진행 세션 수: {}", course.getCourseId(), endSessionCnt);
+    log.info("@@@[코스 통계 업데이트] 과목명: {}, 진행 세션 수: {}", course.getCourseId(), endSessionCnt);
     updateCourseStatistics(course, endSessionCnt);
-    log.info("[분석 종료 완료] SessionId: {} 프로세스가 정상 종료되었습니다.", sessionId);
+    log.info("@@@[분석 종료 완료] SessionId: {} 프로세스가 정상 종료되었습니다.", sessionId);
   }
 
   private void updateCourseStatistics(Course course, int endSessionCnt) {
