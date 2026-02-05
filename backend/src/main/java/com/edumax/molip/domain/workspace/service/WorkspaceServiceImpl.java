@@ -15,12 +15,14 @@ import com.edumax.molip.domain.session.entity.CourseLearner;
 import com.edumax.molip.domain.session.entity.CourseLearnerSession;
 import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.session.repository.CourseLearnerRepository;
+import com.edumax.molip.domain.workspace.dto.request.ActivateWorkspaceMemberRequest;
 import com.edumax.molip.domain.workspace.dto.request.ChangeWorkspaceMemberRoleRequest;
 import com.edumax.molip.domain.workspace.dto.request.CreateJoinCodeRequest;
 import com.edumax.molip.domain.workspace.dto.request.CreateWorkspaceRequest;
-import com.edumax.molip.domain.workspace.dto.request.InactiveWorkspaceMemberRequest;
 import com.edumax.molip.domain.workspace.dto.request.JoinWorkspaceRequest;
+import com.edumax.molip.domain.workspace.dto.request.UpdateWorkspaceMemberRoleRequest;
 import com.edumax.molip.domain.workspace.dto.request.UpdateWorkspaceRequest;
+import com.edumax.molip.domain.workspace.dto.response.ActivateWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.ChangeWorkspaceMemberRoleResponse;
 import com.edumax.molip.domain.workspace.dto.response.CreateJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.CreateWorkspaceResponse;
@@ -32,8 +34,8 @@ import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdRes
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdResponse.FindWorkspaceMemberByIdCourse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegisterResponse;
-import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceMemberRoleResponse;
 import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.find_workspace_response.FindWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.find_workspace_response.FindWorkspaceResponseAdmin;
@@ -48,6 +50,7 @@ import com.edumax.molip.domain.workspace.entity.InviteCode;
 import com.edumax.molip.domain.workspace.entity.Workspace;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import com.edumax.molip.domain.workspace.entity.WorkspaceRegister;
+import com.edumax.molip.domain.workspace.exception.ExpiredInviteCodeException;
 import com.edumax.molip.domain.workspace.exception.InviteCodeExistException;
 import com.edumax.molip.domain.workspace.exception.NoInviteCodeException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceAppliedAtException;
@@ -102,7 +105,19 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   private List<FindWorkspaceResponse> findWorkspacesGeneral(
       List<Workspace> workspaces, Member member) {
     List<FindWorkspaceResponse> result = new ArrayList<>();
-    workspaces.forEach(workspace -> result.add(findWorkspaceGeneral(workspace, member)));
+    workspaces.stream()
+        .filter(
+            workspace -> {
+              Optional<WorkspaceMember> workspaceMember =
+                  workspaceMemberRepository.findByMemberAndWorkspace(member, workspace);
+              if (workspaceMember.isPresent()) {
+                WorkspaceMember currentWorkspaceMember = workspaceMember.orElse(null);
+                return currentWorkspaceMember.getStatus() == WorkspaceMemberStatus.ACTIVE;
+              } else {
+                return true;
+              }
+            })
+        .forEach(workspace -> result.add(findWorkspaceGeneral(workspace, member)));
     return result;
   }
 
@@ -251,6 +266,9 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         workspaceRepository
             .findById(workspaceId)
             .orElseThrow(NoWorkspaceException::new); // GlobalExceptionHandler
+    if (member.getRole() == Member.Role.ADMIN) {
+      return findWorkspaceCoursesByIdTrainer(null, workspace);
+    }
     WorkspaceMember workspaceMember =
         workspaceMemberRepository
             .findByMemberAndWorkspace(member, workspace)
@@ -258,8 +276,6 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     return workspaceMember.getRole() == WorkspaceMemberRole.LEARNER
         ? findWorkspaceCoursesByIdLearner(workspaceMember, workspace)
         : findWorkspaceCoursesByIdTrainer(workspaceMember, workspace);
-    // 위에서 예외 나오는 경우? -> 현재 사용자가 입력 받은 워스 멤버가 아니라면 에러남?
-    // 프론트에서 그런 경우가 있나?
   }
 
   private List<FindWorkspaceCoursesByIdResponse> findWorkspaceCoursesByIdLearner(
@@ -343,7 +359,10 @@ public class WorkspaceServiceImpl implements WorkspaceService {
               CourseStatus status = course.getStatus();
               // trainer 고유
               WorkspaceMember learner = course.getLeaner();
-              Boolean isOwn = learner.equals(workspaceMember);
+              Boolean isOwn = null;
+              if (workspaceMember != null) { // null로 들어오면 관리자
+                isOwn = learner.equals(workspaceMember);
+              }
               String trainerName = learner.getMember().getName();
 
               long finishedSessionCount =
@@ -411,9 +430,15 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     // 워스 가입 코드가 일치한 것으로 검색
     Member member = memberRepository.findById(memberId).orElseThrow(NoMemberException::new);
     Optional<InviteCode> inviteCode = inviteCodeRepository.findByIdentifyValue(searchQuery);
-    return inviteCode.isPresent()
-        ? findWorkspaceGeneral(inviteCode.orElse(null).getWorkspace(), member)
-        : null;
+    if (inviteCode.isPresent()) {
+      InviteCode currentInviteCode = inviteCode.orElse(null);
+      if (currentInviteCode.isExpired()) {
+        throw new ExpiredInviteCodeException();
+      }
+      return findWorkspaceGeneral(currentInviteCode.getWorkspace(), member);
+    } else {
+      return null;
+    }
   }
 
   @Override
@@ -477,21 +502,22 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
   @Override
   @Transactional
-  public InactiveWorkspaceMemberResponse inactiveWorkspaceMember(
-      InactiveWorkspaceMemberRequest inactiveWorkspaceMemberRequest, Long memberId) {
+  public ActivateWorkspaceMemberResponse activateWorkspaceMember(
+      ActivateWorkspaceMemberRequest activateWorkspaceMemberRequest, Long memberId) {
     Member member =
         memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
     if (member.getRole() != Member.Role.ADMIN) {
       throw new NoAdminException();
     }
-    Long workspaceMemberId = inactiveWorkspaceMemberRequest.getWorkspaceMemberId();
+    Long workspaceMemberId = activateWorkspaceMemberRequest.getWorkspaceMemberId();
     WorkspaceMember workspaceMember =
         workspaceMemberRepository
             .findById(workspaceMemberId)
             .orElseThrow(NoWorkspaceMemberException::new);
-    workspaceMember.setStatus(WorkspaceMemberStatus.INACTIVE);
+    WorkspaceMemberStatus status = activateWorkspaceMemberRequest.getStatus();
+    workspaceMember.setStatus(status);
     workspaceMemberRepository.save(workspaceMember);
-    return InactiveWorkspaceMemberResponse.builder().apiResult(true).build();
+    return ActivateWorkspaceMemberResponse.builder().apiResult(true).build();
   }
 
   @Override
@@ -720,5 +746,24 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         .learningCourseCount(learningCourseCount)
         .certificatedCount(certificatedCount)
         .build();
+  }
+
+  @Override
+  @Transactional
+  public UpdateWorkspaceMemberRoleResponse updateWorkspaceMemberRole(
+      UpdateWorkspaceMemberRoleRequest updateWorkspaceMemberRoleRequest, Long memberId) {
+    Member member = memberRepository.findById(memberId).orElseThrow(NoMemberException::new);
+    if (member.getRole() != Member.Role.ADMIN) {
+      throw new NoAdminException();
+    }
+    Long workspaceMemberId = updateWorkspaceMemberRoleRequest.getWorkspaceMemberId();
+    WorkspaceMember workspaceMember =
+        workspaceMemberRepository
+            .findById(workspaceMemberId)
+            .orElseThrow(NoWorkspaceMemberException::new);
+    WorkspaceMemberRole role = updateWorkspaceMemberRoleRequest.getRole();
+    workspaceMember.setRole(role);
+    workspaceMemberRepository.save(workspaceMember);
+    return UpdateWorkspaceMemberRoleResponse.builder().apiResult(true).build();
   }
 }

@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class InactiveWorkspaceMemberResponse {
+public class UpdateWorkspaceMemberRoleResponse {
   private Boolean apiResult;
 }

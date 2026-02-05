@@ -60,7 +60,7 @@ public class AuthController {
     } catch (BadCredentialsException e) {
       // 이메일/비밀번호 불일치
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-          .body(new LoginResponse(null, "이메일 또는 비밀번호가 올바르지 않습니다.", null, null, null, null));
+          .body(new LoginResponse(null, "이메일 또는 비밀번호가 올바르지 않습니다.", null, null, null, null, null));
     } catch (AuthenticationException e) {
       // 그 외 Spring Security 인증 실패
       log.error("로그인 인증 오류", e);
@@ -99,7 +99,8 @@ public class AuthController {
             userDetails.getDisplayName(),
             userDetails.getMemberId(),
             userDetails.getUsername(),
-            userDetails.getProfileImageUrl());
+            userDetails.getProfileImageUrl(),
+            memberService.getMemberRole(userDetails.getMemberId()));
 
     return ResponseEntity.status(HttpStatus.OK).body(body);
   }
