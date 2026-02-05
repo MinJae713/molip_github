@@ -15,12 +15,13 @@ import com.edumax.molip.domain.session.entity.CourseLearner;
 import com.edumax.molip.domain.session.entity.CourseLearnerSession;
 import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.session.repository.CourseLearnerRepository;
+import com.edumax.molip.domain.workspace.dto.request.ActivateWorkspaceMemberRequest;
 import com.edumax.molip.domain.workspace.dto.request.ChangeWorkspaceMemberRoleRequest;
 import com.edumax.molip.domain.workspace.dto.request.CreateJoinCodeRequest;
 import com.edumax.molip.domain.workspace.dto.request.CreateWorkspaceRequest;
-import com.edumax.molip.domain.workspace.dto.request.InactiveWorkspaceMemberRequest;
 import com.edumax.molip.domain.workspace.dto.request.JoinWorkspaceRequest;
 import com.edumax.molip.domain.workspace.dto.request.UpdateWorkspaceRequest;
+import com.edumax.molip.domain.workspace.dto.response.ActivateWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.ChangeWorkspaceMemberRoleResponse;
 import com.edumax.molip.domain.workspace.dto.response.CreateJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.CreateWorkspaceResponse;
@@ -32,7 +33,6 @@ import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdRes
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdResponse.FindWorkspaceMemberByIdCourse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegisterResponse;
-import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.find_workspace_response.FindWorkspaceResponse;
@@ -103,7 +103,19 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   private List<FindWorkspaceResponse> findWorkspacesGeneral(
       List<Workspace> workspaces, Member member) {
     List<FindWorkspaceResponse> result = new ArrayList<>();
-    workspaces.forEach(workspace -> result.add(findWorkspaceGeneral(workspace, member)));
+    workspaces.stream()
+        .filter(
+            workspace -> {
+              Optional<WorkspaceMember> workspaceMember =
+                  workspaceMemberRepository.findByMemberAndWorkspace(member, workspace);
+              if (workspaceMember.isPresent()) {
+                WorkspaceMember currentWorkspaceMember = workspaceMember.orElse(null);
+                return currentWorkspaceMember.getStatus() == WorkspaceMemberStatus.ACTIVE;
+              } else {
+                return true;
+              }
+            })
+        .forEach(workspace -> result.add(findWorkspaceGeneral(workspace, member)));
     return result;
   }
 
@@ -484,21 +496,22 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
   @Override
   @Transactional
-  public InactiveWorkspaceMemberResponse inactiveWorkspaceMember(
-      InactiveWorkspaceMemberRequest inactiveWorkspaceMemberRequest, Long memberId) {
+  public ActivateWorkspaceMemberResponse activateWorkspaceMember(
+      ActivateWorkspaceMemberRequest activateWorkspaceMemberRequest, Long memberId) {
     Member member =
         memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
     if (member.getRole() != Member.Role.ADMIN) {
       throw new NoAdminException();
     }
-    Long workspaceMemberId = inactiveWorkspaceMemberRequest.getWorkspaceMemberId();
+    Long workspaceMemberId = activateWorkspaceMemberRequest.getWorkspaceMemberId();
     WorkspaceMember workspaceMember =
         workspaceMemberRepository
             .findById(workspaceMemberId)
             .orElseThrow(NoWorkspaceMemberException::new);
-    workspaceMember.setStatus(WorkspaceMemberStatus.INACTIVE);
+    WorkspaceMemberStatus status = activateWorkspaceMemberRequest.getStatus();
+    workspaceMember.setStatus(status);
     workspaceMemberRepository.save(workspaceMember);
-    return InactiveWorkspaceMemberResponse.builder().apiResult(true).build();
+    return ActivateWorkspaceMemberResponse.builder().apiResult(true).build();
   }
 
   @Override

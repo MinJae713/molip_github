@@ -1,12 +1,13 @@
 package com.edumax.molip.domain.workspace.controller;
 
 import com.edumax.molip.common.model.MemberUserDetails;
+import com.edumax.molip.domain.workspace.dto.request.ActivateWorkspaceMemberRequest;
 import com.edumax.molip.domain.workspace.dto.request.ChangeWorkspaceMemberRoleRequest;
 import com.edumax.molip.domain.workspace.dto.request.CreateJoinCodeRequest;
 import com.edumax.molip.domain.workspace.dto.request.CreateWorkspaceRequest;
-import com.edumax.molip.domain.workspace.dto.request.InactiveWorkspaceMemberRequest;
 import com.edumax.molip.domain.workspace.dto.request.JoinWorkspaceRequest;
 import com.edumax.molip.domain.workspace.dto.request.UpdateWorkspaceRequest;
+import com.edumax.molip.domain.workspace.dto.response.ActivateWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.ChangeWorkspaceMemberRoleResponse;
 import com.edumax.molip.domain.workspace.dto.response.CreateJoinCodeResponse;
 import com.edumax.molip.domain.workspace.dto.response.CreateWorkspaceResponse;
@@ -17,7 +18,6 @@ import com.edumax.molip.domain.workspace.dto.response.FindMyStatsResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegisterResponse;
-import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.find_workspace_response.FindWorkspaceResponse;
@@ -114,13 +114,13 @@ public class WorkspaceController {
     return ResponseEntity.ok(workspaceService.deleteWorkspace(workspaceId, member.getMemberId()));
   }
 
-  @PatchMapping("/inactive")
-  public ResponseEntity<InactiveWorkspaceMemberResponse> inactiveWorkspaceMember(
-      @Valid @RequestBody InactiveWorkspaceMemberRequest inactiveWorkspaceMemberRequest,
+  @PatchMapping("/activate")
+  public ResponseEntity<ActivateWorkspaceMemberResponse> activateWorkspaceMember(
+      @Valid @RequestBody ActivateWorkspaceMemberRequest activateWorkspaceMemberRequest,
       @AuthenticationPrincipal MemberUserDetails member) {
     return ResponseEntity.ok(
-        workspaceService.inactiveWorkspaceMember(
-            inactiveWorkspaceMemberRequest, member.getMemberId()));
+        workspaceService.activateWorkspaceMember(
+            activateWorkspaceMemberRequest, member.getMemberId()));
   }
 
   @PatchMapping("/changeRole")
