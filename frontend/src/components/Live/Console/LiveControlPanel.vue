@@ -2,10 +2,12 @@
 import { ref, inject } from 'vue';
 import { useVideoRoomStore } from '@/stores/videoRoom'; // Unified Store
 import { useQuizStore } from '@/stores/quiz';
+import { useTrainerLiveStore } from '@/stores/trainerlive';
 import QuizGenerationModal from '@/components/Live/Sidebar/QuizGenerationModal.vue';
 import { useTimer } from '@/composables/useTimer';
 
 const videoRoomStore = useVideoRoomStore();
+const trainerLiveStore = useTrainerLiveStore();
 const quizStore = useQuizStore();
 const { startTimer } = useTimer();
 const getQuiz = inject<() => void>('getQuiz');
@@ -66,47 +68,17 @@ const handleQuickQuiz = () => {
       </div>
     </Transition>
 
-    <div class="space-y-3">
-      <div class="flex items-center justify-between group">
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined text-slate-400 text-lg">videocam_off</span>
-          <span class="text-sm font-bold text-slate-600">학생 카메라 강제 끄기</span>
-        </div>
-        <label class="relative inline-flex items-center cursor-pointer">
-          <input type="checkbox" class="sr-only peer">
-          <div
-            class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600">
-          </div>
-        </label>
-      </div>
-
-      <div class="flex items-center justify-between group">
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined text-slate-400 text-lg">chat_bubble_outline</span>
-          <span class="text-sm font-bold text-slate-600">채팅 잠금</span>
-        </div>
-        <label class="relative inline-flex items-center cursor-pointer">
-          <input type="checkbox" class="sr-only peer">
-          <div
-            class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600">
-          </div>
-        </label>
-      </div>
-    </div>
-
-    <button
-      class="w-full py-3 bg-red-50 text-red-500 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors border border-red-100 active:scale-[0.98]">
-      <span class="material-symbols-outlined text-xl">mic_off</span>
-      전체 음소거
-    </button>
 
     <div class="grid grid-cols-3 gap-3">
-      <button @click="isTimeModalOpen = !isTimeModalOpen" :class="[
+      <button @click="trainerLiveStore.toggleBreak()" :class="[
         'flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold border transition-all active:scale-95',
-        isTimeModalOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100'
+        trainerLiveStore.isOnBreak
+          ? 'bg-amber-100 border-amber-200 text-amber-700 animate-pulse'
+          : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100'
       ]">
-        <span class="material-symbols-outlined text-lg">coffee</span>
-        쉬는 시간
+        <span class="material-symbols-outlined text-lg">{{ trainerLiveStore.isOnBreak ? 'play_arrow' : 'coffee'
+        }}</span>
+        {{ trainerLiveStore.isOnBreak ? '수업 재개' : '쉬는 시간' }}
       </button>
 
       <button @click="handleQuickQuiz"

@@ -105,6 +105,7 @@ interface LiveSessionData {
 }
 
 const handleStartLive = async (session: any) => {
+    console.log("handleStartLive 버튼눌림!", session);
     try {
         const response = await api.post(`https://i14a309.p.ssafy.io/api/session/${session.sessionId}/start`);
         const { janusRoomId, pin, sessionId } = response.data;

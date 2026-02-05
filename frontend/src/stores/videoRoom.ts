@@ -124,6 +124,10 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
 
   // Student Monitoring (for Trainer)
   const studentStreams = ref<Map<string, MediaStream>>(new Map());
+
+  // ✅ 카메라 송출 성공 여부
+  const isPublished = ref<boolean>(false);
+
   const participants = ref<
     Array<{
       id: string | number;
@@ -418,6 +422,8 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
    */
   function handleMessage(handle: JanusHandle, msg: JanusMessage, jsep: JSEP) {
     const event = msg["videoroom"];
+    console.log(`[Janus] handleMessage event: ${event}`, msg); // ✅ 모든 이벤트 로그 출력
+
     if (event === "destroyed") {
       alert("수업이 종료되었습니다.");
       // 필요 시 라우터 이동 로직 추가 (Router 인스턴스가 스토어 내부에 없으므로 컴포넌트 레벨에서 watch하거나, window.location 사용)
@@ -434,6 +440,14 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
         handleIncomingPublishers(msg["publishers"]);
       }
     } else if (event === "event") {
+      // ✅ Publish 성공 확인 (configure 요청 응답)
+      if (msg["configured"] === "ok") {
+        console.log(
+          "[Janus] Publish Configured (Camera Published successfully)",
+        );
+        isPublished.value = true;
+      }
+
       // 새로운 퍼블리셔 입장 처리
       if (msg["publishers"]) {
         console.log("[Janus] 새로운 퍼블리셔 등장 이벤트");
@@ -459,58 +473,45 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
    */
   async function publishCamera() {
     if (!camHandle.value || publishingCam.value) return;
-    publishingCam.value = true;
 
-    // 학생 오디오 송출 허용
-    const mediaOpts: any = {
-      audioRecv: false,
-      videoRecv: false,
-      audioSend: true,
-      videoSend: true,
-      // Janus가 localStream을 종료하지 않도록 설정
-      keepAudio: true,
-      keepVideo: true,
-    };
+    console.log("[publishCamera] 호출됨. localStream:", !!localStream.value);
 
-    if (selectedAudioDeviceId.value)
-      mediaOpts.audio = { deviceId: { exact: selectedAudioDeviceId.value } };
-    if (selectedVideoDeviceId.value)
-      mediaOpts.video = { deviceId: { exact: selectedVideoDeviceId.value } };
-
-    const rawStream = toRaw(localStream.value);
-    let streamToUse = rawStream;
-
-    if (rawStream) {
-      const audioTracks = rawStream.getAudioTracks();
-      const videoTracks = rawStream.getVideoTracks();
-      console.log(`[Publish] Using Local Stream: ${rawStream.id}`);
-      console.log(`[Publish] Audio Tracks: ${audioTracks.length}`, audioTracks);
-      console.log(`[Publish] Video Tracks: ${videoTracks.length}`, videoTracks);
-
-      if (audioTracks.length === 0 && videoTracks.length === 0) {
-        console.warn(
-          "[Publish] Local stream has no tracks! Fallback to internal capture.",
-        );
-        streamToUse = null; // 트랙이 없으면 Janus가 직접 캡처하게 함
-      }
-    } else {
-      console.log("[Publish] No Local Stream, requesting new...");
-      streamToUse = null;
+    // localStream이 없으면 에러
+    if (!localStream.value) {
+      console.error(
+        "[publishCamera] localStream이 없습니다! DeviceSetupModal에서 먼저 카메라를 설정하세요.",
+      );
+      return;
     }
 
-    const audioTrack = streamToUse?.getAudioTracks()[0];
-    const videoTrack = streamToUse?.getVideoTracks()[0];
+    const audioTrack = localStream.value.getAudioTracks()[0];
+    const videoTrack = localStream.value.getVideoTracks()[0];
+
+    console.log(
+      "[publishCamera] audioTrack:",
+      !!audioTrack,
+      "videoTrack:",
+      !!videoTrack,
+    );
+
+    // 최소 하나의 트랙이 있어야 함
+    if (!audioTrack && !videoTrack) {
+      console.error("[publishCamera] 오디오/비디오 트랙이 모두 없습니다!");
+      return;
+    }
+
+    publishingCam.value = true;
 
     camHandle.value.createOffer({
       tracks: [
         {
           type: "audio",
-          capture: audioTrack ? audioTrack.clone() : null,
+          capture: audioTrack || null,
           recv: false,
         },
         {
           type: "video",
-          capture: videoTrack ? videoTrack.clone() : null,
+          capture: videoTrack || null,
           recv: false,
         },
       ],
@@ -704,5 +705,6 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
     participants,
     selectedStudentId,
     selectStudent,
+    isPublished,
   };
 });

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import { useTrainerLiveStore } from '@/stores/trainerlive';
+import { useTrainerSessionStore } from '@/stores/trainerSession';
 import { useUserStore } from '@/stores/user';
 import { useTimer } from '@/composables/useTimer';
 import { useRecording } from '@/composables/useRecording';
@@ -8,6 +9,7 @@ import { useRoute } from 'vue-router';
 
 // [1] 스토어 및 컴포넌트 선언
 const trainerLiveStore = useTrainerLiveStore();
+const trainerSessionStore = useTrainerSessionStore();
 const userStore = useUserStore();
 const { recordingTime, startRecording } = useRecording();
 const { formattedTime, timeLeft } = useTimer();
@@ -20,24 +22,39 @@ defineEmits(['end-class']);
 // [3] 상태 관리
 const isBreakEndModalOpen = ref(false);
 
-// [강의 시작 핸들러]
+// [강의 시작 핸들러] (통합됨)
 const handleStartLive = async () => {
   const sId = String(route.params.sessionId);
-  if (!trainerLiveStore.janus) {
-    await trainerLiveStore.initJanus(sId);
-  }
-  await trainerLiveStore.startSession();
-};
+  console.log("[handleStartLive] 시작. sessionId:", sId);
 
-// [분석 시작 핸들러]
-const handleStartAnalysis = async () => {
-  await trainerLiveStore.startAnalysis();
-  startRecording();
+  // 1. Janus 연결 확인 및 초기화
+  if (!trainerLiveStore.janus) {
+    console.log("[handleStartLive] Janus 초기화 중...");
+    await trainerLiveStore.initJanus(sId);
+    console.log("[handleStartLive] Janus 초기화 완료");
+  }
+
+  // 2. 화면 공유 (Janus Session) 시작
+  console.log("[handleStartLive] startSession 호출 전. isSessionStarted:", trainerLiveStore.isSessionStarted);
+  await trainerLiveStore.startSession();
+  console.log("[handleStartLive] startSession 완료. isSessionStarted:", trainerLiveStore.isSessionStarted);
+
+  // 3. 분석 시작 (API 호출 + 녹음 시작) 및 녹화 타이머 시작
+  // 화면 공유가 성공적으로 시작되었을 때만 분석 시작
+  if (trainerLiveStore.isSessionStarted) {
+    console.log("[handleStartLive] startAnalysis 호출");
+    await trainerLiveStore.startAnalysis();
+    startRecording();
+    console.log("[handleStartLive] 모든 시작 완료. isAnalysisStarted:", trainerLiveStore.isAnalysisStarted);
+  } else {
+    console.warn("[handleStartLive] isSessionStarted가 false라서 분석 시작 안됨");
+  }
 };
 
 onMounted(async () => {
   // 컴포넌트 마운트 시 유저 정보 fetch (이 부분이 있어야 프로필이 뜹니다!)
   await userStore.fetchUserInfo();
+  await trainerSessionStore.fetchSessionDetail(Number(route.params.sessionId));
 });
 </script>
 
@@ -52,39 +69,28 @@ onMounted(async () => {
       <div class="flex flex-col">
         <div class="flex items-center gap-2">
           <h1 class="text-lg font-bold text-slate-900">
-            강의실 {{ trainerLiveStore.roomInfo?.janusRoomId || '' }}
+            {{ trainerSessionStore.currentManagedSession?.title || '' }}
           </h1>
           <span v-if="trainerLiveStore.isAnalysisStarted"
             class="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded animate-pulse">ON AIR</span>
           <span v-else class="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">READY</span>
         </div>
-        <p class="text-xs text-slate-400 font-medium">실시간 AI 분석 세션</p>
+        <p class="text-xs text-slate-400 font-medium">{{ trainerSessionStore.currentManagedSession?.description || '' }}
+        </p>
       </div>
     </div>
-
     <div class="flex items-center gap-4">
       <div class="flex items-center gap-3">
-        <!-- 1단계: 강의 시작 전 -->
-        <button v-if="!trainerLiveStore.isSessionStarted" @click="handleStartLive"
+        <!-- 통합된 강의 시작/종료 버튼 -->
+
+        <!-- 1. 강의/분석 중이 아닐 때: [수업 시작] -->
+        <button v-if="!trainerLiveStore.isAnalysisStarted" @click="handleStartLive"
           class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-100 flex items-center gap-2">
           <span class="material-symbols-outlined text-sm">play_circle</span>
-          강의 시작
+          수업 시작
         </button>
 
-        <!-- 2단계: 강의는 켰지만 분석 전 -->
-        <template v-else-if="!trainerLiveStore.isAnalysisStarted">
-          <button @click="handleStartAnalysis"
-            class="bg-rose-500 hover:bg-rose-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-rose-100 flex items-center gap-2 active:scale-95">
-            <span class="material-symbols-outlined text-sm">analytics</span>
-            분석 시작
-          </button>
-          <button @click="$emit('end-class')"
-            class="bg-slate-800 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-slate-200 active:scale-95">
-            수업 종료
-          </button>
-        </template>
-
-        <!-- 3단계: 분석 중 -->
+        <!-- 2. 분석 중일 때 (수업 중): [수업 종료] + REC 표시 -->
         <template v-else>
           <div class="flex items-center gap-2 bg-red-50 px-3 py-2 rounded-xl border border-red-100">
             <div class="size-2 bg-red-500 rounded-full animate-pulse"></div>

@@ -55,7 +55,7 @@ export const useTrainerSessionStore = defineStore("trainerSession", () => {
   async function fetchSessionDetail(sessionId: string | number) {
     isLoading.value = true;
     try {
-      const response = await api.get(`/sessions/${sessionId}`);
+      const response = await api.get(`/session/${sessionId}/simple`);
       currentManagedSession.value = mapSession(response.data);
     } catch (error) {
       console.error("세션 상세 로드 실패:", error);
