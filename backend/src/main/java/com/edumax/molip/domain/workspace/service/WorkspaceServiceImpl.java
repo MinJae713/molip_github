@@ -54,6 +54,7 @@ import com.edumax.molip.domain.workspace.exception.AlreadyWorkspaceRegisterExcep
 import com.edumax.molip.domain.workspace.exception.ExpiredInviteCodeException;
 import com.edumax.molip.domain.workspace.exception.IncorrectWorkspaceMemberException;
 import com.edumax.molip.domain.workspace.exception.InviteCodeExistException;
+import com.edumax.molip.domain.workspace.exception.NoGeneralMemberException;
 import com.edumax.molip.domain.workspace.exception.NoInviteCodeException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceAppliedAtException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceException;
@@ -170,11 +171,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   @Transactional
   public JoinWorkspaceResponse joinWorkspace(
       JoinWorkspaceRequest joinWorkspaceRequest, Long memberId) {
-    Member member =
-        memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
-    if (member.getRole() != Member.Role.ADMIN) {
-      throw new NoAdminException();
-    }
+    // member가 일반인 경우도 들어옴 (pending인 경우!)
     Long workspaceId = joinWorkspaceRequest.getWorkspaceId();
     Workspace workspace =
         workspaceRepository
@@ -190,9 +187,17 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     // PENDING, APPROVE, REJECTED
     LocalDateTime appliedAt = joinWorkspaceRequest.getAppliedAt();
 
+    // 권한 검사
+    // PENDING이 아닌 요청(APPROVE, REJECTED)인데 User이면 에러
+    // PENDING인데 ADMIN이면 에러
+    Member member =
+        memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
     switch (status) {
       case PENDING:
         {
+          if (member.getRole() == Member.Role.ADMIN) {
+            throw new NoGeneralMemberException();
+          }
           // 사용자 워크스페이스 가입 신청
           // 워크 스페이스 가입 대기에 추가 (PENDING)
           // 이미 REJECT 된 상태라면 수정 로직
@@ -219,6 +224,9 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         }
       case APPROVE:
         {
+          if (member.getRole() == Member.Role.USER) {
+            throw new NoAdminException();
+          }
           // 관리자 워크스페이스 가입 승인
           if (role == null) {
             throw new NoWorkspaceMemberRoleException();
@@ -250,6 +258,9 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         }
       case REJECTED:
         {
+          if (member.getRole() == Member.Role.USER) {
+            throw new NoAdminException();
+          }
           if (appliedAt == null) {
             throw new NoWorkspaceAppliedAtException();
           }
