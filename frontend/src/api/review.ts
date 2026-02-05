@@ -38,14 +38,13 @@ export interface MockScriptDataItem {
     message: string;
 }
 
-export interface ChatData {
-    chatData: ChatDataItem[];
-}
+// API Response Type
+export type ChatData = ChatDataItem[];
 
 export interface ChatDataItem {
-    timeline: number;
-    message: string;
-    memberId: number;
+    timestamp: string;
+    content: string;
+    senderId: number;
 }
 
 

@@ -212,9 +212,10 @@ const scrollToBottom = async () => {
 };
 
 // 리스트 변경 시 자동 스크롤
-watch(() => props.qaList.length, () => {
+watch(() => props.qaList, (newVal) => {
+    console.log("[SidebarChat] QA List Updated:", newVal);
     scrollToBottom();
-});
+}, { deep: true, immediate: true });
 </script>
 
 <style scoped>

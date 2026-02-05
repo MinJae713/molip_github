@@ -103,7 +103,7 @@ onMounted(async () => {
     if (sessionId) {
         console.log(sessionId);
         await sessionStore.fetchSessionInfo(sessionId);
-        await loadReviewData("10002");
+        await loadReviewData(sessionId);
         connectStomp();
     }
 });
@@ -249,13 +249,13 @@ async function loadReviewData(sessionId: string) {
             await userStore.fetchUserInfo();
         }
         
-        const memberId = "10002";
-        console.log(`[Review] Fetching data for session: ${sessionId}, member: ${memberId}`);
-        
+        let memberId = userStore.user.memberId;
         if (!memberId) {
-            console.error("[Review] Failed to get memberId even after fetch.");
-            return;
+             console.warn("[Review] No memberId in store, using fallback '10002'");
+             memberId = "10002";
         }
+        
+        console.log(`[Review] Fetching data for session: ${sessionId}, member: ${memberId}`);
 
         const response = await fetchReviewData(sessionId, memberId);
         console.log("[Review] Raw API Response:", response);
@@ -329,8 +329,39 @@ async function loadReviewData(sessionId: string) {
              console.warn("[Review] Script data is empty or invalid structure", scriptData);
         }
 
-        const chatData = await fetchChatData(1, 2);
-        console.log("[Review] Chat Data:", chatData);
+        const chatDataResponse = await fetchChatData(1, 2);
+        console.log("[Review] Chat Data:", chatDataResponse);
+
+        if (chatDataResponse && Array.isArray(chatDataResponse)) {
+            let lastQuestionId = '';
+            
+            const mappedChat = chatDataResponse.map((item, index) => {
+                const isAnswer = item.senderId === 0;
+                
+                // If it's a question (not answer), generate a new Group ID
+                if (!isAnswer) {
+                    lastQuestionId = `history-${index}-${Date.now()}`;
+                } else if (!lastQuestionId) {
+                    // Orphaned answer (shouldn't happen often), treat as standalone
+                    lastQuestionId = `history-${index}-orphaned`;
+                }
+
+                return {
+                    questionId: lastQuestionId,
+                    content: item.content,
+                    senderName: isAnswer ? 'AI Tutor' : (userStore.user.name || '나'),
+                    timestamp: item.timestamp,
+                    type: isAnswer ? 'answer' : 'question',
+                    createdAt: item.timestamp,
+                    // Keep original for reference if needed
+                    senderId: item.senderId
+                };
+            });
+            
+            console.log("[Review] Mapped Chat Data:", mappedChat);
+            // 기존 qaList에 추가 (혹은 덮어쓰기)
+            qaList.value = [...mappedChat];
+        }
 
     } catch (error) {
         console.error("[Review] Failed to load review data:", error);
