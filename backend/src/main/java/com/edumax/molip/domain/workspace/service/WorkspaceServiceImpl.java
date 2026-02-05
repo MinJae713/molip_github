@@ -264,6 +264,9 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         workspaceRepository
             .findById(workspaceId)
             .orElseThrow(NoWorkspaceException::new); // GlobalExceptionHandler
+    if (member.getRole() == Member.Role.ADMIN) {
+      return findWorkspaceCoursesByIdTrainer(null, workspace);
+    }
     WorkspaceMember workspaceMember =
         workspaceMemberRepository
             .findByMemberAndWorkspace(member, workspace)
@@ -271,8 +274,6 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     return workspaceMember.getRole() == WorkspaceMemberRole.LEARNER
         ? findWorkspaceCoursesByIdLearner(workspaceMember, workspace)
         : findWorkspaceCoursesByIdTrainer(workspaceMember, workspace);
-    // 위에서 예외 나오는 경우? -> 현재 사용자가 입력 받은 워스 멤버가 아니라면 에러남?
-    // 프론트에서 그런 경우가 있나?
   }
 
   private List<FindWorkspaceCoursesByIdResponse> findWorkspaceCoursesByIdLearner(
@@ -356,7 +357,10 @@ public class WorkspaceServiceImpl implements WorkspaceService {
               CourseStatus status = course.getStatus();
               // trainer 고유
               WorkspaceMember learner = course.getLeaner();
-              Boolean isOwn = learner.equals(workspaceMember);
+              Boolean isOwn = null;
+              if (workspaceMember != null) { // null로 들어오면 관리자
+                isOwn = learner.equals(workspaceMember);
+              }
               String trainerName = learner.getMember().getName();
 
               long finishedSessionCount =
