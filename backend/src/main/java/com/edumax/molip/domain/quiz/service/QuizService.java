@@ -21,10 +21,33 @@ public class QuizService {
   private final QuizServiceGrpc.QuizServiceBlockingStub quizServiceBlockingStub;
   private final ScriptRepository scriptRepository;
 
-  String KEY_FORMAT = "quiz:stt:room-id:%s";
+  String KEY_FORMAT = "quiz:stt:room-id:%d";
 
-  public AiQuizMessage createQuizRedis(String roomId, int textLength) {
-    String key = generateKey(roomId);
+  public AiQuizMessage createQuizRedisTest(Long sessionId) {
+    QuizRequest request =
+        QuizRequest.newBuilder()
+            .setSessionId(sessionId.toString())
+            .setSttText(
+                "안녕하세요! 오늘은 자바스크립트의 핵심, '변수'를 알아봅니다. 변수는 데이터를 저장하는 공간으로, 다양한 종류가 있습니다. 예를 들어, 숫자를 저장하는 'number', 문자를 저장하는 'string', 참과 거짓을 나타내는 'boolean' 등이 있습니다. 변수를 선언할 때는 'var', 'let', 'const' 키워드를 사용합니다.")
+            .build();
+
+    log.info("Quiz STT Text: {}", request.getSttText());
+    QuizResponse response = quizServiceBlockingStub.createQuiz(request);
+    log.info("Quiz Response: {}", response);
+
+    return AiQuizMessage.builder()
+        .question(response.getQuestion())
+        .answer1(response.getAnswer1())
+        .answer2(response.getAnswer2())
+        .answer3(response.getAnswer3())
+        .answer4(response.getAnswer4())
+        .correctAnswer(response.getCorrectAnswer())
+        .explanation(response.getExplanation())
+        .build();
+  }
+
+  public AiQuizMessage createQuizRedis(Long sessionId, int textLength) {
+    String key = generateKey(sessionId);
     StringBuilder sb = new StringBuilder();
 
     Long totalCntLong = redisTemplate.opsForZSet().zCard(key);
@@ -34,7 +57,7 @@ public class QuizService {
 
     List<String> reverseTextList = new ArrayList<>();
     int totalCnt = totalCntLong.intValue();
-    int chunkSize = 10;
+    int chunkSize = 30;
     boolean finished = false;
     int curLength = 0;
     int maxPage = (int) Math.ceil((double) totalCnt / chunkSize);
@@ -75,10 +98,14 @@ public class QuizService {
     }
 
     QuizRequest request =
-        QuizRequest.newBuilder().setSessionId(roomId).setSttText(sb.toString().trim()).build();
+        QuizRequest.newBuilder()
+            .setSessionId(sessionId.toString())
+            .setSttText(sb.toString().trim())
+            .build();
 
     log.info("Quiz STT Text: {}", sb.toString().trim());
     QuizResponse response = quizServiceBlockingStub.createQuiz(request);
+    log.info("Quiz Response: {}", response);
 
     return AiQuizMessage.builder()
         .question(response.getQuestion())
@@ -91,8 +118,8 @@ public class QuizService {
         .build();
   }
 
-  private String generateKey(String roomId) {
-    return KEY_FORMAT.formatted(roomId);
+  private String generateKey(Long sessionId) {
+    return KEY_FORMAT.formatted(sessionId);
   }
 
   public AiQuizMessage createQuizDB(Long sessionId, int time, int textLength) {
@@ -105,7 +132,7 @@ public class QuizService {
 
     List<String> reverseTextList = new ArrayList<>();
     int totalCnt = totalCntLong.intValue();
-    int chunkSize = 10;
+    int chunkSize = 30;
     boolean finished = false;
     int curLength = 0;
     int maxPage = (int) Math.ceil((double) totalCnt / chunkSize);
@@ -141,11 +168,13 @@ public class QuizService {
 
     QuizRequest request =
         QuizRequest.newBuilder()
-            .setSessionId(String.valueOf(sessionId))
+            .setSessionId(sessionId.toString())
             .setSttText(sb.toString().trim())
             .build();
 
+    log.info("Quiz STT Text: {}", sb.toString().trim());
     QuizResponse response = quizServiceBlockingStub.createQuiz(request);
+    log.info("Quiz Response: {}", response);
 
     return AiQuizMessage.builder()
         .question(response.getQuestion())

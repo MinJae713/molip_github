@@ -31,7 +31,7 @@ public class VoiceForwardHandler extends BinaryWebSocketHandler {
   private final StringRedisTemplate redisTemplate;
 
   // 상수는 static final로 관리하는 것이 메모리 효율상 좋습니다.
-  private static final String KEY_FORMAT = "quiz:stt:session-id:%s";
+  private static final String KEY_FORMAT = "quiz:stt:session-id:%d";
   private static final Duration TTL = Duration.ofDays(1);
 
   // 연결할때 호출
@@ -51,8 +51,8 @@ public class VoiceForwardHandler extends BinaryWebSocketHandler {
 
             handleSttResult(
                 new SttSaveEvent(
-                    (String) session.getAttributes().get("sessionId"),
-                    response.getText(),
+                    Long.parseLong((String) session.getAttributes().get("sessionId")),
+                    response.getText() == null ? "" : response.getText(),
                     response.getTimeline()));
             //            eventPublisher.publishEvent(
             //                new SttSaveEvent(
@@ -85,7 +85,7 @@ public class VoiceForwardHandler extends BinaryWebSocketHandler {
     redisTemplate.expire(key, TTL);
   }
 
-  private String generateKey(String sessionId) {
+  private String generateKey(Long sessionId) {
     return String.format(KEY_FORMAT, sessionId);
   }
 

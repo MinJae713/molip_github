@@ -20,7 +20,6 @@ public class EmotionWebSocketInterceptor extends HttpSessionHandshakeInterceptor
     String path = request.getURI().getPath();
     String sessionId = path.substring(path.lastIndexOf('/') + 1);
     attributes.put("sessionId", sessionId);
-
     if (request instanceof ServletServerHttpRequest servletRequest) {
       HttpServletRequest httpRequest = servletRequest.getServletRequest();
 

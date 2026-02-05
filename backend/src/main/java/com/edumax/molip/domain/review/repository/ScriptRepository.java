@@ -17,4 +17,8 @@ public interface ScriptRepository extends JpaRepository<Script, Long> {
       "SELECT count(s) FROM Script s WHERE s.learnerAnalysis.sessionId = :sessionId AND timeline < :timeline")
   Long countBySessionIdWithTime(
       @Param("sessionId") Long sessionId, @Param("timeline") Integer timeline);
+
+  @Query(
+      "SELECT s FROM Script s WHERE s.learnerAnalysis.sessionId = :sessionId ORDER BY s.timeline ASC")
+  List<Script> findAllBySessionId(@Param("sessionId") Long sessionId);
 }
