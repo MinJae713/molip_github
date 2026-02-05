@@ -27,6 +27,19 @@ public class AsyncConfig {
   }
 
   @Bean
+  public Executor qnaMessageSaveExecutor() {
+    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(4); // 최소 쓰레드 개수
+    executor.setMaxPoolSize(16); // 최대 쓰레드 개수
+    executor.setQueueCapacity(100); // broking 큐 사이즈
+    executor.setThreadNamePrefix("qna-message-save-"); // 쓰레드 이름 접두사
+    // 큐가 가득 찼을 때, 이벤트를 버리지 않고 호출한 쓰레드(Main)가 직접 처리하게 함 (데이터 유실 방지)
+    executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+    executor.initialize(); // 초기화
+    return executor;
+  }
+
+  @Bean
   public Executor emotionSaveExecutor() {
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(10); // 최소 쓰레드 개수

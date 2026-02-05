@@ -1,6 +1,7 @@
 package com.edumax.molip.common.config;
 
 import com.edumax.molip.grpc.emotion.EmotionServiceGrpc;
+import com.edumax.molip.grpc.qna.QnaServiceGrpc;
 import com.edumax.molip.grpc.quiz.QuizServiceGrpc;
 import com.edumax.molip.grpc.stt.STTServiceGrpc;
 import org.springframework.context.annotation.Bean;
@@ -25,5 +26,11 @@ public class GrpcConfig {
   public EmotionServiceGrpc.EmotionServiceStub emotionServiceStub(
       GrpcChannelFactory channelFactory) {
     return EmotionServiceGrpc.newStub(channelFactory.createChannel("emotion-service"));
+  }
+
+  @Bean
+  public QnaServiceGrpc.QnaServiceBlockingStub qnaServiceBlockingStub(
+      GrpcChannelFactory channelFactory) {
+    return QnaServiceGrpc.newBlockingStub(channelFactory.createChannel("qna-service"));
   }
 }
