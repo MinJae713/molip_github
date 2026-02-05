@@ -95,25 +95,26 @@ export class MediaPipeManager {
 
     private performAnalysis() {
         const now = Date.now();
-        if (now - this.lastSentTime < this.SEND_INTERVAL) return;
 
         // 1. Gaze & Behavior Analysis
         const faceLandmarks = this.lastFaceResults?.multiFaceLandmarks?.[0] || [];
         const poseLandmarks = this.lastPoseResults?.poseLandmarks || null;
 
         // Note: modify gazeTracker.analyze to accept empty list for consistent return
+        // Analyze every frame for smoothing filters to work
         const result = this.gazeTracker.analyze(faceLandmarks, poseLandmarks);
 
         if (this.onAnalysisReady) {
             this.onAnalysisReady(result);
         }
 
-        // 2. Image Cropping (Only if face detected)
-        if (faceLandmarks && faceLandmarks.length > 0 && this.ctx) {
-            this.processCrop(faceLandmarks);
+        // 2. Image Cropping (Throttle this one - heavy and for backend)
+        if (now - this.lastSentTime >= this.SEND_INTERVAL) {
+            if (faceLandmarks && faceLandmarks.length > 0 && this.ctx) {
+                this.processCrop(faceLandmarks);
+            }
+            this.lastSentTime = now;
         }
-
-        this.lastSentTime = now;
     }
 
     private processCrop(landmarks: any[]) {
@@ -163,5 +164,9 @@ export class MediaPipeManager {
         this.faceMesh = null;
         this.pose = null;
         this.videoElement.srcObject = null;
+    }
+
+    calibrate(targetX: number, targetY: number, currentRawX: number, currentRawY: number) {
+        this.gazeTracker.calibrate(targetX, targetY, currentRawX, currentRawY);
     }
 }

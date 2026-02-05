@@ -1,7 +1,12 @@
 <template>
     <div class="bg-slate-50 text-slate-900 h-screen flex flex-col overflow-hidden relative">
         <!-- Device Setup Modal -->
-        <DeviceSetupModal v-if="!isSetupComplete" @join="handleJoinSession" />
+        <DeviceSetupModal v-if="!isSetupComplete" 
+            :currentGaze="currentGaze" 
+            :rawGaze="lastRawGaze"
+            @join="handleJoinSession" 
+            @calibrate="handleCalibration" 
+        />
 
         <!-- INFO: 임시 연결 종료 버튼 -->
         <button @click="disconnectAll"
@@ -28,6 +33,37 @@
                     {{ !debugGazeStatus.isAbsent ? 'YES' : 'ABSENT' }}
                 </span>
             </div>
+            
+            <!-- 시선 시각화 플롯 -->
+            <div class="mt-3 border-t border-slate-700 pt-3">
+                <div class="text-[10px] text-slate-400 mb-1">Live Gaze Plot</div>
+                <div class="relative w-[140px] h-[100px] bg-slate-900 border border-slate-600 rounded overflow-hidden mx-auto">
+                    <!-- Monitor Area (Safe Zone) : x 0.2~0.8, y 0.1~0.9 -->
+                    <!-- Width: 60% (0.8-0.2), Left: 20% | Height: 80% (0.9-0.1), Top: 10% -->
+                    <div class="absolute border-2 border-dashed border-green-500/50"
+                         style="left: 20%; top: 10%; width: 60%; height: 80%;">
+                        <div class="absolute top-1 left-1 text-[8px] text-green-500/70">Monitor</div>
+                    </div>
+
+                    <!-- Center Crosshair -->
+                    <div class="absolute top-1/2 left-0 w-full h-[1px] bg-slate-700/50"></div>
+                    <div class="absolute left-1/2 top-0 h-full w-[1px] bg-slate-700/50"></div>
+
+                    <!-- Gaze Point -->
+                    <!-- Flip X coordinate because camera is mirrored? Usually webcam preview is mirrored. -->
+                    <!-- Let's assume raw coordinates: x:0 is left, x:1 is right. -->
+                    <div class="absolute w-2.5 h-2.5 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)] transition-all duration-75 ease-out transform -translate-x-1/2 -translate-y-1/2"
+                         :style="{ 
+                             left: `${currentGaze.x * 100}%`, 
+                             top: `${currentGaze.y * 100}%` 
+                         }">
+                    </div>
+                </div>
+                <div class="text-[9px] text-slate-500 text-center mt-1">
+                    X: {{ currentGaze.x.toFixed(2) }} / Y: {{ currentGaze.y.toFixed(2) }}
+                </div>
+            </div>
+
              <div class="mt-2 text-[10px] text-slate-500 border-t border-slate-700 pt-1">
                 Last Update: {{ debugGazeStatus.timestamp }}
             </div>
@@ -131,6 +167,9 @@ const debugGazeStatus = ref({
     timestamp: '-'
 });
 
+const currentGaze = ref({ x: 0.5, y: 0.5 }); // [NEW] 실시간 시선 좌표
+const lastRawGaze = ref({ x: 0.5, y: 0.5 }); // Store raw gaze for calibration
+
 //================================================================================
 
 // MediaPipe
@@ -196,7 +235,7 @@ const connectStomp = () => {
 // Binary WebSocket 연결 (이미지 전송)
 const connectBinarySocket = () => {
     // 쿼리 파라미터로 토큰 전송
-    const url = `wss://i14a309.p.ssafy.io/emotion/${sessionId}?member-id=4`;
+    const url = `wss://i14a309.p.ssafy.io/emotion/${sessionId}?member-id=2`;
     console.log(`[Binary] Connecting to: ${url}`);
 
     try {
@@ -307,26 +346,33 @@ const disconnectAll = () => {
     isAuthorized.value = false;
 };
 
-// Watch for local stream changes (Janus connection)
-watch(
-    () => videoStore.localStream,
-    (newStream) => {
-        if (newStream && isSetupComplete.value) {
-            startMediaPipe();
-        } else {
-            stopMediaPipe();
-        }
-    },
-    { immediate: true }
-);
+const lastStompSentTime = ref(0);
 
-// 집중도 분석결과 전송
+// 집중도 분석결과 전송 (Called every frame from MediaPipe)
 const handleAnalysisResult = (focusData: GazeResult) => {
-    // Spring Boot로 전송할 데이터 포맷 매핑
-    // timeline: string
-    // focusOn: boolean (시선이 강의화면 내부)
-    // movement: boolean (움직임 여부 -> !isStable)
-    // empty: boolean (자리비움)
+    
+    // 0. Update Last Raw Gaze (for calibration)
+    if (focusData.rawGaze) {
+        lastRawGaze.value = focusData.rawGaze;
+    }
+
+    // 1. Update Gaze UI (Always update this for feedback - 30fps)
+    currentGaze.value = focusData.gaze;
+
+    // Debug 상태 업데이트 (Refresh 30fps)
+    debugGazeStatus.value = {
+        isLookingAtMonitor: focusData.isLookingAtMonitor,
+        isStable: focusData.isStable,
+        isAbsent: focusData.isAbsent,
+        timestamp: new Date().toLocaleTimeString()
+    };
+
+    // 2. Setup Check - Stop here if not fully joined
+    if (!isSetupComplete.value) return;
+
+    // 3. Send to Server (Throttle: 1 second interval)
+    const now = Date.now();
+    if (now - lastStompSentTime.value < 1000) return;
 
     if (!stompClient || !stompClient.connected) return;
 
@@ -337,24 +383,41 @@ const handleAnalysisResult = (focusData: GazeResult) => {
         empty: focusData.isAbsent
     }
 
-    console.log(`📤 [Learner] Sending analysis data to /app/concentrate/${sessionId}/4`, payload);
+    // console.log(`📤 [Learner] Sending analysis data to /app/concentrate/${sessionId}/2`, payload);
 
     stompClient.send(
-        `/app/concentrate/${sessionId}/4`, 
+        `/app/concentrate/${sessionId}/2`, 
         {}, 
         JSON.stringify(payload)
     );
-
-    // Debug 상태 업데이트
-    debugGazeStatus.value = {
-        isLookingAtMonitor: focusData.isLookingAtMonitor,
-        isStable: focusData.isStable,
-        isAbsent: focusData.isAbsent,
-        timestamp: new Date().toLocaleTimeString()
-    };
-
-    console.log("집중도 데이터 전송", JSON.stringify(payload))
+    lastStompSentTime.value = now;
 }
+
+const handleCalibration = (avgGaze?: { x: number, y: number }) => {
+    if (mediaPipeManager) {
+        // If averaged gaze is provided (from 3s intent), use it. Otherwise use last raw gaze.
+        const currentRaw = avgGaze || lastRawGaze.value;
+
+        // Calibrate: Map "Current/Averaged Raw Gaze" to "Center Target (0.5, 0.5)"
+        console.log("Creating Calibration Profile...", currentRaw);
+        mediaPipeManager.calibrate(0.5, 0.5, currentRaw.x, currentRaw.y);
+        alert("✅ 시선 중앙 보정이 완료되었습니다.");
+    }
+};
+
+// [Verified] Watch for local stream changes
+watch(
+    () => videoStore.localStream,
+    (newStream) => {
+        // allow starting mediapipe even during setup for calibration
+        if (newStream) {
+            startMediaPipe();
+        } else {
+            stopMediaPipe();
+        }
+    },
+    { immediate: true }
+);
 
 //================================================================================
 
