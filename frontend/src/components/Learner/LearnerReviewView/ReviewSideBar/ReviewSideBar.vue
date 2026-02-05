@@ -53,7 +53,10 @@
                  <div class="w-10 h-1 bg-slate-300 rounded-full group-hover:bg-indigo-500 transition-colors"></div>
             </div>
 
-            <SidebarChat />
+            <SidebarChat 
+                :qa-list="qaList || []"
+                @send-message="(...args) => $emit('send-message', ...args)"
+            />
         </div>
     </div>
 </template>
@@ -75,9 +78,10 @@ const props = defineProps<{
     personalMoodData?: number[];
     classMoodData?: number[];
     scriptData?: ScriptItem[];
+    qaList?: any[]; // Chat list is not needed for QnA only sidebar
 }>();
 
-const emit = defineEmits(['jump-to-time']);
+const emit = defineEmits(['jump-to-time', 'send-message']);
 
 const currentTab = ref('mood');
 
