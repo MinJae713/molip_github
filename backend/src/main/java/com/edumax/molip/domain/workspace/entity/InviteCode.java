@@ -38,4 +38,8 @@ public class InviteCode {
   @JoinColumn(name = "workspace_id", nullable = false)
   @OnDelete(action = OnDeleteAction.CASCADE)
   private Workspace workspace;
+
+  public boolean isExpired() {
+    return expiredAt.isBefore(LocalDateTime.now());
+  }
 }

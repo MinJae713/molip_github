@@ -48,6 +48,7 @@ import com.edumax.molip.domain.workspace.entity.InviteCode;
 import com.edumax.molip.domain.workspace.entity.Workspace;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import com.edumax.molip.domain.workspace.entity.WorkspaceRegister;
+import com.edumax.molip.domain.workspace.exception.ExpiredInviteCodeException;
 import com.edumax.molip.domain.workspace.exception.InviteCodeExistException;
 import com.edumax.molip.domain.workspace.exception.NoInviteCodeException;
 import com.edumax.molip.domain.workspace.exception.NoWorkspaceAppliedAtException;
@@ -411,9 +412,15 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     // 워스 가입 코드가 일치한 것으로 검색
     Member member = memberRepository.findById(memberId).orElseThrow(NoMemberException::new);
     Optional<InviteCode> inviteCode = inviteCodeRepository.findByIdentifyValue(searchQuery);
-    return inviteCode.isPresent()
-        ? findWorkspaceGeneral(inviteCode.orElse(null).getWorkspace(), member)
-        : null;
+    if (inviteCode.isPresent()) {
+      InviteCode currentInviteCode = inviteCode.orElse(null);
+      if (currentInviteCode.isExpired()) {
+        throw new ExpiredInviteCodeException();
+      }
+      return findWorkspaceGeneral(currentInviteCode.getWorkspace(), member);
+    } else {
+      return null;
+    }
   }
 
   @Override
