@@ -1,5 +1,6 @@
 package com.edumax.molip.domain.review.service;
 
+import com.edumax.molip.common.util.JacksonUtil;
 import com.edumax.molip.domain.chatting.service.ChattingService;
 import com.edumax.molip.domain.course.entity.Course;
 import com.edumax.molip.domain.course.entity.CourseLearnerAnalysis;
@@ -66,8 +67,18 @@ public class ReviewService {
   private int trainerFeverRate = 50; // 학생중 50% 이상이 열정이면 강사도 타임라인도 열정
   private int trainerEmptyRate = 50; // 학생중 50% 이상이 부재중이면 강사 타임라인도 부재중
 
+  public CourseLearnerSession getLearnerSessionAnalysis(Long sessionId, Long memberId) {
+    return courseLearnerSessionRepository
+        .findBySessionSessionIdAndMemberId(sessionId, memberId)
+        .orElse(null);
+  }
+
   public List<EmotionGraph> getEmotionGraph(Long sessionId, Long memberId) {
     return emotionGraphRepository.findBySessionIdAndMemberId(sessionId, memberId);
+  }
+
+  public LearnerAnalysis getLearnerAnalysis(Long sessionId) {
+    return learnerAnalysisRepository.findById(sessionId).orElse(null);
   }
 
   public AnalysisSignalMessage startAnalysis(String sessionId) {
@@ -384,6 +395,7 @@ public class ReviewService {
                 .avgAttendance(finalAvgAtt)
                 .avgConcentrate(finalAvgCon)
                 .avgQuizCorrect(0f)
+                .pauseTime(JacksonUtil.toJson(request.getPauseElementList()))
                 .build());
 
     List<EmotionGraph> finalEmotions =
