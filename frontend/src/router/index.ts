@@ -34,6 +34,8 @@ import LearnerWorkspace from "@/views/Learner/LearnerWorkspace.vue";
 import LearnerStatisticsView from "@/views/Learner/LearnerStatisticsView.vue";
 import LearnerReviewView from "@/views/Learner/LearnerReviewView.vue";
 
+import LearnerLiveSessionViewTest from "@/views/Learner/LearnerLiveSessionViewTest.vue";
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -178,6 +180,12 @@ const router = createRouter({
       path: "/live-session/:sessionId",
       name: "learnerLiveSession",
       component: LearnerLiveSessionView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/live-session/test",
+      name: "learnerLiveSessionTest",
+      component: LearnerLiveSessionViewTest,
       meta: { requiresAuth: true },
     },
     {

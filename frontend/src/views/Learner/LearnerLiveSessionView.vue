@@ -1,13 +1,71 @@
 <template>
     <div class="bg-slate-50 text-slate-900 h-screen flex flex-col overflow-hidden relative">
         <!-- Device Setup Modal -->
-        <DeviceSetupModal v-if="!isSetupComplete" @join="handleJoinSession" />
+        <DeviceSetupModal v-if="!isSetupComplete" :currentGaze="currentGaze" :rawGaze="lastRawGaze"
+            @join="handleJoinSession" @calibrate="handleCalibration" />
 
         <!-- INFO: 임시 연결 종료 버튼 -->
         <button @click="disconnectAll"
             class="absolute top-20 left-6 z-50 bg-red-600 text-white px-3 py-2 rounded-md shadow-lg text-sm font-bold hover:bg-red-700 transition-colors">
             🔌 연결 끊기 (TEST)
         </button>
+
+        <!-- INFO: Gaze Tracker 디버그 UI -->
+        <div
+            class="absolute top-36 left-6 z-50 bg-black/80 text-white p-4 rounded-lg shadow-xl text-xs space-y-2 pointer-events-none">
+            <h3 class="font-bold text-yellow-400 mb-2">👀 Gaze Tracker Status</h3>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+                <span class="text-slate-400">Looking At Monitor:</span>
+                <span :class="debugGazeStatus.isLookingAtMonitor ? 'text-green-400 font-bold' : 'text-red-400'">
+                    {{ debugGazeStatus.isLookingAtMonitor ? 'YES' : 'NO' }}
+                </span>
+
+                <span class="text-slate-400">Stable (No Move):</span>
+                <span :class="debugGazeStatus.isStable ? 'text-green-400' : 'text-yellow-400 font-bold'">
+                    {{ debugGazeStatus.isStable ? 'YES' : 'NO (!)' }}
+                </span>
+
+                <span class="text-slate-400">User Present:</span>
+                <span :class="!debugGazeStatus.isAbsent ? 'text-blue-400' : 'text-red-500 font-bold'">
+                    {{ !debugGazeStatus.isAbsent ? 'YES' : 'ABSENT' }}
+                </span>
+            </div>
+
+            <!-- 시선 시각화 플롯 -->
+            <div class="mt-3 border-t border-slate-700 pt-3">
+                <div class="text-[10px] text-slate-400 mb-1">Live Gaze Plot</div>
+                <div
+                    class="relative w-[140px] h-[100px] bg-slate-900 border border-slate-600 rounded overflow-hidden mx-auto">
+                    <!-- Monitor Area (Safe Zone) : x 0.2~0.8, y 0.1~0.9 -->
+                    <!-- Width: 60% (0.8-0.2), Left: 20% | Height: 80% (0.9-0.1), Top: 10% -->
+                    <div class="absolute border-2 border-dashed border-green-500/50"
+                        style="left: 20%; top: 10%; width: 60%; height: 80%;">
+                        <div class="absolute top-1 left-1 text-[8px] text-green-500/70">Monitor</div>
+                    </div>
+
+                    <!-- Center Crosshair -->
+                    <div class="absolute top-1/2 left-0 w-full h-[1px] bg-slate-700/50"></div>
+                    <div class="absolute left-1/2 top-0 h-full w-[1px] bg-slate-700/50"></div>
+
+                    <!-- Gaze Point -->
+                    <!-- Flip X coordinate because camera is mirrored? Usually webcam preview is mirrored. -->
+                    <!-- Let's assume raw coordinates: x:0 is left, x:1 is right. -->
+                    <div class="absolute w-2.5 h-2.5 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)] transition-all duration-75 ease-out transform -translate-x-1/2 -translate-y-1/2"
+                        :style="{
+                            left: `${currentGaze.x * 100}%`,
+                            top: `${currentGaze.y * 100}%`
+                        }">
+                    </div>
+                </div>
+                <div class="text-[9px] text-slate-500 text-center mt-1">
+                    X: {{ currentGaze.x.toFixed(2) }} / Y: {{ currentGaze.y.toFixed(2) }}
+                </div>
+            </div>
+
+            <div class="mt-2 text-[10px] text-slate-500 border-t border-slate-700 pt-1">
+                Last Update: {{ debugGazeStatus.timestamp }}
+            </div>
+        </div>
 
         <LiveSessionHeader sessionTitle="인공지능 윤리와 실제 실습" sessionSubtitle="디지털 비즈니스 전략 강의 (4주차)"
             :elapsedTime="elapsedTime" />
@@ -105,6 +163,17 @@ const currentEmotion = ref({
 let timerInterval: number | null = null;
 const isSetupComplete = ref(false);
 
+// 디버깅용 상태
+const debugGazeStatus = ref({
+    isLookingAtMonitor: false,
+    isStable: true,
+    isAbsent: false,
+    timestamp: '-'
+});
+
+const currentGaze = ref({ x: 0.5, y: 0.5 }); // [NEW] 실시간 시선 좌표
+const lastRawGaze = ref({ x: 0.5, y: 0.5 }); // Store raw gaze for calibration
+
 //================================================================================
 
 // MediaPipe
@@ -146,19 +215,16 @@ const connectWebSocket = () => {
             Authorization: `Bearer ${accessToken}`
         },
         reconnectDelay: 5000,
-        debug: (str) => {
-            // console.log('[STOMP Debug]', str);
-        },
+        debug: () => { }, // 디버그 로그 끄기
         onConnect: () => {
             console.log("[Learner Live] STOMP Connected! ✅");
-            console.log("[Learner Live] stompClient:", stompClient.value);
-            console.log("[Learner Live] stompClient.connected:", stompClient.value?.connected);
             isConnected.value = true;
 
             // 1. 분석 결과 구독 (memberId 포함)
             stompClient.value?.subscribe(`/topic/analysis/${sessionId}/${memberId.value}`, (res) => {
                 const result = JSON.parse(res.body);
                 console.log("[Learner Live] 분석 결과 수신:", result);
+
                 // 강의 시작 시간 수신 (강사가 녹화 시작 버튼 클릭 시)
                 if (result.startTime) {
                     handleLectureStartTime(result.startTime);
@@ -170,6 +236,7 @@ const connectWebSocket = () => {
                     console.log("[Learner Live] 집중도 데이터 수신:", result.concentrateValue);
                 }
             });
+
             // 2. 채팅/질문 구독
             stompClient.value?.subscribe(`/topic/chat-room/${sessionId}`, (res) => {
                 console.log('[Learner Live] Chat/QA Message:', res.body);
@@ -188,7 +255,7 @@ const connectWebSocket = () => {
                 isQuizModalOpen.value = true;
             });
 
-            // ✅ 4. 수업 시작 시간 구독 (강사가 브로드캐스트)
+            // 4. 수업 시작 시간 구독 (강사가 브로드캐스트)
             stompClient.value?.subscribe(`/topic/session/${sessionId}/start-time`, (res) => {
                 console.log('[Learner Live] Start Time Received:', res.body);
                 const data = JSON.parse(res.body);
@@ -216,7 +283,8 @@ const connectWebSocket = () => {
 const connectBinarySocket = () => {
     // 쿼리 파라미터로 토큰 전송
     const url = `wss://i14a309.p.ssafy.io/emotion/${sessionId}?member-id=${memberId.value}`;
-    console.log(`[Binary] Connecting to: ${url}`, 'memberId:', memberId.value);
+    console.log(`[Binary] Connecting to: ${url}`);
+
 
     try {
         binarySocket = new WebSocket(url);
@@ -350,37 +418,34 @@ const disconnectAll = () => {
 watch(
     () => videoStore.localStream,
     (newStream) => {
-        // ✅ 스트림이 없어지면 MediaPipe 중지
-        if (!newStream) {
+        if (newStream && isSetupComplete.value) {
+            startMediaPipe();
+        } else {
             stopMediaPipe();
         }
-        // ⚠️ 스트림이 생겼다고 자동 시작하지 않음! (강사 신호 대기)
-        // startMediaPipe()는 handleLectureStartTime()에서만 호출됨
     },
     { immediate: true }
 );
 
-// MediaPipe 실시간 분석 결과 처리
+// 집중도 분석결과 전송
+// 집중도 분석결과 전송
 const handleAnalysisResult = (focusData: GazeResult) => {
-    // ✅ 분석이 활성화되지 않았으면 전송하지 않음
-    if (!isAnalysisActive.value) {
-        return;
+    // 0. Update Last Raw Gaze (for calibration)
+    if (focusData.rawGaze) {
+        lastRawGaze.value = focusData.rawGaze;
     }
 
-    // ✅ 1초에 한 번만 전송 (Throttling)
-    const now = Date.now();
-    if (now - lastAnalysisTime.value < 1000) {
-        return;
-    }
-    lastAnalysisTime.value = now;
+    // 1. Update Gaze UI (Always update this for feedback - 30fps)
+    currentGaze.value = focusData.gaze;
 
-    // 동기화되지 않았으면 timeline 계산 불가
+    // Debug 상태 업데이트 (Refresh 30fps)
+    debugGazeStatus.value = {
+        isLookingAtMonitor: focusData.isLookingAtMonitor,
+        isStable: focusData.isStable,
+        isAbsent: focusData.isAbsent,
+        timestamp: new Date().toLocaleTimeString()
+    };
 
-    // 동기화되지 않았으면 timeline 계산 불가
-    if (!isSynced.value || !lectureStartTime.value) {
-        console.warn('[Analysis] 시간 동기화 대기 중...');
-        return;
-    }
     // Spring Boot로 전송할 데이터 포맷 매핑
     // timeline: string
     // focusOn: boolean (시선이 강의화면 내부)
@@ -405,11 +470,26 @@ const handleAnalysisResult = (focusData: GazeResult) => {
     console.log("세션 시작 시간: ", lectureStartTime.value, "현재 timeline:", currentDiff);
 
     console.log(`📤 [Learner] Sending analysis data to /app/concentrate/${sessionId}/${memberId.value}`, payload);
-    // @stomp/stompjs Client는 publish() 메서드 사용
+
     stompClient.value.publish({
         destination: `/app/concentrate/${sessionId}/${memberId.value}`,
         body: JSON.stringify(payload)
     });
+    console.log("집중도 데이터 전송", JSON.stringify(payload))
+
+}
+
+// 캘리브레이션 핸들러 (시선 추적 보정)
+const handleCalibration = (avgGaze?: { x: number, y: number }) => {
+    if (mediaPipeManager) {
+        // If averaged gaze is provided (from 3s intent), use it. Otherwise use last raw gaze.
+        const currentRaw = avgGaze || lastRawGaze.value;
+
+        // Calibrate: Map "Current/Averaged Raw Gaze" to "Center Target (0.5, 0.5)"
+        console.log("Creating Calibration Profile...", currentRaw);
+        mediaPipeManager.calibrate(0.5, 0.5, currentRaw.x, currentRaw.y);
+        alert("✅ 시선 중앙 보정이 완료되었습니다.");
+    }
 };
 
 //================================================================================

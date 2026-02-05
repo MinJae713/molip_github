@@ -54,8 +54,10 @@ export class MediaPipeManager {
 
     // 1. Initialize FaceMesh
     this.faceMesh = new FaceMesh({
-      locateFile: (file) =>
-        `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/${file}`,
+      locateFile: (file) => {
+        console.log(`[FaceMesh] Requesting file: ${file}`);
+        return `/mediapipe/face_mesh/${file}`;
+      },
     });
     this.faceMesh.setOptions({
       maxNumFaces: 1,
@@ -66,8 +68,10 @@ export class MediaPipeManager {
 
     // 2. Initialize Pose
     this.pose = new Pose({
-      locateFile: (file) =>
-        `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${file}`,
+      locateFile: (file) => {
+        console.log(`[Pose] Requesting file: ${file}`);
+        return `/mediapipe/pose/${file}`;
+      },
     });
     this.pose.setOptions({
       modelComplexity: 1,
@@ -90,8 +94,6 @@ export class MediaPipeManager {
       if (this.videoElement.paused || this.videoElement.ended) return;
 
       // Send to both models
-      // Note: This might be heavy. For optimization, we could alternate or run in parallel.
-      // running await sequentially for simplicity now.
       await this.faceMesh?.send({ image: this.videoElement });
       await this.pose?.send({ image: this.videoElement });
 
@@ -113,20 +115,21 @@ export class MediaPipeManager {
   private performAnalysis() {
     const now = Date.now();
 
-    // 1. Gaze & Behavior Analysis
+    // 1. Gaze & Behavior Analysis (Runs every frame)
     const faceLandmarks = this.lastFaceResults?.multiFaceLandmarks?.[0] || [];
     const poseLandmarks = this.lastPoseResults?.poseLandmarks || null;
 
-    // Note: modify gazeTracker.analyze to accept empty list for consistent return
-    // Analyze every frame for smoothing filters to work
     const result = this.gazeTracker.analyze(faceLandmarks, poseLandmarks);
 
     if (this.onAnalysisReady) {
       this.onAnalysisReady(result);
     }
 
-    // 2. Image Cropping (Throttle this one - heavy and for backend)
+    // 2. Image Cropping (Throttled to 1 second)
+    // Ensures it runs only once per second, regardless of detection status
     if (now - this.lastSentTime >= this.SEND_INTERVAL) {
+      this.lastSentTime = now; // Update timestamp immediately
+
       if (faceLandmarks && faceLandmarks.length > 0 && this.ctx) {
         this.processCrop(faceLandmarks);
       } else {
@@ -134,7 +137,6 @@ export class MediaPipeManager {
           this.onCropReady(this.whiteImageBuffer);
         }
       }
-      this.lastSentTime = now;
     }
   }
 

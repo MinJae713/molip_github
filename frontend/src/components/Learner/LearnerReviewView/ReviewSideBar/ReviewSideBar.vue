@@ -37,7 +37,10 @@
                 :quiz-list="quizList"
                 @update:quizList="(newList) => quizList = newList"
             />
-            <SidebarScript v-else-if="currentTab === 'script'" />
+            <SidebarScript v-else-if="currentTab === 'script'" 
+                :script-list="scriptData"
+                @jump-to-time="$emit('jump-to-time', $event)"
+            />
         </div>
 
         <!-- 3. 채팅창 -->
@@ -50,7 +53,10 @@
                  <div class="w-10 h-1 bg-slate-300 rounded-full group-hover:bg-indigo-500 transition-colors"></div>
             </div>
 
-            <SidebarChat />
+            <SidebarChat 
+                :qa-list="qaList || []"
+                @send-message="(...args) => $emit('send-message', ...args)"
+            />
         </div>
     </div>
 </template>
@@ -63,10 +69,19 @@ import SidebarScript from './SidebarScript.vue';
 import SidebarChat from './SidebarChat.vue';
 
 // Props 정의 (상위에서 데이터 받음)
+interface ScriptItem {
+    timeline: number; 
+    message: string;
+}
+
 const props = defineProps<{
     personalMoodData?: number[];
     classMoodData?: number[];
+    scriptData?: ScriptItem[];
+    qaList?: any[]; // Chat list is not needed for QnA only sidebar
 }>();
+
+const emit = defineEmits(['jump-to-time', 'send-message']);
 
 const currentTab = ref('mood');
 
