@@ -992,7 +992,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
           isCameraOn: true,
           isMicOn: true,
           concentrationScore: 50, // 초기 집중도 (백엔드에서 업데이트 예정)
-          status: "focus", // 초기 상태
+          status: "NORMAL", // 초기 상태
         });
 
         console.log(

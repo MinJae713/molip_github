@@ -315,11 +315,6 @@ const connectBinarySocket = () => {
 const handleCropReady = (arrayBuffer: ArrayBuffer) => {
     const socket = binarySocket;
 
-    // ✅ 분석이 활성화되지 않았으면 전송하지 않음
-    if (!isAnalysisActive.value) {
-        return;
-    }
-
     // 1. 소켓 및 권한 상태 확인
     if (!socket || socket.readyState !== WebSocket.OPEN || !isAuthorized.value) {
         return;
@@ -428,17 +423,23 @@ watch(
 );
 
 // 집중도 분석결과 전송
-// 집중도 분석결과 전송
 const handleAnalysisResult = (focusData: GazeResult) => {
-    // 0. Update Last Raw Gaze (for calibration)
+    // 0. Update Last Raw Gaze (for calibration) - Always update
     if (focusData.rawGaze) {
         lastRawGaze.value = focusData.rawGaze;
     }
 
-    // 1. Update Gaze UI (Always update this for feedback - 30fps)
+    // 1. Update Gaze UI (Always update this for feedback - 30fps for smooth calibration)
     currentGaze.value = focusData.gaze;
 
-    // Debug 상태 업데이트 (Refresh 30fps)
+    // ✅ 1초 Throttling: 이후 로직은 1초에 한 번만 실행
+    const now = Date.now();
+    if (now - lastAnalysisTime.value < 1000) {
+        return;
+    }
+    lastAnalysisTime.value = now;
+
+    // 2. Debug 상태 업데이트 (1초마다)
     debugGazeStatus.value = {
         isLookingAtMonitor: focusData.isLookingAtMonitor,
         isStable: focusData.isStable,
