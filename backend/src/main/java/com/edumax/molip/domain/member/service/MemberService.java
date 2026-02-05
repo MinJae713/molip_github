@@ -2,6 +2,7 @@ package com.edumax.molip.domain.member.service;
 
 import com.edumax.molip.domain.member.entity.Member;
 import com.edumax.molip.domain.member.exception.DuplicateEmailException;
+import com.edumax.molip.domain.member.exception.NoMemberException;
 import com.edumax.molip.domain.member.repository.MemberRepository;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,11 @@ public class MemberService {
   private Long refreshTokenExpirationDay;
 
   private String REFRESH_TOKEN_KEY_FORMAT = "jwt:refresh:%d";
+
+  public Member.Role getMemberRole(Long memberId) {
+    Member member = memberRepository.findById(memberId).orElseThrow(NoMemberException::new);
+    return member.getRole();
+  }
 
   public void updateRefreshToken(Long memberId, String refreshToken) {
     String redisKey = REFRESH_TOKEN_KEY_FORMAT.formatted(memberId);
