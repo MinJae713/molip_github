@@ -52,7 +52,7 @@ public class VoiceForwardHandler extends BinaryWebSocketHandler {
             handleSttResult(
                 new SttSaveEvent(
                     Long.parseLong((String) session.getAttributes().get("sessionId")),
-                    response.getText(),
+                    response.getText() == null ? "" : response.getText(),
                     response.getTimeline()));
             //            eventPublisher.publishEvent(
             //                new SttSaveEvent(

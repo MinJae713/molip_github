@@ -2,11 +2,13 @@ package com.edumax.molip.domain.review.controller;
 
 import com.edumax.molip.common.model.MemberUserDetails;
 import com.edumax.molip.domain.quiz.service.QuizService;
+import com.edumax.molip.domain.review.dto.response.ScriptResponse;
 import com.edumax.molip.domain.review.entity.EmotionGraph;
 import com.edumax.molip.domain.review.entity.TimelineElement;
 import com.edumax.molip.domain.review.service.ReviewService;
 import com.edumax.molip.domain.review.service.StorageService;
 import com.edumax.molip.domain.session.dto.request.EndAnalysisRequest;
+import com.edumax.molip.domain.session.dto.response.AnalysisSignalMessage;
 import com.edumax.molip.domain.session.dto.response.SessionDetailResponse;
 import com.edumax.molip.domain.session.handler.AnalysisManager;
 import com.edumax.molip.domain.session.service.SessionService;
@@ -111,8 +113,9 @@ public class ReviewController {
 
   @PostMapping("/start/analysis/{sessionId}")
   public ResponseEntity<Map<String, String>> startAnalysis(@PathVariable String sessionId) {
-    reviewService.startAnalysis(sessionId);
-    return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "분석 시작"));
+    AnalysisSignalMessage analysisSignalMessage = reviewService.startAnalysis(sessionId);
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(Map.of("message", "분석 시작", "startTime", analysisSignalMessage.startTime()));
   }
 
   @PostMapping("/end/analysis/{sessionId}")
@@ -199,4 +202,16 @@ public class ReviewController {
   }
 
   record EmotionGraphResponse(Integer index, String name, Float value) {}
+
+  @GetMapping("/script/{sessionId}")
+  public ResponseEntity<List<ScriptResponse>> getSessionScript(@PathVariable Long sessionId) {
+    List<ScriptResponse> scriptList = reviewService.getScripts(sessionId);
+    return ResponseEntity.status(HttpStatus.OK).body(scriptList);
+  }
+
+  @GetMapping("/script/{sessionId}/test")
+  public ResponseEntity<List<ScriptResponse>> getSessionScriptTest(@PathVariable Long sessionId) {
+    List<ScriptResponse> scriptList = reviewService.getScripts(1L);
+    return ResponseEntity.status(HttpStatus.OK).body(scriptList);
+  }
 }

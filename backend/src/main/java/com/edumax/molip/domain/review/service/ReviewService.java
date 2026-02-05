@@ -5,6 +5,7 @@ import com.edumax.molip.domain.course.entity.Course;
 import com.edumax.molip.domain.course.entity.CourseLearnerAnalysis;
 import com.edumax.molip.domain.course.repository.CourseLearnerAnalysisRepository;
 import com.edumax.molip.domain.course.repository.CourseRepository;
+import com.edumax.molip.domain.review.dto.response.ScriptResponse;
 import com.edumax.molip.domain.review.entity.EmotionGraph;
 import com.edumax.molip.domain.review.entity.LearnerAnalysis;
 import com.edumax.molip.domain.review.entity.TimelineElement;
@@ -69,7 +70,7 @@ public class ReviewService {
     return emotionGraphRepository.findBySessionIdAndMemberId(sessionId, memberId);
   }
 
-  public void startAnalysis(String sessionId) {
+  public AnalysisSignalMessage startAnalysis(String sessionId) {
     emotionSaveListener.startLecture(sessionId);
     AnalysisManager analysisManager = analysisManagerRegistry.getManager(sessionId);
     analysisManager.startScheduling(0, sessionId);
@@ -86,10 +87,10 @@ public class ReviewService {
         }
       }
     }
-    sendAnalysisMessage(memberIdList, sessionId);
+    return sendAnalysisMessage(memberIdList, sessionId);
   }
 
-  private void sendAnalysisMessage(List<String> memberIdList, String sessionId) {
+  private AnalysisSignalMessage sendAnalysisMessage(List<String> memberIdList, String sessionId) {
     AnalysisSignalMessage analysisSignalMessage =
         new AnalysisSignalMessage(LocalDateTime.now().toString());
     for (String memberId : memberIdList) {
@@ -97,6 +98,7 @@ public class ReviewService {
           "/topic/analysis/" + sessionId + "/" + memberId, analysisSignalMessage);
     }
     messagingTemplate.convertAndSend("/topic/analysis/" + sessionId, analysisSignalMessage);
+    return analysisSignalMessage;
   }
 
   private int getRestTime(List<PauseElement> pauseList) {
@@ -448,6 +450,12 @@ public class ReviewService {
   private class EmotionElement {
     int timeline;
     float[] emotionValueList;
+  }
+
+  public List<ScriptResponse> getScripts(Long sessionId) {
+    return scriptRepository.findAllBySessionId(sessionId).stream()
+        .map(script -> new ScriptResponse(script.getTimeline(), script.getMessage()))
+        .toList();
   }
 
   record ConcentrateElement(int timeline, boolean empty, float concentrateValue, boolean fever) {}
