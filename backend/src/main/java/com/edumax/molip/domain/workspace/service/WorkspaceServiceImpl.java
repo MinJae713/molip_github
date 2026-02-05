@@ -32,10 +32,12 @@ import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdRes
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberByIdResponse.FindWorkspaceMemberByIdCourse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceRegisterResponse;
-import com.edumax.molip.domain.workspace.dto.response.FindWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.InactiveWorkspaceMemberResponse;
 import com.edumax.molip.domain.workspace.dto.response.JoinWorkspaceResponse;
 import com.edumax.molip.domain.workspace.dto.response.UpdateWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.find_workspace_response.FindWorkspaceResponse;
+import com.edumax.molip.domain.workspace.dto.response.find_workspace_response.FindWorkspaceResponseAdmin;
+import com.edumax.molip.domain.workspace.dto.response.find_workspace_response.FindWorkspaceResponseGeneral;
 import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdLearnerResponse;
 import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdResponse;
 import com.edumax.molip.domain.workspace.dto.response.workspace_courses.FindWorkspaceCoursesByIdTrainerResponse;
@@ -91,33 +93,42 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   @Override
   public List<FindWorkspaceResponse> findWorkspaces(Long memberId) {
     List<Workspace> workspaces = workspaceRepository.findAll();
-    return workspaces.stream().map(workspace -> findWorkspace(workspace, memberId)).toList();
+    Member member = memberRepository.findById(memberId).orElseThrow(NoMemberException::new);
+    return member.getRole() == Member.Role.USER
+        ? findWorkspacesGeneral(workspaces, member)
+        : findWorkspacesAdmin(member);
+  }
+
+  private List<FindWorkspaceResponse> findWorkspacesGeneral(
+      List<Workspace> workspaces, Member member) {
+    List<FindWorkspaceResponse> result = new ArrayList<>();
+    workspaces.forEach(workspace -> result.add(findWorkspaceGeneral(workspace, member)));
+    return result;
+  }
+
+  private List<FindWorkspaceResponse> findWorkspacesAdmin(Member member) {
+    List<FindWorkspaceResponse> result = new ArrayList<>();
+    List<Workspace> workspaces = workspaceRepository.findByMember(member);
+    workspaces.forEach(workspace -> result.add(FindWorkspaceResponseAdmin.from(workspace)));
+    return result;
   }
 
   @Override
-  public FindWorkspaceResponse findWorkspaceById(Long workspaceId, Long memberId) {
+  public FindWorkspaceResponseGeneral findWorkspaceById(Long workspaceId, Long memberId) {
     Workspace workspace =
         workspaceRepository
             .findById(workspaceId)
             .orElseThrow(NoWorkspaceException::new); // GlobalExceptionHandler
-    return findWorkspace(workspace, memberId);
+    Member member = memberRepository.findById(memberId).orElseThrow(NoMemberException::new);
+    return findWorkspaceGeneral(workspace, member);
   }
 
-  private FindWorkspaceResponse findWorkspace(Workspace workspace, Long memberId) {
-    // 이 API를 관리자 쪽에서도 부르는가? - 그럼 로직 좀 바뀝니다
-    Member member = memberRepository.findById(memberId).orElseThrow(NoMemberException::new);
-    Long workspaceId = workspace.getWorkspaceId();
-    String name = workspace.getName();
-    String description = workspace.getDescription();
-    String logoUrl = workspace.getLogoUrl();
-    List<WorkspaceMember> workspaceMembers = workspace.getWorkspaceMembers();
-    List<Course> courses = workspace.getCourses();
-    Long workspaceMemberId = null;
-
+  private FindWorkspaceResponseGeneral findWorkspaceGeneral(Workspace workspace, Member member) {
     WorkspaceRegister workspaceRegister =
         workspaceRegisterRepository.findByMemberAndWorkspace(member, workspace).orElse(null);
     String myStatus = "미신청";
     WorkspaceMemberRole myRole = null;
+    Long workspaceMemberId = null;
     /**
      * - workspaceRegister가 없으면 아얘 신청한 이력이 없는 것으로 간주합니다!! - 워크스페이스에 들어갔다고 workspaceRegister 테이블에서
      * 삭제되지 않음 - PENDING, REJECTED면 null (WorkspaceMember가 아니기 때문임)
@@ -135,17 +146,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
       }
     }
 
-    return FindWorkspaceResponse.builder()
-        .workspaceId(workspaceId)
-        .name(name)
-        .logoUrl(logoUrl)
-        .description(description)
-        .memberCount(workspaceMembers.size())
-        .courseCount(courses.size())
-        .myStatus(myStatus)
-        .myRole(myRole)
-        .workspaceMemberId(workspaceMemberId)
-        .build();
+    return FindWorkspaceResponseGeneral.from(workspace, myStatus, myRole, workspaceMemberId);
   }
 
   @Override
@@ -389,8 +390,9 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   @Override
   public List<FindWorkspaceResponse> findMyWorkspaces(Long memberId) {
     Member member = memberRepository.findById(memberId).orElseThrow(NoMemberException::new);
+    List<FindWorkspaceResponse> result = new ArrayList<>();
     List<WorkspaceMember> workspaceMembers = workspaceMemberRepository.findByMember(member);
-    return workspaceMembers.stream()
+    workspaceMembers.stream()
         .sorted(
             new Comparator<WorkspaceMember>() {
               @Override
@@ -398,16 +400,19 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 return o2.getWorkspaceMemberId().compareTo(o1.getWorkspaceMemberId());
               }
             })
-        .map(workspaceMember -> findWorkspace(workspaceMember.getWorkspace(), memberId))
-        .toList();
+        .forEach(
+            workspaceMember ->
+                result.add(findWorkspaceGeneral(workspaceMember.getWorkspace(), member)));
+    return result;
   }
 
   @Override
-  public FindWorkspaceResponse searchWorkspaces(String searchQuery, Long memberId) {
+  public FindWorkspaceResponseGeneral searchWorkspaces(String searchQuery, Long memberId) {
     // 워스 가입 코드가 일치한 것으로 검색
+    Member member = memberRepository.findById(memberId).orElseThrow(NoMemberException::new);
     Optional<InviteCode> inviteCode = inviteCodeRepository.findByIdentifyValue(searchQuery);
     return inviteCode.isPresent()
-        ? findWorkspace(inviteCode.orElse(null).getWorkspace(), memberId)
+        ? findWorkspaceGeneral(inviteCode.orElse(null).getWorkspace(), member)
         : null;
   }
 
