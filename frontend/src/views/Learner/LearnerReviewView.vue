@@ -53,7 +53,7 @@ import SockJS from 'sockjs-client';
 
 // Mock Data Load & Processing
 // import apiResponse from '../../../mockupdata/mockup_data.json';
-import { fetchReviewData, fetchMoodData, fetchScriptData, type MockDataItem, type MoodGraphDataItem, type MockScriptDataItem } from '@/api/review';
+import { fetchReviewData, fetchMoodData, fetchScriptData, fetchChatData, type MockDataItem, type MoodGraphDataItem, type MockScriptDataItem, type ChatDataItem } from '@/api/review';
 
 // 라우터
 const route = useRoute();
@@ -329,6 +329,8 @@ async function loadReviewData(sessionId: string) {
              console.warn("[Review] Script data is empty or invalid structure", scriptData);
         }
 
+        const chatData = await fetchChatData(1, 2);
+        console.log("[Review] Chat Data:", chatData);
 
     } catch (error) {
         console.error("[Review] Failed to load review data:", error);
