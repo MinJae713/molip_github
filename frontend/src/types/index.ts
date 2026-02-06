@@ -166,6 +166,8 @@ export interface StatItem {
   title: string;
   unit: string;
   value: string | number;
+  iconBgClass?: string; // Icon background color class
+  iconColorClass?: string; // Icon color class
 }
 export interface WeeklyStat {
   label: string;
@@ -343,4 +345,28 @@ export interface CourseStudent {
   name: string;
   position: string;
   attandanceRate: string | number; // API returns string "0.43", flexibility for number
+}
+
+// ==========================================
+// Learner Statistics API Types
+// ==========================================
+
+export interface SessionRecordResponse {
+  sessionId: number;
+  learningTime: number; // 세션 학습 시간 (분)
+  concentrate: number; // 세션 몰입도
+  concentrateTotalAverage: number; // 세션 몰입도 전체 평균
+  title: string; // 세션명
+  date: string; // 세션 날짜 (YYYY-MM-DD or date string)
+  isAttendance: boolean; // 출석 여부
+  exitQuiz: number; // 퇴실 퀴즈 점수
+  isProceed: boolean; // 세션 진행 여부
+}
+
+export interface CourseStatsResponse {
+  courseId: number; // 예시 데이터에 있음, 명세엔 없었으나 있는게 안전
+  totalLearningTime: number; // 강의 내 총 학습 시간 (분)
+  exitQuizAverage: number; // 퇴실 퀴즈 평균
+  concentrateMyAverage: number; // 평균 몰입도
+  sessionRecords: SessionRecordResponse[];
 }

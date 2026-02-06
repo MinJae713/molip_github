@@ -16,30 +16,33 @@
         </nav>
         <!-- Header -->
         <courseHeader />
+
+
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <!-- Left Column: Curriculum -->
             <div class="xl:col-span-2 space-y-6">
-                <div class="space-y-6">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                            <span class="material-symbols-outlined text-indigo-600">toc</span>
-                            커리큘럼
-                        </h2>
-                        <span
-                            class="text-sm text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm font-medium">
-                            총 {{ sessionStore.sessionsList.length }}개 세션
-                        </span>
-                    </div>
 
-                    <div class="space-y-4">
-                        <CurriculumList v-for="(session, index) in sessionStore.sessionsList" :key="session.sessionId"
-                            :session="session" :index="index" />
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-indigo-600">toc</span>
+                                커리큘럼
+                            </h2>
+                            <span
+                                class="text-sm text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm font-medium">
+                                총 {{ sessionStore.sessionsList.length }}개 세션
+                            </span>
+                        </div>
 
-                        <div v-if="sessionStore.sessionsList.length === 0" class="py-20 text-center text-slate-400">
-                            등록된 커리큘럼이 없습니다.
+                        <div class="space-y-4">
+                            <CurriculumList v-for="(session, index) in sessionStore.sessionsList" :key="session.sessionId"
+                                :session="session" :index="index" />
+
+                            <div v-if="sessionStore.sessionsList.length === 0" class="py-20 text-center text-slate-400">
+                                등록된 커리큘럼이 없습니다.
+                            </div>
                         </div>
                     </div>
-                </div>
             </div>
             <!-- Right Column: Sidebar Widgets -->
             <div class="space-y-6">
@@ -58,7 +61,7 @@ import { useRoute } from 'vue-router';
 import { useLearnerCourseStore } from '@/stores/learnerCourse';
 import { useLearnerSessionStore } from '@/stores/learnerSession';
 
-import { onMounted } from 'vue';
+import { onMounted, computed } from 'vue';
 
 const courseStore = useLearnerCourseStore()
 const sessionStore = useLearnerSessionStore()
@@ -73,7 +76,7 @@ onMounted(() => {
 
     }
     if ((courseId && typeof courseId === 'string') && (workspaceId && typeof workspaceId === 'string')) {
-        sessionStore.fetchSessionsList(courseId, workspaceId);
+        sessionStore.fetchSessionsList(courseId);
     }
 });
 

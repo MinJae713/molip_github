@@ -187,13 +187,13 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   // 워크스페이스 진입 시 상단 통계 요약정보 호출
   async function fetchWorkspaceStats(workspaceId: string | number) {
     try {
-      // json-server의 관계형 쿼리 활용: /workspaces/1/my-stats
-      const response = await api.get(`/workspaces/${workspaceId}/my-stats`);
-      const data = Array.isArray(response.data)
-        ? response.data[0]
-        : response.data;
+      const response = await api.get(`/workspaces/${workspaceId}/stats`);
+      const data = response.data;
+
+      // 타입 안전성을 위한 로깅 (선택)
+      // console.log("Workspace Stats:", data);
+
       workspaceStats.value = data || null;
-      console.log("통계 호출 성공!", workspaceStats.value);
     } catch (error) {
       console.error("통계 로드 실패:", error);
       workspaceStats.value = null;

@@ -33,7 +33,6 @@
             <div class="flex items-center gap-3 bg-white p-1 pr-2 rounded-lg border border-slate-200 shadow-sm">
                 <div class="pl-3 text-xs font-bold text-slate-400 uppercase tracking-wide">Course</div>
                 <select v-model="selectedCourseId" class="...">
-                    <option value="all">전체 코스 통계</option>
                     <option v-for="course in courseStore.myEnrolledCourses" :key="course.courseId"
                         :value="course.courseId">
                         {{ course.title }}
@@ -42,23 +41,34 @@
             </div>
         </div>
 
-        <!-- 통계 카드 그리드 (4열) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" v-if="learnerWorkspaceTopCardStats">
-            <StatCard v-for="stat in learnerWorkspaceTopCardStats.values" :key="stat.title" :data="stat" />
-        </div>
+        <!-- 통계 데이터가 있는 경우 -->
+        <template v-if="learnerWorkspaceTopCardStats">
+            <!-- 통계 카드 그리드 (3열) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <StatCard v-for="stat in learnerWorkspaceTopCardStats.values" :key="stat.title" :data="stat" />
+            </div>
 
-        <!-- 차트 영역 (2열) -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- 주간 학습 참여도 -->
-            <WeeklyLearningChart :weekly-data="learnerWeeklyStats" />
-            <!-- 세션별 집중도 트렌드 -->
-            <SessionConcentrationChart :stats="learnerSessionStats" :session_name="currentCourseName"
-                :is-all="selectedCourseId === 'all'" />
-        </div>
+            <!-- 차트 영역 (2열) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- 세션별 학습 시간 -->
+                <SessionTimeChart :stats="learnerWeeklyStats" />
+                <!-- 세션별 집중도 트렌드 -->
+                <SessionConcentrationChart :stats="learnerSessionStats" :session_name="currentCourseName" />
+            </div>
 
-        <!-- 상세 리포트 테이블 영역 -->
-        <div class="mt-6" v-if="selectedCourseId !== 'all'">
-            <SessionReportTable :reports="learnerSessionReports?.sessions" :course-name="currentCourseName" />
+            <!-- 상세 리포트 테이블 영역 -->
+            <div class="mt-6">
+                <SessionReportTable :reports="learnerSessionReports?.sessions || []" :course-name="currentCourseName" />
+            </div>
+        </template>
+
+        <!-- 데이터가 없는 경우 (Empty State) -->
+        <div v-else class="flex flex-col items-center justify-center py-32 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center">
+            <div class="bg-white p-4 rounded-full shadow-sm mb-4">
+                <span class="material-symbols-outlined text-4xl text-slate-300">bar_chart</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1">표시할 학습 통계가 없습니다</h3>
+            <p class="text-slate-500 text-sm max-w-md">아직 학습 데이터가 집계되지 않았거나, 수강 중인 강의가 없습니다.<br>세션에 참여하여 나만의 학습 리포트를 만들어보세요!</p>
         </div>
     </div>
 </template>
@@ -75,7 +85,7 @@ import { storeToRefs } from 'pinia';
 
 // 컴포넌트 임포트
 import StatCard from '@/components/common/CommonComponents/StatCard.vue';
-import WeeklyLearningChart from '@/components/Learner/LearnerStatisticsView/WeeklyLearningChart.vue';
+import SessionTimeChart from '@/components/Learner/LearnerStatisticsView/SessionTimeChart.vue';
 import SessionConcentrationChart from '@/components/Learner/LearnerStatisticsView/SessionConcentrationChart.vue';
 import SessionReportTable from '@/components/Learner/LearnerStatisticsView/SessionReportTable.vue';
 
@@ -98,52 +108,61 @@ const {
 
 // 현재 선택된 코스 이름 찾기 (Computed)
 const currentCourseName = computed(() => {
-    if (selectedCourseId.value === 'all') return '전체 강의';
-
     const course = courseStore.myEnrolledCourses.find(
         c => c.courseId == selectedCourseId.value
     );
-    return course ? course.title : '알 수 없는 강의';
+    return course ? course.title : '선택된 강의 없음';
 });
 
 // 통합 데이터 로드 함수
-const loadStatistics = async (workspaceId: string, courseId: string | number, userId: string | number) => {
-    await Promise.all([
-        statsStore.fetchLearnerWorkspaceTopCardStats(workspaceId, courseId, userId),
-        statsStore.fetchLearnerWeeklyStats(workspaceId, courseId, userId),
-        statsStore.fetchLearnerSessionStats(workspaceId, courseId, userId),
-        statsStore.fetchLearnerSessionReports(workspaceId, courseId, userId)
-    ]);
+const loadStatistics = async (courseId: string | number) => {
+    // Single API call now
+    await statsStore.fetchCourseStats(courseId);
 };
 
 onMounted(async () => {
     const workspaceId = route.params.id as string;
     const userId = userStore.user?.memberId;
 
-    if (workspaceId && userId) {
-        // 초기 로딩
-        await loadStatistics(workspaceId, selectedCourseId.value, userId);
-    }
-
-    // 코스 목록 로드
-    await courseStore.fetchMyEnrolledCourses();
-
-    // 코스 선택 변경 감지 및 데이터 리로드
-    watch(selectedCourseId, async (newId) => {
-        if (workspaceId && userId) {
-            await loadStatistics(workspaceId, newId, userId);
-        }
-    });
-
-    // 워크스페이스 정보가 없을 경우 fetch
+    // 1. 워크스페이스 정보가 없을 경우 fetch
     if (workspaceStore.myWorkspaces.length === 0) {
         await workspaceStore.fetchMyWorkspaces();
     }
+    
+    // 2. 코스 목록 로드
+    if (workspaceId) {
+        await courseStore.fetchMyEnrolledCourses(workspaceId);
+    }
+    
+    // 3. 초기 코스 선택 (목록이 있으면 첫 번째 코스 선택)
+    if (courseStore.myEnrolledCourses.length > 0) {
+         // 이미 선택된 값이 유효한 코스인지 확인
+        const isValid = courseStore.myEnrolledCourses.some(c => c.courseId == selectedCourseId.value);
+        
+        if (!isValid || selectedCourseId.value === 'all') {
+             selectedCourseId.value = courseStore.myEnrolledCourses[0].courseId;
+        }
+    }
+
+    // 4. 통계 로드
+    if (userId && selectedCourseId.value !== 'all') {
+        await loadStatistics(selectedCourseId.value);
+    }
+
+    // 코스 선택 변경 감지 및 데이터 리로드
+    watch(selectedCourseId, async (newId) => {
+        if (newId && newId !== 'all') {
+            await loadStatistics(newId);
+        }
+    });
+
 });
+
 
 // 현재 route에 따라 home 경로 결정
 const homeRoute = computed(() => {
-    const isTrainer = route.name?.toString().includes('Trainer');
+    const routeName = route.name?.toString() || '';
+    const isTrainer = routeName.includes('Trainer');
     return {
         name: isTrainer ? 'workspaceTrainer' : 'workspaceLearner',
         params: { id: workspaceStore.currentWorkspace?.workspaceId || route.params.id }

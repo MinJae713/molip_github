@@ -56,14 +56,18 @@
 
                     <div class="h-8"></div> <!-- 공간 확보용 -->
 
-                    <button v-if="courseStatus === '수강중'" @click.stop="$emit('enter-course', course.courseId)"
-                        class="size-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors cursor-pointer mt-2">
-                        <span class="material-symbols-outlined">
+
+                </div>
+                <div v-if="courseStatus === '수강중'" class="flex flex-col items-stretch gap-2">
+                    <button @click.stop="$emit('enter-course', course.courseId)"
+                        class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-sm font-bold rounded-lg border border-indigo-100 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer">
+                        <span class="material-symbols-outlined text-[18px]">
                             {{ progressRate > 0 ? 'resume' : 'play_arrow' }}
                         </span>
+                        강의실 입장
                     </button>
                 </div>
-                <div v-if="courseStatus === '신청가능'" class="flex flex-col items-stretch gap-2">
+                <div v-else-if="courseStatus === '신청가능'" class="flex flex-col items-stretch gap-2">
                     <button 
                         @click.stop="handleEnrollClick" 
                         :disabled="isSubmitting"
@@ -87,11 +91,7 @@
                         검토 중...
                     </span>
                 </div>
-                <button v-else @click="$emit('open-curriculum', course.courseId)"
-                    class="px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 hover:border-indigo-200 transition-all flex items-center gap-1.5">
-                    <span class="material-symbols-outlined text-[16px]">menu_book</span>
-                    커리큘럼 확인
-                </button>
+
             </div>
         </div>
     </article>
