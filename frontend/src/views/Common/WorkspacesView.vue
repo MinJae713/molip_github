@@ -1,63 +1,76 @@
 <template>
     <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
-        <div class="mb-12">
-            <h1 class="text-3xl font-bold text-slate-900 mb-3">내 워크스페이스</h1>
-            <p class="text-slate-500 mb-8 text-lg">
-                초대 코드를 입력해 워크스페이스에 참여하거나, 참여한 워크스페이스로 이동하세요.
-            </p>
-
-            <form @submit.prevent="handleSearch" class="relative max-w-3xl shadow-lg rounded-xl">
-                <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                    <span class="material-symbols-outlined text-indigo-600 text-2xl">search</span>
-                </div>
-                <input v-model="searchQuery" type="text" @click="handleSearch"
-                    class="block w-full pl-14 pr-24 py-5 bg-white border-0 ring-1 ring-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-600 text-lg shadow-sm cursor-pointer"
-                    placeholder="워크스페이스 이름 또는 초대 코드를 입력하세요" />
-                <div class="absolute inset-y-0 right-2 flex items-center">
-                    <button type="submit" :disabled="isLoading"
-                        class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white px-6 py-2.5 rounded-lg font-bold text-base transition-colors">
-                        검색
-                    </button>
-                </div>
-            </form>
-        </div>
-        <div v-if="isLoading" class="flex justify-center py-20">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <!-- 관리자 뷰 -->
+        <div v-if="isAdmin">
+            <AdminWorkspaceList />
         </div>
 
-        <div v-else-if="workspaceStore.myWorkspaces.length === 0"
-            class="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-200">
-            <span class="material-symbols-outlined text-6xl text-slate-300 mb-4">folder_off</span>
-            <p class="text-slate-500 text-lg font-medium">참여 중인 워크스페이스가 없습니다.</p>
-            <p class="text-slate-400 text-sm mt-1">위 검색창을 통해 새로운 워크스페이스를 찾아보세요.</p>
-        </div>
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <WorkspaceCard v-for="workspace in workspaceStore.myWorkspaces" :key="workspace.workspaceId"
-                :workspace="workspace" @enter="handleEnter" />
-        </div>
+        <!-- 학습자/강사 뷰 -->
+        <div v-else>
+            <div class="mb-12">
+                <h1 class="text-3xl font-bold text-slate-900 mb-3">내 워크스페이스</h1>
+                <p class="text-slate-500 mb-8 text-lg">
+                    초대 코드를 입력해 워크스페이스에 참여하거나, 참여한 워크스페이스로 이동하세요.
+                </p>
 
-        <!-- 검색 모달 -->
-        <WorkspaceSearchModal :is-open="isSearchModalOpen" :initial-query="searchQuery" @close="closeSearchModal"
-            @enter="handleEnter" />
+                <form @submit.prevent="handleSearch" class="relative max-w-3xl shadow-lg rounded-xl">
+                    <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                        <span class="material-symbols-outlined text-indigo-600 text-2xl">search</span>
+                    </div>
+                    <input v-model="searchQuery" type="text" @click="handleSearch"
+                        class="block w-full pl-14 pr-24 py-5 bg-white border-0 ring-1 ring-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-600 text-lg shadow-sm cursor-pointer"
+                        placeholder="워크스페이스 이름 또는 초대 코드를 입력하세요" />
+                    <div class="absolute inset-y-0 right-2 flex items-center">
+                        <button type="submit" :disabled="isLoading"
+                            class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white px-6 py-2.5 rounded-lg font-bold text-base transition-colors">
+                            검색
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div v-if="isLoading" class="flex justify-center py-20">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            </div>
+
+            <div v-else-if="workspaceStore.myWorkspaces.length === 0"
+                class="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-200">
+                <span class="material-symbols-outlined text-6xl text-slate-300 mb-4">folder_off</span>
+                <p class="text-slate-500 text-lg font-medium">참여 중인 워크스페이스가 없습니다.</p>
+                <p class="text-slate-400 text-sm mt-1">위 검색창을 통해 새로운 워크스페이스를 찾아보세요.</p>
+            </div>
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <WorkspaceCard v-for="workspace in workspaceStore.myWorkspaces" :key="workspace.workspaceId"
+                    :workspace="workspace" @enter="handleEnter" />
+            </div>
+
+            <!-- 검색 모달 -->
+            <WorkspaceSearchModal :is-open="isSearchModalOpen" :initial-query="searchQuery" @close="closeSearchModal"
+                @enter="handleEnter" />
+        </div>
     </main>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 // import api from '@/api'; // Removed
 import { useWorkspaceStore } from '@/stores/workspace'; // Added
+import { useUserStore } from '@/stores/user';
 import WorkspaceCard from '@/components/common/WorkspacesView/WorkspaceCard.vue';
 import WorkspaceSearchModal from '@/components/common/WorkspacesView/WorkspaceSearchModal.vue';
+import AdminWorkspaceList from '@/components/common/WorkspacesView/AdminWorkspaceList.vue';
 
 import type { Workspace } from '@/types';
 
 const router = useRouter();
 const workspaceStore = useWorkspaceStore(); // Added
+const userStore = useUserStore();
 // const myWorkspaces = ref<Workspace[]>([]); // Removed local ref
 const searchQuery = ref('');
 const isLoading = ref(false);
 const isSearchModalOpen = ref(false);
+
+const isAdmin = computed(() => userStore.user.role === 'ADMIN');
 
 // 2. 데이터 호출 로직 (AJAX) - 전체 목록 로드
 const fetchMyWorkspaces = async () => {
@@ -94,8 +107,17 @@ const handleEnter = (id: string | number, role?: "TRAINER" | "LEARNER" | undefin
     }
 };
 
-onMounted(() => {
-    fetchMyWorkspaces();
+onMounted(async () => {
+    // 유저 정보가 없으면 로드 시도
+    if (!userStore.user.memberId) {
+        await userStore.fetchUserInfo();
+    }
+    
+    // 관리자가 아닐 때만 '내 워크스페이스' 목록 호출
+    // (관리자인 경우 AdminWorkspaceList 컴포넌트 내부에서 전체 목록을 호출함)
+    if (!isAdmin.value) {
+        fetchMyWorkspaces();
+    }
 });
 </script>
 

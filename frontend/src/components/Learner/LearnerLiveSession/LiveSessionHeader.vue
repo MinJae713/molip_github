@@ -7,9 +7,9 @@
             </div>
             <div class="flex flex-col">
                 <h2 class="font-bold text-slate-800 text-sm leading-tight">
-                    {{ sessionTitle }}
+                    {{ sessionTitle || '강의 제목 로딩 중...' }}
                 </h2>
-                <p class="text-xs text-slate-500">{{ sessionSubtitle }}</p>
+                <p class="text-xs text-slate-500">{{ sessionSubtitle || '세션 정보 로딩 중...' }}</p>
             </div>
         </div>
 
@@ -22,7 +22,7 @@
             <div class="flex items-center gap-3 pl-4 border-l border-slate-200">
                 <div class="flex flex-col items-end">
                     <span class="text-[10px] font-bold text-slate-400 leading-none mb-0.5">LEARNER</span>
-                    <span class="text-xs font-bold text-slate-700 uppercase">Kim SSAFY</span>
+                    <span class="text-xs font-bold text-slate-700 uppercase">{{ userName }}</span>
                 </div>
                 <div class="size-8 rounded-full border-2 border-indigo-100 overflow-hidden shadow-sm">
                     <img class="size-full object-cover"
@@ -35,9 +35,10 @@
 
 <script setup lang="ts">
 defineProps<{
-    sessionTitle: string;
+    sessionTitle: string | null;
     sessionSubtitle: string;
     elapsedTime: number;
+    userName: string;
 }>();
 
 const formatTime = (seconds: number) => {

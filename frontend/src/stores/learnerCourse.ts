@@ -2,7 +2,12 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 
 import api from "@/api";
-import type { LearnerCourse, Material, ZzimCourse, WorkspaceStats } from "@/types";
+import type {
+  LearnerCourse,
+  Material,
+  ZzimCourse,
+  WorkspaceStats,
+} from "@/types";
 
 // 이 스토어는 수강생(Learner)이 수강 중인 코스를 관리하는 역할에 집중
 // 강사가 관리하는 코스 정보는 `stores/trainerCourse.ts`를 사용
@@ -27,6 +32,8 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
     workspaceId: string | number,
     forceRefresh = false,
   ) {
+    if (!workspaceId) return;
+
     if (
       !forceRefresh &&
       lastWorkspaceId.value === workspaceId &&
@@ -55,9 +62,11 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
     isLoading.value = true;
     try {
       const response = await api.get(`/courses/me`, {
-        params: { workspaceId }
+        params: { workspaceId },
       });
-      myEnrolledCourses.value = Array.isArray(response.data) ? response.data : [];
+      myEnrolledCourses.value = Array.isArray(response.data)
+        ? response.data
+        : [];
       console.log("[Learner] 내 수강 강의 로드 성공:", myEnrolledCourses.value);
     } catch (error) {
       console.error("[Learner] 내 수강 강의 로드 실패:", error);
@@ -91,7 +100,10 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
     try {
       const response = await api.get(`/courses/${workspaceId}/certificated`);
       myCertificatedCourses.value = response.data;
-      console.log("[Learner] 수료 강의 로드 성공:", myCertificatedCourses.value);
+      console.log(
+        "[Learner] 수료 강의 로드 성공:",
+        myCertificatedCourses.value,
+      );
     } catch (error) {
       console.error("[Learner] 수료 강의 로드 실패:", error);
       myCertificatedCourses.value = [];
@@ -110,7 +122,7 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
     try {
       const response = await api.post(`/courses/${workspaceId}/zzim`, {
         courseId: Number(courseId),
-        isZzim: !isCurrentlyLiked
+        isZzim: !isCurrentlyLiked,
       });
 
       if (response.data.apiResult) {
@@ -118,14 +130,16 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
         await fetchLikeCourses(workspaceId);
 
         const updateList = (list: any[]) => {
-          const item = list.find(c => String(c.courseId) === String(courseId));
+          const item = list.find(
+            (c) => String(c.courseId) === String(courseId),
+          );
           if (item) item.isLiked = !isCurrentlyLiked;
         };
 
         updateList(workspaceCourses.value);
         updateList(myEnrolledCourses.value);
 
-        console.log(`[Learner] 찜 ${!isCurrentlyLiked ? '등록' : '해제'} 성공`);
+        console.log(`[Learner] 찜 ${!isCurrentlyLiked ? "등록" : "해제"} 성공`);
         return true; // ★ 성공 반환
       }
       return false; // apiResult가 false인 경우
@@ -136,8 +150,11 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
     }
   }
 
-  // [C] 강의 수강 신청
-  async function enrollCourse(courseId: string | number, workspaceId: string | number) {
+  // 강의 수강 신청
+  async function enrollCourse(
+    courseId: string | number,
+    workspaceId: string | number,
+  ) {
     isLoading.value = true;
     try {
       const response = await api.post(`/courses/${courseId}/apply`);
@@ -148,15 +165,26 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
         await fetchCoursesByWorkspace(workspaceId, true);
         await fetchLikeCourses(workspaceId); // 찜 목록 갱신 (상태 변경 반영)
       }
-      return { success: true, status: 'ok' };
+      return { success: true, status: "ok" };
     } catch (error: any) {
       console.error("[Learner] 수강 신청 실패:", error);
       // 이미 신청된 경우 (백엔드 에러 메시지나 코드로 식별)
       // 여기서는 에러 메시지에 '이미' 또는 409 상태코드를 체크한다고 가정
-      if (error.response?.status === 409 || error.response?.data?.message?.includes('이미')) {
-        return { success: false, status: 'already_applied', message: error.response?.data?.message };
+      if (
+        error.response?.status === 409 ||
+        error.response?.data?.message?.includes("이미")
+      ) {
+        return {
+          success: false,
+          status: "already_applied",
+          message: error.response?.data?.message,
+        };
       }
-      return { success: false, status: 'error', message: '수강 신청 중 오류가 발생했습니다.' };
+      return {
+        success: false,
+        status: "error",
+        message: "수강 신청 중 오류가 발생했습니다.",
+      };
     } finally {
       isLoading.value = false;
     }

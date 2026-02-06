@@ -62,6 +62,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useWorkspaceAdminStore } from '@/stores/workspaceAdmin';
 import JoinRequestTable from '@/components/Admin/JoinRequestView/JoinRequestTable.vue';
+import type { JoinRequest } from '@/types';
 
 const route = useRoute();
 const adminStore = useWorkspaceAdminStore();
@@ -79,7 +80,7 @@ const statusStyles = {
 const columnConfigs: Record<string, any[]> = {
   PENDING: [{ key: 'info', label: '신청자 정보' }, { key: 'applied_at', label: '신청일', align: 'center' }, { key: 'status', label: '상태', align: 'center' }, { key: 'manage', label: '관리', align: 'center' }],
   APPROVE: [{ key: 'info', label: '신청자 정보' }, { key: 'applied_at', label: '신청일', align: 'center' }, { key: 'approved_at', label: '승인 완료일', align: 'center' }, { key: 'status', label: '상태', align: 'center' }],
-  REJECTED: [{ key: 'info', label: '신청자 정보' }, { key: 'applied_at', label: '신청일', align: 'center' }, { key: 'rejected_at', label: '반려일', align: 'center' }, { key: 'reject_reason', label: '반려 사유', align: 'center' }, { key: 'status', label: '상태', align: 'center' }]
+  REJECTED: [{ key: 'info', label: '신청자 정보' }, { key: 'applied_at', label: '신청일', align: 'center' }, { key: 'rejected_at', label: '반려일', align: 'center' }, { key: 'status', label: '상태', align: 'center' }, { key: 'manage', label: '관리', align: 'center' }]
 };
 
 // [TypeScript 해결] undefined 방지를 위해 ?? [] 추가
@@ -103,16 +104,16 @@ const pendingCount = computed(() => adminStore.joinRequests.filter(r => r.status
 const getCountByStatus = (status: string) => adminStore.joinRequests.filter(r => r.status === status).length;
 
 // [에러 해결] 이벤트 핸들러 추가
-const handleApprove = async (registerId: number) => {
-  if (confirm('이 신청자를 승인하시겠습니까?')) {
+const handleApprove = async (req: JoinRequest) => {
+  if (confirm(`${req.name}님을 승인하시겠습니까?`)) {
      const workspaceId = Number(route.params.id);
-     await adminStore.updateJoinRequestStatus(workspaceId, registerId, 'APPROVE');
+     await adminStore.updateJoinRequestStatus(workspaceId, req.workspaceRegisterId, 'APPROVE');
   }
 };
-const handleReject = async (registerId: number) => {
-  if (confirm('이 신청자를 반려하시겠습니까?')) {
+const handleReject = async (req: JoinRequest) => {
+  if (confirm(`${req.name}님을 반려하시겠습니까?`)) {
      const workspaceId = Number(route.params.id);
-     await adminStore.updateJoinRequestStatus(workspaceId, registerId, 'REJECTED');
+     await adminStore.updateJoinRequestStatus(workspaceId, req.workspaceRegisterId, 'REJECTED');
   }
 };
 </script>

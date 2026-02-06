@@ -13,7 +13,11 @@ export interface Participant {
   isCameraOn: boolean;
   isMicOn: boolean;
   concentrationScore: number; // 0 ~ 100
-  status: "focus" | "distracted" | "away"; // 집중, 주의, 부재
+  status:
+    | "EMPTY" // 자리비움
+    | "FEVER" // 집중
+    | "NORMAL"; // 일반
+  isVideoStreamReady: boolean; // Janus 스트림 준비 완료 여부
 }
 
 // 자누스

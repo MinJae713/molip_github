@@ -166,6 +166,11 @@ const router = createRouter({
           name: "workspaceTrainerCourseDetail",
           component: TrainerCourseView,
         },
+        {
+          path: "stats",
+          name: "workspaceTrainerStatistics",
+          component: () => import("@/views/Trainer/TrainerStatisticsView.vue"),
+        },
       ],
     },
     // 기존 라우트

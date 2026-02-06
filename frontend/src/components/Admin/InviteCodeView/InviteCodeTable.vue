@@ -11,7 +11,15 @@
       </tr>
     </thead>
     <tbody class="divide-y divide-slate-50">
-      <tr v-for="(item, index) in codes" :key="item.joinCodeId" class="hover:bg-slate-50/30 transition-colors group">
+      <tr v-if="codes.length === 0">
+        <td colspan="6" class="p-12 text-center text-slate-400">
+            <div class="flex flex-col items-center justify-center">
+                <span class="material-symbols-outlined text-5xl text-slate-200 mb-3">folder_off</span>
+                <p class="text-sm font-medium">발급된 초대코드가 없습니다.</p>
+            </div>
+        </td>
+      </tr>
+      <tr v-else v-for="(item, index) in codes" :key="item.joinCodeId" class="hover:bg-slate-50/30 transition-colors group">
         <!-- 인덱스 -->
         <td class="p-4 text-center text-sm text-slate-500">
           {{ index + 1 }}
@@ -25,7 +33,16 @@
             </div>
             <div class="flex flex-col">
               <span class="text-sm font-black text-slate-900 leading-tight">{{ item.joinCodeName }}</span>
-              <span class="text-[11px] font-bold text-slate-400">{{ item.identifyValue }}</span>
+              <button 
+                @click.stop="copyCode(item.joinCodeId, item.identifyValue)" 
+                class="group/copy flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-indigo-500 transition-colors text-left"
+                title="클릭하여 복사"
+              >
+                  <span>{{ item.identifyValue }}</span>
+                  <span class="material-symbols-outlined text-[12px] opacity-0 group-hover/copy:opacity-100 transition-opacity" :class="{ 'opacity-100 text-emerald-500': copiedId === item.joinCodeId }">
+                      {{ copiedId === item.joinCodeId ? 'check' : 'content_copy' }}
+                  </span>
+              </button>
             </div>
           </div>
         </td>
@@ -59,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 import type { CodeItem } from '@/types'; // 공용 타입 정의
 
 const props = defineProps<{
@@ -69,6 +86,20 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'delete', joinCodeId: number, joinCodeName: string): void;
 }>();
+
+const copiedId = ref<number | null>(null);
+
+const copyCode = async (id: number, code: string) => {
+  try {
+    await navigator.clipboard.writeText(code);
+    copiedId.value = id;
+    setTimeout(() => {
+        if (copiedId.value === id) copiedId.value = null;
+    }, 2000);
+  } catch (err) {
+    console.error('Copy failed', err);
+  }
+};
 
 // 날짜 포맷팅 (YYYY-MM-DD HH:mm:ss)
 const formatDate = (dateStr?: string, forceEndOfDay: boolean = false) => {

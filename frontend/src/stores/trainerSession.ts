@@ -34,12 +34,7 @@ export const useTrainerSessionStore = defineStore("trainerSession", () => {
   ) {
     isLoading.value = true;
     try {
-      const response = await api.get(
-        `/workspaces/${workspaceId}/me/courses?role=TRAINER`,
-      );
-      // Note: This API seems to return courses, not sessions?
-      // Checking user intent from original code: it was `managedSessions.value = response.data`.
-      // If the API returns sessions, we map them.
+      const response = await api.get(`/session?courseId=${courseId}`);
       managedSessions.value = Array.isArray(response.data)
         ? response.data.map(mapSession)
         : [];
@@ -55,7 +50,7 @@ export const useTrainerSessionStore = defineStore("trainerSession", () => {
   async function fetchSessionDetail(sessionId: string | number) {
     isLoading.value = true;
     try {
-      const response = await api.get(`/sessions/${sessionId}`);
+      const response = await api.get(`/session/${sessionId}/simple`);
       currentManagedSession.value = mapSession(response.data);
     } catch (error) {
       console.error("세션 상세 로드 실패:", error);

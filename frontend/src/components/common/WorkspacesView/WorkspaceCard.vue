@@ -4,8 +4,10 @@
             <div class="flex items-center gap-4">
                 <div
                     :class="['size-14 rounded-lg border flex items-center justify-center overflow-hidden transition-colors', theme.bg, theme.border]">
-                    <img v-if="workspace.logoUrl" :src="workspace.logoUrl" :alt="workspace.name"
-                        class="w-full h-full object-cover" />
+                    <img v-if="workspace.logoUrl" :src="workspace.logoUrl" :alt="workspace.name" class="w-full h-full object-cover" />
+                    <span v-else :class="['text-xl font-bold', theme.icon]">
+                        {{ (workspace.name || '?').substring(0, 1).toUpperCase() }}
+                    </span>
                 </div>
                 <div>
                     <h3 class="font-bold text-lg text-slate-900 group-hover:text-indigo-600 transition-colors">

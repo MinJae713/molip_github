@@ -21,7 +21,7 @@ const modalTitle = computed(() => {
 
 const handleConfirm = () => {
   // 부모에게 선택된 ID들과 변경할 역할을 보냄
-  const ids = props.selectedMembers.map(m => m.id);
+  const ids = props.selectedMembers.map(m => m.workspaceMemberId);
   emit('confirm', { ids, role: selectedRole.value });
 };
 </script>
@@ -41,7 +41,7 @@ const handleConfirm = () => {
       </p>
 
       <div class="space-y-3">
-        <label v-for="role in ['Admin', 'Instructor', 'Learner']" :key="role" 
+        <label v-for="role in ['Trainer', 'Learner']" :key="role" 
                class="flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-all"
                :class="selectedRole === role ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-100 hover:bg-slate-50'">
           <div class="flex items-center gap-3">

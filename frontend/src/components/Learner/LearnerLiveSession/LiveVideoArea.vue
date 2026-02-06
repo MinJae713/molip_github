@@ -81,13 +81,14 @@ const pipVideoRef = ref<HTMLVideoElement | null>(null);
 watch(
     () => props.mainStream,
     async (newStream) => {
-        await nextTick();
-        console.log("[LiveVideoArea] MainStream Watcher Triggered. Stream:", newStream?.id, "VideoRef:", !!mainVideoRef.value);
-        if (mainVideoRef.value) {
-            mainVideoRef.value.srcObject = newStream;
-            if (newStream) console.log("[LiveVideoArea] Assigned mainStream to video element");
-        } else {
-            console.warn("[LiveVideoArea] Video element ref is missing!");
+        try {
+            await nextTick();
+            if (mainVideoRef.value) {
+                mainVideoRef.value.srcObject = newStream;
+                if (newStream) console.log("[LiveVideoArea] Assigned mainStream to video element:", newStream.id);
+            }
+        } catch (err) {
+            console.error("[LiveVideoArea] Error in mainStream watcher:", err);
         }
     },
     { immediate: true }
@@ -98,16 +99,20 @@ watch(
 watch(
     () => [props.pipStream, props.localStream],
     async ([newPip, newLocal]) => {
-        await nextTick();
-        if (pipVideoRef.value) {
-            // 로컬 스트림이 있으면 우선 표시 (Self-View)
-            if (newLocal) {
-                pipVideoRef.value.srcObject = newLocal;
-            } else if (newPip) {
-                pipVideoRef.value.srcObject = newPip;
-            } else {
-                pipVideoRef.value.srcObject = null;
+        try {
+            await nextTick();
+            if (pipVideoRef.value) {
+                // 로컬 스트림이 있으면 우선 표시 (Self-View)
+                if (newLocal) {
+                    pipVideoRef.value.srcObject = newLocal;
+                } else if (newPip) {
+                    pipVideoRef.value.srcObject = newPip;
+                } else {
+                    pipVideoRef.value.srcObject = null;
+                }
             }
+        } catch (err) {
+            console.error("[LiveVideoArea] Error in pipStream watcher:", err);
         }
     },
     { immediate: true }

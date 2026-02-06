@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { useMemberStore } from '@/stores/member';
-import { useLearnerCourseStore } from '@/stores/learnerCourse'; // 강의 스토어 추가
+import { useWorkspaceAdminStore } from '@/stores/workspaceAdmin';
+import { useAdminCourseStore } from '@/stores/adminCourse'; // 강의 스토어 변경
 import StatusBadge from '@/components/common/CommonComponents/StatusBadge.vue';
 import MemberDetailModal from './MemberDetailModal.vue';
 import RoleChangeModal from './RoleChangeModal.vue';
@@ -11,25 +11,24 @@ import type { WorkspaceMember } from '@/types';
 
 // 초기화
 const route = useRoute();
-const memberStore = useMemberStore();
-const courseStore = useLearnerCourseStore();
+const adminStore = useWorkspaceAdminStore();
+const courseStore = useAdminCourseStore();
 const workspaceId = route.params.id as string;
 
 // 데이터 연결 (Store 상태 참조)
-const members = computed(() => memberStore.members || []);
-const isLoading = computed(() => memberStore.isLoading || courseStore.isLoading);
+const members = computed(() => adminStore.members || []);
+const isLoading = computed(() => adminStore.isLoading || courseStore.isLoading);
 
 // 필터링 상태
 const searchQuery = ref('');
 const selectedCourseName = ref('전체 강의');
 
 // 초기 데이터 로드 (멤버 및 워크스페이스 내 강의 목록)
+// 멤버는 상위 뷰에서 로드하므로 여기서는 강의만 로드 가능, 혹은 둘 다 안전하게 로드
 onMounted(async () => {
   if (workspaceId) {
-    await Promise.all([
-      memberStore.fetchMembers(workspaceId),
-      courseStore.fetchCoursesByWorkspace(workspaceId)
-    ]);
+    // memberStore.fetchMembers(workspaceId), -> Parent handles this, but refreshing logic might be needed
+    await courseStore.fetchWorkspaceCourses(workspaceId);
   }
 });
 
@@ -62,11 +61,11 @@ const isAllSelected = computed(() =>
 );
 
 const selectedMembersData = computed(() =>
-  members.value.filter(m => selectedIds.value.includes(m.member_id))
+  members.value.filter(m => selectedIds.value.includes(m.workspaceMemberId))
 );
 
 const toggleAll = () => {
-  selectedIds.value = isAllSelected.value ? [] : filteredMembers.value.map(m => m.member_id);
+  selectedIds.value = isAllSelected.value ? [] : filteredMembers.value.map(m => m.workspaceMemberId);
 };
 
 // 3. 모달 상태 관리
@@ -81,7 +80,7 @@ const openDetail = (member: WorkspaceMember) => {
 const openRoleChange = (member?: WorkspaceMember) => {
   if (member) {
     selectedMember.value = member;
-    selectedIds.value = [member.member_id];
+    selectedIds.value = [member.workspaceMemberId];
   }
   modals.value.role = true;
 };
@@ -89,18 +88,62 @@ const openRoleChange = (member?: WorkspaceMember) => {
 const openStatusConfirm = (member?: WorkspaceMember) => {
   if (member) {
     selectedMember.value = member;
-    selectedIds.value = [member.member_id];
+    selectedIds.value = [member.workspaceMemberId];
+    // 상세 모달에서 진입 시 상세 모달 닫기
+    modals.value.detail = false;
   }
   modals.value.status = true;
 };
 
 // 4. 액션 실행 (상태 일괄 변경)
-const handleDeactivate = async () => {
-  const success = await memberStore.updateMultipleStatuses(selectedIds.value, 'INACTIVE');
-  if (success) {
+// 선택된 멤버들의 상태를 확인하여 액션 결정
+// 모든 선택된 멤버가 INACTIVE일 경우 -> ACTIVE로 변경 (활성화)
+// 그 외 (하나라도 ACTIVE가 있거나 섞여있음) -> INACTIVE로 변경 (비활성화)
+const actionStatus = computed(() => {
+  if (selectedMembersData.value.length === 0) return 'INACTIVE';
+  const isAllInactive = selectedMembersData.value.every(m => m.status === 'INACTIVE');
+  return isAllInactive ? 'ACTIVE' : 'INACTIVE';
+});
+
+const handleStatusChange = async () => {
+  try {
+    await adminStore.updateMembersStatus(selectedIds.value, actionStatus.value);
+    
+    // 성공 시 모달 닫기
     modals.value.status = false;
     selectedIds.value = [];
+  } catch (e) {
+    alert('일부 멤버 처리에 실패했습니다.');
   }
+};
+
+const handleRoleChange = async (payload: { ids: number[], role: string }) => {
+  const { ids, role } = payload;
+  const targetRole = role.toUpperCase() as 'TRAINER' | 'LEARNER';
+  
+  if (!ids || ids.length === 0) return;
+
+  try {
+    await adminStore.changeMembersRole(ids, targetRole);
+    
+    // 성공 시 모달 닫기 및 초기화
+    modals.value.role = false;
+    selectedIds.value = [];
+    alert('역할이 변경되었습니다.');
+  } catch (e) {
+    console.error(e);
+    alert('일부 멤버의 역할 변경에 실패했습니다.');
+  }
+};
+
+// 5. 유틸리티
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}.${month}.${day}`;
 };
 </script>
 
@@ -131,9 +174,17 @@ const handleDeactivate = async () => {
         <button @click="openRoleChange()" :disabled="selectedIds.length === 0"
           class="px-3 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-all">역할
           변경</button>
+        
+        <!-- 동적 상태 변경 버튼 -->
         <button @click="openStatusConfirm()" :disabled="selectedIds.length === 0"
-          class="px-3 py-2 border border-red-50 rounded-lg text-xs font-bold text-red-600 hover:bg-red-50 disabled:opacity-40 transition-all">계정
-          비활성화</button>
+          :class="[
+            'px-3 py-2 border rounded-lg text-xs font-bold disabled:opacity-40 transition-all',
+            actionStatus === 'ACTIVE' 
+              ? 'border-emerald-50 text-emerald-600 hover:bg-emerald-50' 
+              : 'border-red-50 text-red-600 hover:bg-red-50'
+          ]">
+          {{ actionStatus === 'ACTIVE' ? '계정 활성화' : '계정 비활성화' }}
+        </button>
       </div>
     </div>
 
@@ -146,8 +197,8 @@ const handleDeactivate = async () => {
                 class="rounded border-slate-300 text-indigo-600 cursor-pointer" />
             </th>
             <th class="p-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">참여진 정보</th>
-            <th class="p-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">역할</th>
-            <th class="p-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">가입일 / 최근 접속</th>
+            <th class="p-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">역할</th>
+            <th class="p-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">가입일 / 최근 접속</th>
             <th class="p-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">상태</th>
           </tr>
         </thead>
@@ -162,16 +213,16 @@ const handleDeactivate = async () => {
           </tr>
 
           <template v-else>
-            <tr v-for="member in filteredMembers" :key="member.member_id" @click="openDetail(member)"
+            <tr v-for="member in filteredMembers" :key="member.workspaceMemberId" @click="openDetail(member)"
               class="hover:bg-indigo-50/30 transition-colors group cursor-pointer">
               <td class="p-4 text-center" @click.stop>
-                <input type="checkbox" v-model="selectedIds" :value="member.member_id"
+                <input type="checkbox" v-model="selectedIds" :value="member.workspaceMemberId"
                   class="rounded border-slate-300 text-indigo-600 cursor-pointer" />
               </td>
               <td class="p-4">
                 <div class="flex items-center gap-3">
                   <div class="size-9 rounded-full bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
-                    <img v-if="member.profile_image_url" :src="member.profile_image_url"
+                    <img v-if="member.profileImageUrl" :src="member.profileImageUrl"
                       class="size-full object-cover" />
                     <div v-else
                       class="size-full flex items-center justify-center bg-indigo-50 text-indigo-600 font-bold text-[11px]">
@@ -184,13 +235,13 @@ const handleDeactivate = async () => {
                   </div>
                 </div>
               </td>
-              <td class="p-4">
+              <td class="p-4 text-center">
                 <StatusBadge v-if="member.role" :variant="(member.role.toLowerCase() as any)"
-                  class="scale-90 origin-left" />
+                  class="scale-90 origin-center" />
               </td>
-              <td class="p-4">
-                <div class="text-xs font-bold text-slate-600 mb-0.5">{{ member.joinedAt }}</div>
-                <div class="text-[10px] text-slate-400 font-medium">{{ member.lastLogin }}</div>
+              <td class="p-4 text-center">
+                <div class="text-xs font-bold text-slate-600 mb-0.5">{{ formatDate(member.createdAt) }}</div>
+                <div class="text-[10px] text-slate-400 font-medium">{{ member.connectedAt ? formatDate(member.connectedAt) : '접속 기록 없음' }}</div>
               </td>
               <td class="p-4 text-center">
                 <StatusBadge v-if="member.status" :variant="(member.status.toLowerCase() as any)" show-dot />
@@ -203,19 +254,35 @@ const handleDeactivate = async () => {
         </tbody>
       </table>
     </div>
+
+
+    <!-- Footer -->
+    <div class="p-6 border-t border-slate-100 flex justify-between items-center bg-white">
+      <p class="text-sm text-slate-500">
+        <span v-if="searchQuery || selectedCourseName !== '전체 강의'">전체 {{ members.length }}명 중 </span>
+        <span v-else>전체 </span>
+        <span class="font-bold text-slate-900">{{ filteredMembers.length }}명</span>
+        <span v-if="searchQuery || selectedCourseName !== '전체 강의'"> 표시됨</span>
+      </p>
+    </div>
   </div>
 
   <MemberDetailModal v-if="modals.detail" :isOpen="modals.detail" :member="selectedMember"
     @close="modals.detail = false" @open-role="openRoleChange" @open-status="openStatusConfirm" />
 
   <RoleChangeModal v-if="modals.role" :isOpen="modals.role" :selectedMembers="selectedMembersData"
-    @close="modals.role = false" />
+    @close="modals.role = false" @confirm="handleRoleChange" />
 
-  <ConfirmModal v-if="modals.status" :isOpen="modals.status" title="계정 비활성화" variant="danger"
-    @close="modals.status = false" @confirm="handleDeactivate">
+  <ConfirmModal v-if="modals.status" :isOpen="modals.status" 
+    :title="actionStatus === 'ACTIVE' ? '계정 활성화' : '계정 비활성화'" 
+    :variant="actionStatus === 'ACTIVE' ? 'primary' : 'danger'"
+    @close="modals.status = false" @confirm="handleStatusChange">
     <div class="flex flex-col items-center text-center py-2">
       <p class="text-sm text-slate-600 leading-relaxed">
-        선택한 <strong class="text-slate-900">{{ selectedIds.length }}명</strong>의 계정을 비활성화하시겠습니까?
+        선택한 <strong class="text-slate-900">{{ selectedIds.length }}명</strong>의 계정을 
+        <strong :class="actionStatus === 'ACTIVE' ? 'text-emerald-600' : 'text-red-600'">
+          {{ actionStatus === 'ACTIVE' ? '활성화' : '비활성화' }}
+        </strong>하시겠습니까?
       </p>
     </div>
   </ConfirmModal>

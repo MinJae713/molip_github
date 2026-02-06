@@ -22,52 +22,42 @@
                 <thead>
                     <tr
                         class="bg-slate-50/80 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        <th class="px-6 py-3">이름 / 이메일</th>
-                        <th class="px-6 py-3">부서</th>
+                        <th class="px-6 py-3">이름 / 직책</th>
                         <th class="px-6 py-3 text-center">출석률</th>
-                        <th class="px-6 py-3 text-center">최근 접속</th>
-                        <th class="px-6 py-3 text-center">상태</th>
                         <th class="px-6 py-3 text-right">관리</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-sm">
                     <tr v-if="filteredStudents.length === 0">
-                        <td colspan="6" class="px-6 py-8 text-center text-slate-500">
+                        <td colspan="4" class="px-6 py-8 text-center text-slate-500">
                             등록된 수강생이 없습니다.
                         </td>
                     </tr>
-                    <tr v-for="student in filteredStudents" :key="student.id"
+                    <tr v-for="student in filteredStudents" :key="student.memberId"
                         class="hover:bg-slate-50/50 transition-colors group">
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-3">
-                                <div
+                                <div v-if="!student.profileImageUrl"
                                     class="size-9 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs">
                                     {{ getInitials(student.name) }}
                                 </div>
+                                <img v-else :src="student.profileImageUrl" alt="Profile"
+                                    class="size-9 rounded-full object-cover" />
                                 <div>
                                     <div class="font-bold text-slate-900">{{ student.name }}</div>
-                                    <div class="text-xs text-slate-500">{{ student.email }}</div>
+                                    <div class="text-xs text-slate-500">
+                                        {{ student.position }}
+                                        <span v-if="student.email" class="mx-1 text-slate-300">|</span>
+                                        {{ student.email }}
+                                    </div>
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-slate-600">{{ student.department }}</td>
                         <td class="px-6 py-4 text-center">
                             <span
                                 class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200">
-                                {{ student.attendanceRate }}%
+                                {{ parseFloat(String(student.attandanceRate || 0)) * 100 }}%
                             </span>
-                        </td>
-                        <td class="px-6 py-4 text-center text-slate-500 text-xs">
-                            {{ student.lastConnection ? formatTime(student.lastConnection) : '미접속' }}
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <div class="flex items-center justify-center gap-1.5">
-                                <span class="size-2 rounded-full"
-                                    :class="student.status === 'ACTIVE' ? 'bg-emerald-400' : 'bg-slate-400'"></span>
-                                <span class="text-slate-700 font-medium text-xs">
-                                    {{ student.status === 'ACTIVE' ? '수강 중' : '비활성' }}
-                                </span>
-                            </div>
                         </td>
                         <td class="px-6 py-4 text-right">
                             <button class="text-slate-400 hover:text-indigo-600 transition-colors">
@@ -117,8 +107,7 @@ const filteredStudents = computed(() => {
     return store.students.filter(
         (s) =>
             s.name.toLowerCase().includes(query) ||
-            s.email.toLowerCase().includes(query) ||
-            s.department.toLowerCase().includes(query)
+            s.position.toLowerCase().includes(query)
     );
 });
 

@@ -49,113 +49,133 @@ interface Message {
   timestamp?: string;
 }
 
-const chatList = ref<Message[]>([]);
-const qaList = ref<Message[]>([]);
-const quizData = ref<any>(null); // 퀴즈 데이터 (추후 타입 정의)
-const stompClient = ref<Client | null>(null);
-const socketUrl = import.meta.env.VITE_CHAT_SOCKET_URL;
+// 스토어에서 채팅/퀴즈 데이터 가져오기 (WebSocket은 store에서 관리)
+const chatList = computed(() => trainerLiveStore.chatList);
+const qaList = computed(() => trainerLiveStore.qaList);
+const quizData = computed(() => trainerLiveStore.quizData);
 
-// --- 통계 (Computed) ---
-const focusCount = computed(() => trainerLiveStore.participants.filter(p => p.status === 'focus').length);
-const warningCount = computed(() => trainerLiveStore.participants.filter(p => p.status === 'distracted').length); // distracted status check
-const absentCount = computed(() => trainerLiveStore.participants.filter(p => p.status === 'away').length);
+const analysisData = ref<any>(null); // ai 분석 데이터 (UI에서만 사용)
+const engagementHistory = ref<number[]>(new Array(120).fill(0)); // 몰입도 이력 (최대 120개)
 
-// --- WebSocket 연결 ---
-const connectWebSocket = () => {
+// // --- 통계 (Computed) ---
+// const focusCount = computed(() => trainerLiveStore.participants.filter(p => p.status === 'focus').length);
+
+const emotionMap: Record<string, { label: string, emoji: string, color: string }> = {
+  happy: { label: '행복 (Happy)', emoji: '😊', color: 'bg-yellow-400' },
+  sad: { label: '슬픔 (Sad)', emoji: '😢', color: 'bg-blue-400' },
+  angry: { label: '분노 (Angry)', emoji: '😠', color: 'bg-red-500' },
+  surprise: { label: '놀람 (Surprise)', emoji: '😲', color: 'bg-purple-400' },
+  fear: { label: '공포 (Fear)', emoji: '😨', color: 'bg-indigo-700' },
+  disgust: { label: '혐오 (Disgust)', emoji: '🤢', color: 'bg-green-500' },
+  neutral: { label: '평온 (Neutral)', emoji: '😐', color: 'bg-slate-400' }
+};
+
+const processedEmotions = computed(() => {
+  if (!analysisData.value?.emotionMessage) return [];
+
+  const msg = analysisData.value.emotionMessage;
+  const emotions: { key: string; confidence: number }[] = [];
+
+  for (let i = 1; i <= 7; i++) {
+    const emotionKey = (msg as any)[`emotion${i}`];
+    const confidence = (msg as any)[`confidence${i}`];
+    if (emotionKey && emotionMap[emotionKey]) {
+      emotions.push({
+        key: emotionKey,
+        confidence: confidence || 0
+      });
+    }
+  }
+  return emotions
+    .sort((a, b) => b.confidence - a.confidence)
+    .slice(0, 2)
+    .map(emo => {
+      const key = emo.key as keyof typeof emotionMap;
+      const data = emotionMap[key];
+      return {
+        label: data?.label || 'Unknown',
+        emoji: data?.emoji || '❓',
+        percentage: Math.round(emo.confidence), // HEAD used this, keeping consistent
+        color: data?.color || 'bg-slate-400'
+      };
+    });
+});
+
+// 몰입도 데이터 변화 감시 및 큐 업데이트
+watch(() => analysisData.value?.concentrateMessage, (newMsg) => {
+  if (newMsg && typeof newMsg.concentration === 'number') {
+    engagementHistory.value.push(newMsg.concentration);
+    // 최대 120개 유지 (2분 분량)
+    if (engagementHistory.value.length > 120) {
+      engagementHistory.value.shift();
+    }
+  }
+});
+
+// [Merge Resolution] Added from fe-develop, mapped to trainerlive types
+const warningCount = computed(() => trainerLiveStore.participants.filter(p => p.status === 'NORMAL').length);
+const absentCount = computed(() => trainerLiveStore.participants.filter(p => p.status === 'EMPTY').length);
+
+// --- AI 분석 결과만 구독 (채팅/퀴즈는 스토어에서 처리) ---
+let stompClient: Client | null = null;
+
+const connectAnalysisWebSocket = () => {
   const sessionId = route.params.sessionId as string;
-  console.log(`[Trainer Live] Connecting to WebSocket. SessionID: ${sessionId}`);
+  const socketUrl = import.meta.env.VITE_CHAT_SOCKET_URL;
 
-  stompClient.value = new Client({
+  stompClient = new Client({
     webSocketFactory: () => new SockJS(socketUrl),
     connectHeaders: {
       Authorization: `Bearer ${localStorage.getItem('accessToken')}`
     },
-    debug: (str) => {
-      console.log('[Trainer Live Stomp Debug]', str);
-    },
+    debug: () => { }, // 디버그 비활성화
     onConnect: () => {
-      console.log(`[Trainer Live] Connected ✅`);
+      console.log('[TrainerLiveSessionView] AI Analysis Connected ✅');
+      // AI 분석결과만 구독 (UI 업데이트용)
+      stompClient?.subscribe(`/topic/analysis/${sessionId}`, (res) => {
+        console.log('[Trainer Analysis] Received:', res.body);
+        const data = JSON.parse(res.body);
+        analysisData.value = data;
 
-      // 1. 채팅/질문 구독
-      stompClient.value?.subscribe(`/topic/chat-room/${sessionId}`, (res) => {
-        console.log(`[Trainer Live] Chat/QA Message:`, res.body);
-        const msg: Message = JSON.parse(res.body);
-        // questionId 유무로 채팅/질문 구분
-        if (!msg.questionId) {
-          chatList.value.push(msg);
-        } else {
-          qaList.value.push(msg);
+        // ✅ stateChangeList 처리: 학생 상태 변경 반영
+        if (data.stateChangeList && Array.isArray(data.stateChangeList)) {
+          data.stateChangeList.forEach((change: { memberId: number; newState: string }) => {
+            console.log(`[Status Change] memberId: ${change.memberId}, newState: ${change.newState}`);
+            trainerLiveStore.updateParticipantStatus(change.memberId, change.newState as "NORMAL" | "FEVER" | "EMPTY");
+          });
         }
-      });
-      // 2. ai 퀴즈 받아오는 방 구독
-      stompClient.value?.subscribe(`/topic/quiz/${sessionId}/test`, (res) => {
-        // stompClient.value?.subscribe(`/topic/quiz/${sessionId}`, (res) => {
-        console.log(`[Trainer Live] AI Quiz Received:`, res.body);
-        quizData.value = JSON.parse(res.body);
       });
     },
     onStompError: (frame) => {
-      console.error('[Trainer Live] Broker error:', frame.headers['message']);
-      console.error('[Trainer Live] Details:', frame.body);
+      console.error('[TrainerLiveSessionView] Broker error:', frame.headers['message']);
     },
     onWebSocketClose: () => {
-      console.log('[Trainer Live] Connection Closed ❌');
+      console.log('[TrainerLiveSessionView] AI Analysis Connection Closed ❌');
     }
   });
 
-  stompClient.value.activate();
+  stompClient.activate();
 };
 
-// --- 메시지 전송 함수 ---
+// --- 메시지 전송 래퍼 함수 (템플릿에서 사용) ---
 const sendChatMessage = (content: string, type: string, questionId?: number | string | null) => {
-  if (!content.trim() || !stompClient.value?.connected) return;
-  const sessionId = route.params.sessionId as string;
-  const payload = {
-    type,
-    content,
-    questionId: questionId || null
-  };
-
-  stompClient.value.publish({
-    destination: `/app/chat-room/${sessionId}`,
-    body: JSON.stringify(payload)
-  });
+  trainerLiveStore.sendChatMessage(content, type, questionId);
 };
 
-const getQuiz = () => {
-  if (!stompClient.value?.connected) return;
-  const sessionId = route.params.sessionId as string;
-  const payload = {
-    content: "퀴즈주세요",
-  }
-  stompClient.value.publish({
-    destination: `/app/quiz/${sessionId}`,
-    body: JSON.stringify(payload)
-  });
-};
-
-// 학생들에게 퀴즈 전송
-const sendQuizToStudents = (quizzes: any) => {
-  if (!stompClient.value?.connected) return;
-  const sessionId = route.params.sessionId as string;
-
-  stompClient.value.publish({
-    destination: `/app/quiz/send/${sessionId}`,
-    body: JSON.stringify(quizzes)
-  });
-
-  console.log('[Trainer Live] Quiz sent to students:', quizzes);
-};
-
-// provide로 하위 컴포넌트에 함수 전달
-provide('sendQuizToStudents', sendQuizToStudents);
-provide('getQuiz', getQuiz);
+// --- 메시지 전송 함수는 스토어에서 제공 ---
+// provide로 하위 컴포넌트에 스토어 함수 전달
+provide('sendQuizToStudents', trainerLiveStore.sendQuizToStudents);
+provide('getQuiz', trainerLiveStore.getQuiz);
 
 // --- 퀵 퀴즈 모달 관리 ---
 // quizData가 업데이트되면 모달 자동 열기
 watch(quizData, (newData) => {
+  console.log('[TrainerLiveSessionView] quizData watch 감지:', newData);
   if (newData && Object.keys(newData).length > 0) {
+    console.log('[TrainerLiveSessionView] 퀵 퀴즈 모달 열기');
     isQuickQuizModalOpen.value = true;
+  } else {
+    console.log('[TrainerLiveSessionView] quizData가 비어있음');
   }
 });
 
@@ -164,7 +184,7 @@ const handleQuickQuizClose = () => {
 };
 
 const handleQuickQuizSend = (quiz: any) => {
-  sendQuizToStudents(quiz);
+  trainerLiveStore.sendQuizToStudents(quiz);
   isQuickQuizModalOpen.value = false;
   alert('퀴즈가 학생들에게 전달되었습니다.');
 };
@@ -172,11 +192,14 @@ const handleQuickQuizSend = (quiz: any) => {
 onMounted(async () => {
   const sessionId = route.params.sessionId as string;
   await trainerLiveStore.initJanus(sessionId);
-  connectWebSocket();
+  trainerLiveStore.openSession(sessionId); // [New] 세션 시작 알림
+  connectAnalysisWebSocket();
 });
 
 onUnmounted(() => {
-  stompClient.value?.deactivate();
+  const sessionId = route.params.sessionId as string;
+  trainerLiveStore.closeSession(sessionId); // [New] 세션 종료 알림
+  stompClient?.deactivate();
 });
 
 // --- 수업 종료 로직 ---
@@ -194,10 +217,13 @@ const handleEndSession = async () => {
       <!-- 메인 강의 영역 (전체 너비 사용) -->
       <main class="flex-1 flex flex-col p-6 gap-6 overflow-y-auto bg-slate-50">
         <LiveVideoConsole />
+
+        <!-- 📹 학생 모니터링 (선택 시에만 표시) -->
+        <StudentMonitor v-if="trainerLiveStore.selectedStudentId" />
+
         <div class="grid grid-cols-12 gap-6 min-h-70">
-          <AIActionRecommendation class="col-span-4" />
-          <GlobalEngagementCard class="col-span-3" />
-          <SessionEmotionAnalysis class="col-span-5" />
+          <GlobalEngagementCard class="col-span-7" :history="engagementHistory" />
+          <SessionEmotionAnalysis class="col-span-5" :emotions="processedEmotions" />
         </div>
       </main>
 
@@ -215,7 +241,7 @@ const handleEndSession = async () => {
             </button>
           </div>
 
-          <SidebarStats :focus-count="focusCount" :warning-count="warningCount" :absent-count="absentCount" />
+          <!-- <SidebarStats :focus-count="focusCount" :warning-count="warningCount" :absent-count="absentCount" /> -->
           <SidebarTabs v-model="activeTab" />
         </div>
 

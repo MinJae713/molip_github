@@ -1,11 +1,7 @@
 <template>
     <div class="max-w-7xl mx-auto space-y-6">
         <!-- 헤더 (타이틀 및 버튼) -->
-        <TrainerCourseDetailHeader title="데이터 기반 고객 경험 최적화 전략" />
-
-        <!-- 통계 요약 (기간, 수강생, 상태) -->
-        <TrainerCourseStats />
-
+        <TrainerCourseDetailHeader :title="trainerCourseStore.currentManagedCourse?.title as string" />
         <!-- 탭 네비게이션 -->
         <div class="border-b border-slate-200">
             <div class="flex space-x-8">
@@ -30,6 +26,10 @@
                 <!-- 수강생 명단 -->
                 <TrainerStudentList />
             </div>
+            <!-- 교육통계 -->
+            <div v-else-if="activeTab === 'stats'">
+                <TrainerCourseStatistics />
+            </div>
             <!-- 다른 탭 placeholder -->
             <div v-else class="py-20 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
                 <p class="text-slate-500">준비 중인 페이지입니다.</p>
@@ -44,10 +44,10 @@ import { useRouter, useRoute } from 'vue-router';
 import type { Session } from '@/types';
 // 컴포넌트
 import TrainerCourseDetailHeader from '@/components/Trainer/TrainerCourseView/TrainerCourseDetailHeader.vue';
-import TrainerCourseStats from '@/components/Trainer/TrainerCourseView/TrainerCourseStats.vue';
 import TrainerSessionList from '@/components/Trainer/TrainerCourseView/TrainerSessionList.vue';
 import TrainerStudentRequestList from '@/components/Trainer/TrainerCourseView/TrainerStudentRequestList.vue';
 import TrainerStudentList from '@/components/Trainer/TrainerCourseView/TrainerStudentList.vue';
+import TrainerCourseStatistics from '@/components/Trainer/TrainerCourseView/TrainerCourseStatistics.vue';
 const router = useRouter();
 const route = useRoute();
 
@@ -75,12 +75,14 @@ const handleTabChange = async (tabId: string) => {
         ]);
     }
 };
-
 onMounted(async () => {
     const courseId = route.params.courseId;
+    const workspaceId = route.params.id;
     console.log("courseId", courseId);
+    console.log("workspaceId", workspaceId);
     if (courseId) {
         sessionList.value = await trainerCourseStore.fetchCourseSessions(Number(courseId));
+        trainerCourseStore.fetchCourseInfo(courseId as string);
         // 초기 로드 시 탭에 따라 데이터 로드
         if (activeTab.value === 'student') {
             await Promise.all([
@@ -105,6 +107,7 @@ interface LiveSessionData {
 }
 
 const handleStartLive = async (session: any) => {
+    console.log("handleStartLive 버튼눌림!", session);
     try {
         const response = await api.post(`https://i14a309.p.ssafy.io/api/session/${session.sessionId}/start`);
         const { janusRoomId, pin, sessionId } = response.data;
