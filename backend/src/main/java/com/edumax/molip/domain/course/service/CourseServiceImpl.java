@@ -21,6 +21,7 @@ import com.edumax.molip.domain.course.dto.response.get_my_course_stats.GetMyCour
 import com.edumax.molip.domain.course.dto.response.get_my_course_stats.GetMyCourseStatsResponseTrainer.SessionAnalysisResponse;
 import com.edumax.molip.domain.course.entity.Course;
 import com.edumax.molip.domain.course.entity.CourseApply;
+import com.edumax.molip.domain.course.entity.CourseCertificated;
 import com.edumax.molip.domain.course.entity.CourseLearnerAnalysis;
 import com.edumax.molip.domain.course.entity.Zzim;
 import com.edumax.molip.domain.course.exception.AlreadyAppliedCourseApplyException;
@@ -30,6 +31,7 @@ import com.edumax.molip.domain.course.exception.NoCourseApplyException;
 import com.edumax.molip.domain.course.exception.NoCourseException;
 import com.edumax.molip.domain.course.exception.NoZzimException;
 import com.edumax.molip.domain.course.repository.CourseApplyRepository;
+import com.edumax.molip.domain.course.repository.CourseCertificatedRepository;
 import com.edumax.molip.domain.course.repository.CourseRepository;
 import com.edumax.molip.domain.course.repository.ZzimRepository;
 import com.edumax.molip.domain.course.types.CourseStatus;
@@ -72,6 +74,7 @@ public class CourseServiceImpl implements CourseService {
   private final WorkspaceMemberRepository workspaceMemberRepository;
   private final CourseApplyRepository courseApplyRepository;
   private final CourseLearnerRepository courseLearnerRepository;
+  private final CourseCertificatedRepository courseCertificatedRepository;
   private final ZzimRepository zzimRepository;
 
   private final WorkspaceRepository workspaceRepository;
@@ -536,12 +539,19 @@ public class CourseServiceImpl implements CourseService {
                       workspaceMemberRepository
                           .findByMemberAndWorkspace(member, workspace)
                           .orElseThrow(NoWorkspaceMemberException::new);
+                  Optional<CourseCertificated> courseCertificated =
+                      courseCertificatedRepository.findByWorkspaceMemberAndCourse(
+                          targetWorkspaceMember, course);
                   return CourseLearnerAnalysisResponse.from(
-                      courseLearnerAnalysis, targetWorkspaceMember.getWorkspaceMemberId());
+                      member,
+                      courseLearnerAnalysis,
+                      targetWorkspaceMember.getWorkspaceMemberId(),
+                      courseCertificated.isPresent());
                 })
             .toList();
 
     return GetMyCourseStatsResponseTrainer.builder()
+        .isCertificated(course.isFinished())
         .courseId(course.getCourseId())
         .avgAttandance(avgAttandance)
         .avgConcentrate(avgConcentrate)

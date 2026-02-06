@@ -1,6 +1,7 @@
 package com.edumax.molip.domain.course.dto.response.get_my_course_stats;
 
 import com.edumax.molip.domain.course.entity.CourseLearnerAnalysis;
+import com.edumax.molip.domain.member.entity.Member;
 import com.edumax.molip.domain.review.entity.LearnerAnalysis;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -16,6 +17,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @SuperBuilder
 public class GetMyCourseStatsResponseTrainer extends GetMyCourseStatsResponse {
+  private Boolean isCertificated; // 수료 여부
   private Float avgAttandance;
   private Float avgConcentrate;
   private Float avgQuizCorrect;
@@ -55,6 +57,9 @@ public class GetMyCourseStatsResponseTrainer extends GetMyCourseStatsResponse {
   @Builder
   public static class CourseLearnerAnalysisResponse {
     private Long memberId;
+    private String name;
+    private String email;
+    private Boolean isCertificated;
     private Long workspaceMemberId;
     private Long courseLearnerId;
     private Float sumConcentrate;
@@ -62,15 +67,20 @@ public class GetMyCourseStatsResponseTrainer extends GetMyCourseStatsResponse {
     private Float sumQuizCorrect;
 
     public static CourseLearnerAnalysisResponse from(
-        CourseLearnerAnalysis courseLearnerAnalysis, Long workspaceMemberId) {
-      Long memberId = courseLearnerAnalysis.getMemberId();
+        Member member,
+        CourseLearnerAnalysis courseLearnerAnalysis,
+        Long workspaceMemberId,
+        Boolean isCertificated) {
       Long courseLearnerId = courseLearnerAnalysis.getCourseLearnerId();
       Float sumConcentrate = courseLearnerAnalysis.getSumConcentrate();
       Integer sumAttendance = courseLearnerAnalysis.getSumAttendance();
       Float sumQuizCorrect = courseLearnerAnalysis.getSumQuizCorrect();
 
       return CourseLearnerAnalysisResponse.builder()
-          .memberId(memberId)
+          .memberId(member.getId())
+          .name(member.getName())
+          .email(member.getEmail())
+          .isCertificated(isCertificated)
           .workspaceMemberId(workspaceMemberId)
           .courseLearnerId(courseLearnerId)
           .sumConcentrate(sumConcentrate)

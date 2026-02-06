@@ -192,4 +192,8 @@ public class Course {
     double divided = (double) courseCertificateds.size() / (double) courseLearners.size();
     return (double) Math.round(divided * 100) / 100;
   }
+
+  public boolean isFinished() {
+    return endSessionCount == sessions.size();
+  }
 }
