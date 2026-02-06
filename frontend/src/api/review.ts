@@ -1,6 +1,6 @@
 import api from "./index";
 
-export interface MockDataItem {
+export interface DataItem {
     timeline: number;
     empty: boolean;
     concentrateValue: number;
@@ -14,11 +14,11 @@ export interface PauseElement {
     endTime: number;
 }
 
-export interface MockApiResponse {
+export interface ApiResponse {
     deadzonePercent: number;
     pauseElementList: PauseElement[];
-    learnerTimelineData: MockDataItem[];
-    trainerTimelineData: MockDataItem[];
+    learnerTimelineData: DataItem[];
+    trainerTimelineData: DataItem[];
 }
 
 export interface MoodGraphDataItem {
@@ -30,10 +30,9 @@ export interface MoodGraphDataItem {
 export interface MoodGraph {
     learnerEmotionGraph: MoodGraphDataItem[];
     trainerEmotionGraph: MoodGraphDataItem[];
-
 }
 
-export interface MockScriptDataItem {
+export interface ScriptDataItem {
     timeline: number;
     message: string;
 }
@@ -49,19 +48,20 @@ export interface ChatDataItem {
 
 
 
-export const fetchReviewData = async (sessionId: string | number, memberId: string | number): Promise<MockApiResponse> => {
+export const fetchReviewData = async (sessionId: string | number, memberId: string | number): Promise<ApiResponse> => {
     // 엔드포인트는 실제 백엔드 명세에 따라 수정 필요할 수 있음
     // 예: /sessions/{sessionId}/analysis 또는 /analysis/{sessionId}
-    const response = await api.post<MockApiResponse>(`/review/test/${sessionId}/${memberId}`);
+    const response = await api.post<ApiResponse>(`/review/test/10002/10002`);
+    // const response = await api.post<ApiResponse>(`/review/learner/${sessionId}/${memberId}`);
 
-    // axios response.data가 MockApiResponse 구조를 가진다고 가정
+    // axios response.data가 ApiResponse 구조를 가진다고 가정
     return response.data;
 };
 
-export const fetchScriptData = async (sessionId: string | number): Promise<MockScriptDataItem[]> => {
+export const fetchScriptData = async (sessionId: string | number): Promise<ScriptDataItem[]> => {
     // 엔드포인트는 실제 백엔드 명세에 따라 수정 필요할 수 있음
     // 예: /sessions/{sessionId}/analysis 또는 /analysis/{sessionId}
-    const response = await api.get<MockScriptDataItem[]>(`/review/script/${sessionId}/test`);
+    const response = await api.get<ScriptDataItem[]>(`/review/script/${sessionId}/test`);
 
     return response.data;
 };
@@ -71,7 +71,7 @@ export const fetchMoodData = async (sessionId: string | number): Promise<MoodGra
     // 예: /sessions/{sessionId}/analysis 또는 /analysis/{sessionId}
     const response = await api.get<MoodGraph>(`/review/emotion-graph/learner/${sessionId}`);
 
-    // axios response.data가 MockApiResponse 구조를 가진다고 가정
+    // axios response.data가 ApiResponse 구조를 가진다고 가정
     return response.data;
 };
 
@@ -80,6 +80,6 @@ export const fetchChatData = async (sessionId: string | number, memberId: string
     // 예: /sessions/{sessionId}/analysis 또는 /analysis/{sessionId}
     const response = await api.get<ChatData>(`/chatting/qna-room/${sessionId}/${memberId}`);
 
-    // axios response.data가 MockApiResponse 구조를 가진다고 가정
+    // axios response.data가 ApiResponse 구조를 가진다고 가정
     return response.data;
 };
