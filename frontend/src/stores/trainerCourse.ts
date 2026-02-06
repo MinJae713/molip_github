@@ -1,14 +1,14 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import api from "@/api";
-import type { LearnerCourse, TrainerCourse, CreateCourse, StudentRequest, CourseStudent } from "@/types";
+import type { LearnerCourse, TrainerCourse, CreateCourse } from "@/types";
 
 export const useTrainerCourseStore = defineStore("trainerCourse", () => {
   const workspaceAllCourses = ref<TrainerCourse[]>([]); // 현재 워크스페이스의 모든 코스 목록
   const managedCourses = ref<any[]>([]); // 강사가 관리하는 전체 코스 목록
   const currentManagedCourse = ref<TrainerCourse | null>(null); // 현재 선택/관리 중인 코스 상세
-  const studentRequests = ref<StudentRequest[]>([]); // 수강 신청 목록
-  const students = ref<CourseStudent[]>([]); // 수강생 목록
+  const studentRequests = ref<any[]>([]); // 수강 신청 목록
+  const students = ref<any[]>([]); // 수강생 목록
   const isLoading = ref(false);
 
   // Helper: API -> Frontend (CamelCase)
@@ -27,10 +27,7 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
   });
   const topStatsBoxValues = ref<any>(null);
   // 강사 상단 통계박스 조회
-  async function fetchCourseStats(
-    workspaceId: string | number,
-    courseId: string | number,
-  ) {
+  async function fetchCourseStats(workspaceId: string | number) {
     try {
       isLoading.value = true;
       const response = await api.get(`/workspaces/${workspaceId}/stats`);
@@ -149,72 +146,89 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
     }
   };
 
-  // --- 수강생 관리 ---
+  // --- 수강생 관리 (MOCK) ---
   const fetchStudentRequests = async (courseId: string | number) => {
-    isLoading.value = true;
-    try {
-      const response = await api.get(`/courses/${courseId}/applies`);
-      studentRequests.value = response.data;
-    } catch (error) {
-      console.error("수강 신청 목록 로드 실패:", error);
-      studentRequests.value = [];
-    } finally {
-      isLoading.value = false;
-    }
+    // TODO: 실제 API 연동
+    console.log(`[Mock] fetchStudentRequests courseId: ${courseId}`);
+    studentRequests.value = [
+      {
+        id: 1,
+        name: "정국진",
+        email: "junho.lee@techcorp.com",
+        department: "데이터분석팀",
+        position: "주임",
+        requestedAt: "2024-02-04T10:00:00",
+        profileImage: "",
+      },
+      {
+        id: 2,
+        name: "박소연",
+        email: "soyeon.park@techcorp.com",
+        department: "영업기획팀",
+        position: "대리",
+        requestedAt: "2024-02-04T09:30:00",
+        profileImage: "",
+      },
+    ];
   };
 
   const approveStudent = async (
     courseId: string | number,
-    workspaceMemberId: number,
+    studentId: number,
   ) => {
-    try {
-      await api.post(`/courses/${courseId}/approve`, {
-        workspaceMemberId,
-        isApply: true,
-      });
-      console.log(`[API Success] approveStudent ${workspaceMemberId} in course ${courseId}`);
-
-      // 목록에서 제거
-      studentRequests.value = studentRequests.value.filter(
-        (s) => s.workspaceMemberId !== workspaceMemberId,
-      );
-      // 수강생 명단 갱신
-      await fetchStudents(courseId);
-    } catch (error) {
-      console.error("수강생 승인 실패:", error);
-    }
+    console.log(`[Mock] approveStudent ${studentId} in course ${courseId}`);
+    studentRequests.value = studentRequests.value.filter(
+      (s) => s.id !== studentId,
+    );
+    // 승인 후 수강생 목록에 추가되는 로직은 백엔드에서 처리됨.
+    // 여기서는 목록 갱신을 위해 fetchStudents 호출 등을 수행해야 함.
   };
 
   const rejectStudent = async (
     courseId: string | number,
-    workspaceMemberId: number,
+    studentId: number,
   ) => {
-    try {
-      await api.post(`/courses/${courseId}/approve`, {
-        workspaceMemberId,
-        isApply: false,
-      });
-      console.log(`[API Success] rejectStudent ${workspaceMemberId} in course ${courseId}`);
-
-      studentRequests.value = studentRequests.value.filter(
-        (s) => s.workspaceMemberId !== workspaceMemberId,
-      );
-    } catch (error) {
-      console.error("수강생 거절 실패:", error);
-    }
+    console.log(`[Mock] rejectStudent ${studentId} in course ${courseId}`);
+    studentRequests.value = studentRequests.value.filter(
+      (s) => s.id !== studentId,
+    );
   };
 
   const fetchStudents = async (courseId: string | number) => {
-    isLoading.value = true;
-    try {
-      const response = await api.get(`/courses/${courseId}/learners`);
-      students.value = response.data;
-    } catch (error) {
-      console.error("수강생 목록 로드 실패:", error);
-      students.value = [];
-    } finally {
-      isLoading.value = false;
-    }
+    console.log(`[Mock] fetchStudents courseId: ${courseId}`);
+    students.value = [
+      {
+        id: 101,
+        name: "이준호",
+        email: "junho.lee@techcorp.com",
+        department: "AI 연구소",
+        attendanceRate: 0,
+        lastConnection: null,
+        status: "ACTIVE",
+        profileImage: "",
+      },
+      {
+        id: 102,
+        name: "최수진",
+        email: "sujin.choi@techcorp.com",
+        department: "HRD",
+        attendanceRate: 80,
+        lastConnection: "2024-02-03T14:00:00",
+        status: "ACTIVE",
+        profileImage: "",
+      },
+      {
+        id: 103,
+        name: "민경훈",
+        email: "kh.min@techcorp.com",
+        department: "마케팅 2팀",
+        attendanceRate: 100,
+        lastConnection: "2024-02-04T09:00:00",
+        status: "INACTIVE", // 예: 수료, 휴학 등
+        profileImage: "",
+      },
+    ];
+    // 전체 42명 중 일부만 mock으로
   };
 
   return {
