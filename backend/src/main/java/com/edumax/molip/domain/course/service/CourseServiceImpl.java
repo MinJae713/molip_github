@@ -576,7 +576,7 @@ public class CourseServiceImpl implements CourseService {
               WorkspaceMember applyWorkspaceMember = courseApply.getWorkspaceMember();
               Member applyMember = applyWorkspaceMember.getMember();
               Long workspaceMemberId = applyWorkspaceMember.getWorkspaceMemberId();
-
+              String email = applyMember.getEmail();
               Long courseApplyId = courseApply.getCourseApplyId();
               String profileImageUrl = applyMember.getProfileImageUrl();
               String name = applyMember.getName();
@@ -585,6 +585,7 @@ public class CourseServiceImpl implements CourseService {
               return GetCourseApplyResponse.builder()
                   .memberId(applyMember.getId())
                   .workspaceMemberId(workspaceMemberId)
+                  .email(email)
                   .courseApplyId(courseApplyId)
                   .profileImageUrl(profileImageUrl)
                   .name(name)
@@ -619,7 +620,7 @@ public class CourseServiceImpl implements CourseService {
               WorkspaceMember learnerWorkspaceMember = courseLearner.getWorkspaceMember();
               Member learnerMember = learnerWorkspaceMember.getMember();
               Long workspaceMemberId = learnerWorkspaceMember.getWorkspaceMemberId();
-
+              String email = learnerMember.getEmail();
               Long courseLearnerId = courseLearner.getCourseLearnerId();
               String profileImageUrl = learnerMember.getProfileImageUrl();
               String name = learnerMember.getName();
@@ -628,6 +629,7 @@ public class CourseServiceImpl implements CourseService {
               return GetCourseLearnerResponse.builder()
                   .memberId(learnerMember.getId())
                   .workspaceMemberId(workspaceMemberId)
+                  .email(email)
                   .courseLearnerId(courseLearnerId)
                   .profileImageUrl(profileImageUrl)
                   .name(name)

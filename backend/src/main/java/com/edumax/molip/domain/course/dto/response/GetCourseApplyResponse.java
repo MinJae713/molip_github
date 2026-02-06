@@ -17,6 +17,7 @@ public class GetCourseApplyResponse {
   private Long memberId;
   private Long workspaceMemberId;
   private Long courseApplyId;
+  private String email;
   private String profileImageUrl;
   private String name;
   private String position;

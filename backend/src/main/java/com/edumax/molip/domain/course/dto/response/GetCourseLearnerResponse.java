@@ -15,6 +15,7 @@ import lombok.Setter;
 public class GetCourseLearnerResponse {
   private Long memberId;
   private Long workspaceMemberId;
+  private String email;
   private Long courseLearnerId;
   private String profileImageUrl;
   private String name;
