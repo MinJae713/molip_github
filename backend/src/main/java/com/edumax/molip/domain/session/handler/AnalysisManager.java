@@ -33,8 +33,8 @@ public class AnalysisManager { // 세션마다 존재
   private final SimpMessagingTemplate messagingTemplate; // 웹소켓 전송을 위한 템플릿
   private ScheduledFuture<?> scheduledTask; // 실행 중인 작업을 담는 변수
 
-  private static final int EMPTY_LIMIT = 10 + 1; // 180초간 자리비움하면 자리비움 처리
-  private static final int FEVER_LIMIT = 10 + 1; // 180초간 풀집중이면 하면 피버타임 처리
+  private static final int EMPTY_LIMIT = 5 + 1; // 180초간 자리비움하면 자리비움 처리
+  private static final int FEVER_LIMIT = 3 + 1; // 180초간 풀집중이면 하면 피버타임 처리
   private static final float CONCENTRATE_DEFAULT = 30;
 
   enum State {
@@ -100,11 +100,13 @@ public class AnalysisManager { // 세션마다 존재
           return true;
         }
       }
-    }
 
-    if (lastState != State.NORMAL) {
-      stateChangeBuffer.put(memberId, new StateChange(memberId, State.NORMAL));
-      lastStateBuffer.put(key, State.NORMAL);
+      if (lastState == State.FEVER) {
+        if (feverDeque.getLast() - feverDeque.getFirst() != FEVER_LIMIT - 1) {
+          stateChangeBuffer.put(memberId, new StateChange(memberId, State.NORMAL));
+          lastStateBuffer.put(key, State.NORMAL);
+        }
+      }
     }
 
     return false;
@@ -138,11 +140,13 @@ public class AnalysisManager { // 세션마다 존재
           return true;
         }
       }
-    }
 
-    if (lastState != State.NORMAL) {
-      stateChangeBuffer.put(memberId, new StateChange(memberId, State.NORMAL));
-      lastStateBuffer.put(key, State.NORMAL);
+      if (lastState == State.FEVER) {
+        if (emptyDeque.getLast() - emptyDeque.getFirst() != FEVER_LIMIT - 1) {
+          stateChangeBuffer.put(memberId, new StateChange(memberId, State.NORMAL));
+          lastStateBuffer.put(key, State.NORMAL);
+        }
+      }
     }
 
     return false;

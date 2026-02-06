@@ -33,7 +33,7 @@ public class EmotionSaveListener {
   private static final String GENERAL_KEY_FORMAT = "review:emotion:session-id:%s";
   private static final String PERSONAL_KEY_FORMAT = "review:emotion:session-id:%s:member-id:%d";
   private static final Duration TTL = Duration.ofDays(1);
-  private static final int BATCH_SIZE = 100;
+  private static final int BATCH_SIZE = 10;
 
   /** 강의 시작 시 호출 (Controller나 Service에서 호출) */
   public void startLecture(String sessionId) {
