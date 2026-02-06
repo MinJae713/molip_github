@@ -37,3 +37,5 @@ __screenshots__/
 
 *storybook.log
 storybook-static
+
+/public/mediapipe

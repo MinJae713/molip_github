@@ -88,8 +88,10 @@ const onLogoUpload = (event: Event) => {
       
       <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div class="flex items-center gap-4">
-          <div class="w-12 h-12 bg-[#6366F1] rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-100">
-            {{ form.name ? form.name.substring(0, 2).toUpperCase() : 'TC' }}
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-100 overflow-hidden" 
+               :class="form.logo_url ? 'bg-white' : 'bg-[#6366F1]'">
+            <img v-if="form.logo_url" :src="form.logo_url" class="w-full h-full object-cover" alt="Workspace Logo" />
+            <span v-else>{{ form.name ? form.name.substring(0, 1).toUpperCase() : 'W' }}</span>
           </div>
           <div>
             <div class="flex items-center gap-2">
@@ -133,6 +135,9 @@ const onLogoUpload = (event: Event) => {
                     <template v-if="form.logo_url">
                       <img :src="form.logo_url" alt="Workspace Logo" class="w-full h-full object-cover" />
                     </template>
+                    <div v-else-if="form.name" class="flex items-center justify-center w-full h-full bg-indigo-50 text-indigo-400 font-bold text-4xl">
+                      {{ form.name.substring(0, 1).toUpperCase() }}
+                    </div>
                     <div v-else class="flex flex-col items-center text-slate-300">
                       <span class="material-symbols-outlined text-4xl">image</span>
                     </div>

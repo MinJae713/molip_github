@@ -1,0 +1,548 @@
+<template>
+    <div class="bg-slate-50 text-slate-900 h-screen flex flex-col overflow-hidden relative">
+        <!-- Device Setup Modal -->
+        <DeviceSetupModal v-if="!isSetupComplete" 
+            :currentGaze="currentGaze" 
+            :rawGaze="lastRawGaze"
+            @join="handleJoinSession" 
+            @calibrate="handleCalibration" 
+        />
+
+        <!-- INFO: 임시 연결 종료 버튼 -->
+        <button @click="disconnectAll"
+            class="absolute top-20 left-6 z-50 bg-red-600 text-white px-3 py-2 rounded-md shadow-lg text-sm font-bold hover:bg-red-700 transition-colors">
+            🔌 연결 끊기 (TEST)
+        </button>
+
+        <!-- INFO: Gaze Tracker 디버그 UI -->
+        <div class="absolute top-36 left-6 z-50 bg-black/80 text-white p-4 rounded-lg shadow-xl text-xs space-y-2 pointer-events-none">
+            <h3 class="font-bold text-yellow-400 mb-2">👀 Gaze Tracker Status</h3>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+                <span class="text-slate-400">Looking At Monitor:</span>
+                <span :class="debugGazeStatus.isLookingAtMonitor ? 'text-green-400 font-bold' : 'text-red-400'">
+                    {{ debugGazeStatus.isLookingAtMonitor ? 'YES' : 'NO' }}
+                </span>
+
+                <span class="text-slate-400">Stable (No Move):</span>
+                <span :class="debugGazeStatus.isStable ? 'text-green-400' : 'text-yellow-400 font-bold'">
+                    {{ debugGazeStatus.isStable ? 'YES' : 'NO (!)' }}
+                </span>
+
+                <span class="text-slate-400">User Present:</span>
+                <span :class="!debugGazeStatus.isAbsent ? 'text-blue-400' : 'text-red-500 font-bold'">
+                    {{ !debugGazeStatus.isAbsent ? 'YES' : 'ABSENT' }}
+                </span>
+            </div>
+            
+            <!-- 시선 시각화 플롯 -->
+            <div class="mt-3 border-t border-slate-700 pt-3">
+                <div class="text-[10px] text-slate-400 mb-1">Live Gaze Plot</div>
+                <div class="relative w-[140px] h-[100px] bg-slate-900 border border-slate-600 rounded overflow-hidden mx-auto">
+                    <!-- Monitor Area (Safe Zone) : x 0.2~0.8, y 0.1~0.9 -->
+                    <!-- Width: 60% (0.8-0.2), Left: 20% | Height: 80% (0.9-0.1), Top: 10% -->
+                    <div class="absolute border-2 border-dashed border-green-500/50"
+                         style="left: 20%; top: 10%; width: 60%; height: 80%;">
+                        <div class="absolute top-1 left-1 text-[8px] text-green-500/70">Monitor</div>
+                    </div>
+
+                    <!-- Center Crosshair -->
+                    <div class="absolute top-1/2 left-0 w-full h-[1px] bg-slate-700/50"></div>
+                    <div class="absolute left-1/2 top-0 h-full w-[1px] bg-slate-700/50"></div>
+
+                    <!-- Gaze Point -->
+                    <!-- Flip X coordinate because camera is mirrored? Usually webcam preview is mirrored. -->
+                    <!-- Let's assume raw coordinates: x:0 is left, x:1 is right. -->
+                    <div class="absolute w-2.5 h-2.5 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)] transition-all duration-75 ease-out transform -translate-x-1/2 -translate-y-1/2"
+                         :style="{ 
+                             left: `${currentGaze.x * 100}%`, 
+                             top: `${currentGaze.y * 100}%` 
+                         }">
+                    </div>
+                </div>
+                <div class="text-[9px] text-slate-500 text-center mt-1">
+                    X: {{ currentGaze.x.toFixed(2) }} / Y: {{ currentGaze.y.toFixed(2) }}
+                </div>
+            </div>
+
+             <div class="mt-2 text-[10px] text-slate-500 border-t border-slate-700 pt-1">
+                Last Update: {{ debugGazeStatus.timestamp }}
+            </div>
+        </div>
+
+        <LiveSessionHeader sessionTitle="인공지능 윤리와 실제 실습" sessionSubtitle="디지털 비즈니스 전략 강의 (4주차)"
+            :elapsedTime="elapsedTime" />
+        <main class="flex flex-1 overflow-hidden p-6 gap-6 relative">
+            <LiveVideoArea :focusStatus="focusStatus" :showWarning="showWarning" @close-warning="showWarning = false"
+                :mainStream="videoStore.mainStream" :pipStream="videoStore.pipStream"
+                :localStream="videoStore.localStream" :userRole="workspaceStore.currentWorkspace?.myRole">
+                <template #controls>
+                    <LiveControlDock :isMicOn="isMicOn" :isCameraOn="isCameraOn" :isHandRaised="isHandRaised"
+                        @toggle-mic="toggleMic" @toggle-camera="toggleCamera" @raise-hand="raiseHand" />
+                </template>
+            </LiveVideoArea>
+
+            <!-- 사이드바 -->
+            <LiveSidebar>
+                <!-- 라이브 퀴즈 관련 -->
+                <LiveQuizCard title="LIVE QUIZ 진행중" subtitle="인공지능 윤리 가이드라인 핵심..." timeRemaining="00:15" />
+                <!-- 참여도 -->
+                <EngagementStats :engagementScore="engagementScore" :currentEmotion="currentEmotion"
+                    :focusStatus="focusStatus" />
+                <!-- 채팅/질문 -->
+                <LiveChatContainer :chatList="chatList" :qaList="qaList" @send-message="sendChatMessage" />
+            </LiveSidebar>
+
+            <!-- MediaPipe용 숨겨진 Video (Janus Stream 미러링) -->
+            <video ref="mediaPipeVideo" class="hidden" autoplay playsinline muted></video>
+        </main>
+
+        <!-- 서프라이즈 퀴즈 모달 -->
+        <LearnerQuizModal :isOpen="isQuizModalOpen" :quizData="surpriseQuizData" @close="handleQuizClose" />
+    </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { useVideoRoomStore } from '@/stores/videoRoom';
+import { useWorkspaceStore } from '@/stores/workspace';
+import { useUserStore } from '@/stores/user';
+import { MediaPipeManager } from '@/utils/mediapipe';
+import type { GazeResult } from '@/utils/gazeTracker';
+import SockJS from 'sockjs-client';
+import Stomp from 'stompjs';
+import { Client } from '@stomp/stompjs';
+
+// Components
+import LiveSessionHeader from '@/components/Learner/LearnerLiveSession/LiveSessionHeader.vue';
+import LiveVideoArea from '@/components/Learner/LearnerLiveSession/LiveVideoArea.vue';
+import LiveControlDock from '@/components/Learner/LearnerLiveSession/LiveControlDock.vue';
+import LiveSidebar from '@/components/Learner/LearnerLiveSession/LiveSidebar.vue';
+import LiveQuizCard from '@/components/Learner/LearnerLiveSession/LiveQuizCard.vue';
+import EngagementStats from '@/components/Learner/LearnerLiveSession/EngagementStats.vue';
+import LiveChatContainer from '@/components/Learner/LearnerLiveSession/LiveChatContainer.vue';
+import DeviceSetupModal from '@/components/Learner/LearnerLiveSession/DeviceSetupModal.vue';
+import LearnerQuizModal from '@/components/Learner/LearnerLiveSession/LearnerQuizModal.vue';
+
+const route = useRoute();
+const videoStore = useVideoRoomStore();
+const workspaceStore = useWorkspaceStore();
+
+// State
+const elapsedTime = ref(0); // seconds (00:45:12)
+const isMicOn = ref(false);
+const isCameraOn = ref(false);
+const isHandRaised = ref(false);
+const showWarning = ref(true);
+const engagementScore = ref(35);
+const focusStatus = ref('집중도 낮음 (Warning)');
+const activeTab = ref<'chat' | 'qa'>('qa');
+const newMessage = ref('');
+const isAnonymous = ref(false);
+
+// WebSocket 상태 관리
+// const stompClient = ref<Client | null>(null);
+const chatList = ref<any[]>([]);
+const qaList = ref<any[]>([]);
+const surpriseQuizData = ref<any>(null);
+const isQuizModalOpen = ref(false);
+
+const socketUrl = import.meta.env.VITE_CHAT_SOCKET_URL;
+
+
+// 실시간 감정분석 이모지 라벨링
+const currentEmotion = ref({
+    emoji: '🤩',
+    label: '흥미로움'
+});
+// Timer
+let timerInterval: number | null = null;
+const isSetupComplete = ref(false);
+
+// 디버깅용 상태
+const debugGazeStatus = ref({
+    isLookingAtMonitor: false,
+    isStable: true,
+    isAbsent: false,
+    timestamp: '-'
+});
+
+const currentGaze = ref({ x: 0.5, y: 0.5 }); // [NEW] 실시간 시선 좌표
+const lastRawGaze = ref({ x: 0.5, y: 0.5 }); // Store raw gaze for calibration
+
+//================================================================================
+
+// MediaPipe
+const mediaPipeVideo = ref<HTMLVideoElement | null>(null);
+let mediaPipeManager: MediaPipeManager | null = null;
+
+// 연결 관련
+const isAuthorized = ref(false);
+const isConnected = ref(false); // [NEW] 연결 상태 관리
+const base_url = import.meta.env.VITE_SOCKET_BASE_URL;
+console.log(base_url);
+const sessionId = route.params.sessionId;
+const userStore = useUserStore();
+const memberId = userStore.user.memberId;
+const accessToken = localStorage.getItem('accessToken');
+
+
+let stompClient: any = null;
+let binarySocket: WebSocket | null = null;
+
+// STOMP 연결 (결과 수신)
+const connectStomp = () => {
+    const socketUrl = `https://${base_url}/message`
+
+    console.log(`[STOMP] Connecting to: ${socketUrl}`);
+    const socket = new SockJS(socketUrl);
+    stompClient = Stomp.over(socket);
+    stompClient.debug = () => { }; // 디버그 로그 끄기
+
+    stompClient.connect({ Authorization: `Bearer ${accessToken}` }, () => {
+        console.log("STOMP Connected!");
+        isConnected.value = true; // 연결 상태 업데이트
+        // 결과 구독
+        stompClient.subscribe(`/topic/analysis/${sessionId}/2`, (res: any) => {
+            const result = JSON.parse(res.body);
+            console.log("분석 결과 수신:", result);
+
+            // 1. 강의 시작 시간 수신
+            if (result.startTime) {
+                console.log("강의 시작 시간:", result.startTime);
+                // 필요한 경우 시작 시간 처리 로직 추가
+            }
+
+            // 2. 통합 분석 결과 수신 (TrainerSessionTest 구조 참조)
+            console.log(`[Emotion Detail] 
+                1위: ${result.emotion1} (${result.confidence1}%)
+                2위: ${result.emotion2} (${result.confidence2}%)
+                3위: ${result.emotion3} (${result.confidence3}%)`);
+
+            // 3. 몰입도 분석 결과 수신 (concentrateValue 존재 시)
+            if (result.concentrateValue !== undefined) {
+                engagementScore.value = result.concentrateValue;
+
+            }
+        });
+        connectBinarySocket();
+
+    }, (error: any) => {
+        console.error("STOMP Connection Error:", error);
+    })
+}
+
+// Binary WebSocket 연결 (이미지 전송)
+const connectBinarySocket = () => {
+    // 쿼리 파라미터로 토큰 전송
+    const url = `wss://i14a309.p.ssafy.io/emotion/${sessionId}?member-id=2`;
+    console.log(`[Binary] Connecting to: ${url}`);
+
+    try {
+        binarySocket = new WebSocket(url);
+        binarySocket.binaryType = "arraybuffer";
+
+        binarySocket.onopen = () => {
+            // JSON 형태로 토큰 전송
+            console.log("Binary WebSocket connected!");
+            // 인증절차 없이 데이터 전송 가능하도록 플래그 허용
+            isAuthorized.value = true;
+        }
+
+        binarySocket.onerror = (error) => {
+            console.error("Binary Socket Error:", error);
+        };
+
+        binarySocket.onclose = (event) => {
+            console.log("Binary Socket Closed:", event.code, event.reason);
+            isAuthorized.value = false;
+        };
+
+    } catch (error) {
+        console.error("Failed to create WebSocket:", error);
+    }
+}
+
+// Callbacks
+const handleCropReady = (arrayBuffer: ArrayBuffer) => {
+    console.log(`[MediaPipe] Cropped data ready: ${arrayBuffer.byteLength} bytes`);
+    // TODO: Send to backend if needed
+    const socket = binarySocket;
+    if (!socket) {
+        console.warn("[Debug] 소켓 객체가 아직 생성되지 않음");
+        return;
+    }
+
+    // socket이 열려있고, 우리가 만든 isAuthorize가 true일 때 전송
+    if (!socket || socket.readyState !== WebSocket.OPEN || !isAuthorized.value) return;
+
+    const packet = new ArrayBuffer(4 + arrayBuffer.byteLength);
+    const view = new DataView(packet);
+
+    // 기존 HTML 방식과 동일하게 타임라인(elapsedTime)을 헤더에 삽입
+    view.setFloat32(0, elapsedTime.value, false);
+
+    const uint8View = new Uint8Array(packet, 4);
+    uint8View.set(new Uint8Array(arrayBuffer));
+
+    socket.send(packet);
+    console.log(`[Sent] Timeline: ${elapsedTime.value}s, Size: ${packet.byteLength} bytes`);
+};
+
+const startMediaPipe = async () => {
+    if (!videoStore.localStream || !mediaPipeVideo.value) return;
+
+    if (!mediaPipeManager) {
+        mediaPipeManager = new MediaPipeManager(
+            mediaPipeVideo.value,
+            handleCropReady,
+            undefined, // internal canvas
+            handleAnalysisResult
+        );
+        await mediaPipeManager.init();
+    }
+
+    try {
+        console.log("[MediaPipe] Starting with Janus Local Stream...");
+        await mediaPipeManager.start(videoStore.localStream);
+    } catch (e) {
+        console.error("[MediaPipe] Start failed", e);
+    }
+};
+
+const stopMediaPipe = () => {
+    if (mediaPipeManager) {
+        mediaPipeManager.stop();
+        mediaPipeManager = null;
+    }
+};
+
+const disconnectAll = () => {
+    console.log("🛑 Force disconnecting all sockets...");
+
+    // MediaPipe 중지 (더 이상 데이터 생성 X)
+    stopMediaPipe();
+
+    // STOMP 연결 해제
+    if (stompClient) {
+        try {
+            stompClient.disconnect(() => {
+                console.log("✅ STOMP Disconnected");
+            });
+        } catch (e) {
+            console.error("STOMP Disconnect Error", e);
+        }
+    }
+
+    // Binary Socket 연결 해제
+    if (binarySocket) {
+        binarySocket.close();
+        binarySocket = null;
+        console.log("✅ Binary Socket Closed");
+    }
+
+    // 상태 초기화
+    isConnected.value = false;
+    isAuthorized.value = false;
+};
+
+const lastStompSentTime = ref(0);
+
+// 집중도 분석결과 전송 (Called every frame from MediaPipe)
+const handleAnalysisResult = (focusData: GazeResult) => {
+    
+    // 0. Update Last Raw Gaze (for calibration)
+    if (focusData.rawGaze) {
+        lastRawGaze.value = focusData.rawGaze;
+    }
+
+    // 1. Update Gaze UI (Always update this for feedback - 30fps)
+    currentGaze.value = focusData.gaze;
+
+    // Debug 상태 업데이트 (Refresh 30fps)
+    debugGazeStatus.value = {
+        isLookingAtMonitor: focusData.isLookingAtMonitor,
+        isStable: focusData.isStable,
+        isAbsent: focusData.isAbsent,
+        timestamp: new Date().toLocaleTimeString()
+    };
+
+    // 2. Setup Check - Stop here if not fully joined
+    if (!isSetupComplete.value) return;
+
+    // 3. Send to Server (Throttle: 1 second interval)
+    const now = Date.now();
+    if (now - lastStompSentTime.value < 1000) return;
+
+    if (!stompClient || !stompClient.connected) return;
+
+    const payload = {
+        timeline: elapsedTime.value,
+        focusOn: focusData.isLookingAtMonitor,
+        movement: !focusData.isStable,
+        empty: focusData.isAbsent
+    }
+
+    // console.log(`📤 [Learner] Sending analysis data to /app/concentrate/${sessionId}/2`, payload);
+
+    stompClient.send(
+        `/app/concentrate/${sessionId}/2`, 
+        {}, 
+        JSON.stringify(payload)
+    );
+    lastStompSentTime.value = now;
+}
+
+const handleCalibration = (avgGaze?: { x: number, y: number }) => {
+    if (mediaPipeManager) {
+        // If averaged gaze is provided (from 3s intent), use it. Otherwise use last raw gaze.
+        const currentRaw = avgGaze || lastRawGaze.value;
+
+        // Calibrate: Map "Current/Averaged Raw Gaze" to "Center Target (0.5, 0.5)"
+        console.log("Creating Calibration Profile...", currentRaw);
+        mediaPipeManager.calibrate(0.5, 0.5, currentRaw.x, currentRaw.y);
+        alert("✅ 시선 중앙 보정이 완료되었습니다.");
+    }
+};
+
+// [Verified] Watch for local stream changes
+watch(
+    () => videoStore.localStream,
+    (newStream) => {
+        // allow starting mediapipe even during setup for calibration
+        if (newStream) {
+            startMediaPipe();
+        } else {
+            stopMediaPipe();
+        }
+    },
+    { immediate: true }
+);
+
+//================================================================================
+
+// --- WebSocket 연결 ---
+const connectWebSocket = () => {
+    const sessionId = route.params.sessionId as string;
+
+    stompClient.value = new Client({
+        webSocketFactory: () => new SockJS(socketUrl),
+        connectHeaders: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        reconnectDelay: 5000,
+        onConnect: () => {
+            console.log('[Learner] WebSocket Connected ✅');
+
+            // 1. 채팅/질문 구독
+            stompClient.value?.subscribe(`/topic/chat-room/${sessionId}`, (res: any) => {
+                console.log('[Learner] Chat/QA Message:', res.body);
+                const msg = JSON.parse(res.body);
+
+                if (!msg.questionId) {
+                    chatList.value.push(msg);
+                } else {
+                    qaList.value.push(msg);
+                }
+            });
+
+            // 2. 서프라이즈 퀴즈 구독
+            stompClient.value?.subscribe(`/topic/surprise-quiz/${sessionId}`, (res: any) => {
+                console.log('[Learner] Surprise Quiz:', res.body);
+                surpriseQuizData.value = JSON.parse(res.body);
+                isQuizModalOpen.value = true;
+            });
+        },
+        onStompError: (frame) => {
+            console.error('[Learner] Broker error:', frame.headers['message']);
+        },
+        onWebSocketClose: () => {
+            console.log('[Learner] Connection Closed ❌');
+        }
+    });
+
+    stompClient.value.activate();
+};
+
+// 메시지 전송
+const sendChatMessage = (content: string, type: string, questionId?: number | string | null) => {
+    if (!content.trim() || !stompClient.value?.connected) return;
+    const sessionId = route.params.sessionId as string;
+
+    const payload = {
+        type,
+        content,
+        questionId: questionId || null
+    };
+
+    stompClient.value.publish({
+        destination: `/app/chat-room/${sessionId}`,
+        body: JSON.stringify(payload)
+    });
+};
+
+// 퀴즈 모달 닫기
+const handleQuizClose = () => {
+    isQuizModalOpen.value = false;
+};
+
+const handleJoinSession = async () => {
+    isSetupComplete.value = true;
+    startSessionTimer();
+
+    // 방 입장 로직: videoStore의 initJanus가 방 조회, 연결, 플러그인 부착 및 입장을 모두 수행합니다.
+    const sessionId = route.params.sessionId;
+    if (sessionId) {
+        try {
+            await videoStore.initJanus(sessionId as string);
+            console.log("방 입장 성공")
+            connectStomp();
+        } catch (e) {
+            console.error("Session Entry Failed", e);
+            // TODO: User notification UI
+        }
+    }
+};
+
+const startSessionTimer = () => {
+    timerInterval = window.setInterval(() => {
+        elapsedTime.value++;
+    }, 1000);
+}
+
+onMounted(async () => {
+    // 1. 타이머 시작 -> 입장 후 시작으로 변경
+    // startSessionTimer();
+
+    // 2. 방 정보 사전 로딩 (Device Setup 중에도 방 존재 여부는 확인 가능)
+    // await videoStore.fetchRoomInfo(route.params.sessionId);
+});
+
+onUnmounted(() => {
+    if (timerInterval) clearInterval(timerInterval);
+    stopMediaPipe();
+    stompClient.value?.deactivate();
+});
+
+// 화면 컨트롤 토글
+const toggleMic = () => {
+    isMicOn.value = !isMicOn.value;
+    videoStore.setAudioEnabled(isMicOn.value);
+};
+const toggleCamera = () => {
+    isCameraOn.value = !isCameraOn.value;
+    videoStore.setVideoEnabled(isCameraOn.value);
+
+    if (isCameraOn.value && !videoStore.camHandle) {
+        // 만약 어떤 이유로 퍼블리싱이 안되어 있다면 시도
+        videoStore.publishCamera();
+    }
+};
+
+const raiseHand = () => {
+    isHandRaised.value = !isHandRaised.value;
+    // TODO: signal logic
+};
+</script>
+
+<style scoped></style>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
 import { useTrainerLiveStore } from '@/stores/trainerlive';
 
 const trainerLiveStore = useTrainerLiveStore();
@@ -9,8 +8,18 @@ const isPublishing = (studentId: string | number) => {
   return trainerLiveStore.studentStreams.has(String(studentId));
 };
 
-/** 2. 집중도 경고 기준 (예: 40% 미만일 때) */
-const isLowConcentration = (score: number) => score < 40;
+/** 2. 상태별 스타일 정보 */
+const getStatusInfo = (status: string) => {
+  switch (status) {
+    case 'FEVER':
+      return { label: '집중중', color: 'bg-emerald-500', textColor: 'text-emerald-600', bgClass: 'bg-emerald-50 border-emerald-200' };
+    case 'EMPTY':
+      return { label: '자리비움', color: 'bg-amber-500', textColor: 'text-amber-600', bgClass: 'bg-amber-50 border-amber-200' };
+    case 'NORMAL':
+    default:
+      return { label: '보통', color: 'bg-slate-400', textColor: 'text-slate-500', bgClass: '' };
+  }
+};
 
 /** 3. 모니터링 시작 핸들러 */
 const handleMonitor = (studentId: string | number) => {
@@ -42,8 +51,8 @@ const handleMonitor = (studentId: string | number) => {
         trainerLiveStore.selectedStudentId === String(student.id)
           ? 'bg-indigo-50 border-indigo-200 shadow-sm'
           : 'bg-white border-slate-50 hover:border-slate-200 hover:shadow-md',
-        // 집중도 저하 시 빨간색 깜빡임 애니메이션 (Tailwind animate-pulse 활용)
-        isLowConcentration(student.concentrationScore) ? 'bg-red-50 border-red-200 animate-[pulse_2s_infinite]' : ''
+        // 상태별 배경색 (FEVER: 초록, EMPTY: 노랑)
+        getStatusInfo(student.status).bgClass
       ]">
         <div class="flex items-center gap-3">
           <div class="relative">
@@ -59,16 +68,11 @@ const handleMonitor = (studentId: string | number) => {
           <div class="flex flex-col gap-0.5">
             <div class="flex items-center gap-1.5">
               <span class="text-[14px] font-bold text-slate-800">{{ student.name }}</span>
-              <span v-if="isLowConcentration(student.concentrationScore)"
-                class="text-[9px] font-black text-red-500 bg-red-100 px-1.5 rounded uppercase">Warning</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <div class="w-16 h-1 bg-slate-100 rounded-full overflow-hidden">
-                <div class="h-full transition-all duration-500"
-                  :class="isLowConcentration(student.concentrationScore) ? 'bg-red-500' : 'bg-indigo-500'"
-                  :style="{ width: `${student.concentrationScore}%` }"></div>
-              </div>
-              <span class="text-[10px] font-bold text-slate-400">{{ student.concentrationScore }}%</span>
+              <!-- 상태 뱃지 -->
+              <span class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase"
+                :class="[getStatusInfo(student.status).color, 'text-white']">
+                {{ getStatusInfo(student.status).label }}
+              </span>
             </div>
           </div>
         </div>
@@ -93,12 +97,12 @@ const handleMonitor = (studentId: string | number) => {
       </div>
     </div>
 
+    <!-- 범례 -->
     <div
       class="mt-auto pt-4 border-t border-slate-50 flex justify-around text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-      <div class="flex items-center gap-1"><span class="size-2 bg-emerald-500 rounded-full"></span> Live</div>
-      <div class="flex items-center gap-1"><span class="size-2 bg-red-500 rounded-full animate-pulse"></span> Low Focus
-      </div>
-      <div class="flex items-center gap-1"><span class="size-2 bg-slate-300 rounded-full"></span> Offline</div>
+      <div class="flex items-center gap-1"><span class="size-2 bg-emerald-500 rounded-full"></span> 집중중</div>
+      <div class="flex items-center gap-1"><span class="size-2 bg-slate-400 rounded-full"></span> 보통</div>
+      <div class="flex items-center gap-1"><span class="size-2 bg-amber-500 rounded-full"></span> 자리비움</div>
     </div>
   </div>
 </template>
@@ -120,19 +124,5 @@ const handleMonitor = (studentId: string | number) => {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #cbd5e1;
-}
-
-/* 집중도 저하 시 깜빡임 애니메이션 커스텀 (필요시) */
-@keyframes pulse {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    background-color: #fef2f2;
-    border-color: #fecaca;
-  }
 }
 </style>

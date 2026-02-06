@@ -30,18 +30,6 @@ const trainerLiveStore = useTrainerLiveStore();
           <span class="material-symbols-outlined text-[20px]">switch_video</span>
           화면 변경
         </button>
-
-        <button
-          @click="trainerLiveStore.isAnalysisStarted ? trainerLiveStore.stopClass() : trainerLiveStore.startClass()"
-          :class="[
-            'flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-sm transition-all',
-            trainerLiveStore.isAnalysisStarted ? 'bg-red-600 text-white shadow-lg shadow-red-900/20' : 'bg-indigo-600 text-white hover:bg-indigo-700'
-          ]">
-          <span class="material-symbols-outlined text-[20px]">
-            {{ trainerLiveStore.isAnalysisStarted ? 'stop_circle' : 'play_circle' }}
-          </span>
-          {{ trainerLiveStore.isAnalysisStarted ? '수업 종료' : '수업 시작 (화면공유)' }}
-        </button>
       </div>
 
       <div class="flex items-center gap-3 px-6 py-2.5 bg-black/30 rounded-full border border-white/5">

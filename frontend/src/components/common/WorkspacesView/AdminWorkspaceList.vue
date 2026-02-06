@@ -79,7 +79,7 @@
                     <div class="flex items-center gap-4">
                         <div class="w-16 h-16 rounded-2xl bg-linear-to-br from-indigo-50 to-purple-50 flex items-center justify-center text-xl font-bold text-indigo-600 border border-slate-100 shadow-inner overflow-hidden">
                             <img v-if="ws.logoUrl" :src="ws.logoUrl" class="w-full h-full object-cover" alt="Logo">
-                            <span v-else class="material-symbols-outlined text-3xl">domain</span>
+                            <span v-else class="text-2xl">{{ (ws.name || '?').substring(0, 1).toUpperCase() }}</span>
                         </div>
                         <div>
                             <h3 class="text-lg font-bold text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1">{{ ws.name }}</h3>

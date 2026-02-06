@@ -1,21 +1,36 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+
 // 감정 데이터 인터페이스
 interface Emotion {
   label: string;
   emoji: string;
   percentage: number;
   color: string;
-  rank: number;
+  rank?: number;
 }
 
-const topEmotions: Emotion[] = [
-  { rank: 1, label: '놀람 (Surprise)', emoji: '😲', percentage: 45, color: 'bg-indigo-500' },
-  { rank: 2, label: '평온 (Calm)', emoji: '😌', percentage: 22, color: 'bg-indigo-300' }
-];
+const props = defineProps<{
+  emotions: Emotion[];
+}>();
+
+const topEmotions = computed(() => {
+  if (!props.emotions || props.emotions.length === 0) {
+    return [
+      { rank: 1, label: '데이터 대기 중', emoji: '⏳', percentage: 0, color: 'bg-slate-300' },
+      { rank: 2, label: '데이터 대기 중', emoji: '⏳', percentage: 0, color: 'bg-slate-200' }
+    ];
+  }
+  return props.emotions.slice(0, 2).map((emo, index) => ({
+    ...emo,
+    rank: index + 1
+  }));
+});
 </script>
 
 <template>
-  <div class="bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col h-full group hover:shadow-md transition-shadow">
+  <div
+    class="bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col h-full group hover:shadow-md transition-shadow">
     <div class="flex items-center justify-between mb-8 px-1">
       <div class="flex items-center gap-2">
         <div class="size-8 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
@@ -30,11 +45,13 @@ const topEmotions: Emotion[] = [
     </div>
 
     <div class="flex gap-4 items-end flex-1">
-      <div v-for="emo in topEmotions" :key="emo.rank" class="flex-1 bg-white rounded-[2rem] p-5 shadow-sm border border-slate-100 relative overflow-hidden group/card hover:border-indigo-200 transition-colors">
-        <div class="absolute top-3 left-3 px-2 py-0.5 bg-slate-50 rounded-lg group-hover/card:bg-indigo-50 transition-colors">
-            <p class="text-[8px] font-black text-slate-400 group-hover/card:text-indigo-400">Top {{ emo.rank }}</p>
+      <div v-for="emo in topEmotions" :key="emo.rank"
+        class="flex-1 bg-white rounded-[2rem] p-5 shadow-sm border border-slate-100 relative overflow-hidden group/card hover:border-indigo-200 transition-colors">
+        <div
+          class="absolute top-3 left-3 px-2 py-0.5 bg-slate-50 rounded-lg group-hover/card:bg-indigo-50 transition-colors">
+          <p class="text-[8px] font-black text-slate-400 group-hover/card:text-indigo-400">Top {{ emo.rank }}</p>
         </div>
-        
+
         <div class="flex flex-col items-center pt-4">
           <span class="text-4xl mb-3 drop-shadow-sm">{{ emo.emoji }}</span>
           <p class="text-[11px] font-bold text-slate-500 mb-1">{{ emo.label }}</p>
@@ -42,13 +59,10 @@ const topEmotions: Emotion[] = [
             <span class="text-3xl font-black text-slate-800 tracking-tight">{{ emo.percentage }}</span>
             <span class="text-xs font-bold text-slate-400">%</span>
           </div>
-          
+
           <div class="w-full h-2 bg-slate-100 rounded-full mt-4 overflow-hidden">
-            <div 
-              class="h-full rounded-full transition-all duration-1000 ease-out" 
-              :class="emo.color"
-              :style="{ width: `${emo.percentage}%` }"
-            ></div>
+            <div class="h-full rounded-full transition-all duration-1000 ease-out" :class="emo.color"
+              :style="{ width: `${emo.percentage}%` }"></div>
           </div>
         </div>
       </div>

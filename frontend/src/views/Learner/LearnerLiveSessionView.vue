@@ -1,13 +1,71 @@
 <template>
     <div class="bg-slate-50 text-slate-900 h-screen flex flex-col overflow-hidden relative">
         <!-- Device Setup Modal -->
-        <DeviceSetupModal v-if="!isSetupComplete" @join="handleJoinSession" />
+        <DeviceSetupModal v-if="!isSetupComplete" :currentGaze="currentGaze" :rawGaze="lastRawGaze"
+            @join="handleJoinSession" @calibrate="handleCalibration" />
 
         <!-- INFO: 임시 연결 종료 버튼 -->
         <button @click="disconnectAll"
             class="absolute top-20 left-6 z-50 bg-red-600 text-white px-3 py-2 rounded-md shadow-lg text-sm font-bold hover:bg-red-700 transition-colors">
             🔌 연결 끊기 (TEST)
         </button>
+
+        <!-- INFO: Gaze Tracker 디버그 UI -->
+        <div
+            class="absolute top-36 left-6 z-50 bg-black/80 text-white p-4 rounded-lg shadow-xl text-xs space-y-2 pointer-events-none">
+            <h3 class="font-bold text-yellow-400 mb-2">👀 Gaze Tracker Status</h3>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+                <span class="text-slate-400">Looking At Monitor:</span>
+                <span :class="debugGazeStatus.isLookingAtMonitor ? 'text-green-400 font-bold' : 'text-red-400'">
+                    {{ debugGazeStatus.isLookingAtMonitor ? 'YES' : 'NO' }}
+                </span>
+
+                <span class="text-slate-400">Stable (No Move):</span>
+                <span :class="debugGazeStatus.isStable ? 'text-green-400' : 'text-yellow-400 font-bold'">
+                    {{ debugGazeStatus.isStable ? 'YES' : 'NO (!)' }}
+                </span>
+
+                <span class="text-slate-400">User Present:</span>
+                <span :class="!debugGazeStatus.isAbsent ? 'text-blue-400' : 'text-red-500 font-bold'">
+                    {{ !debugGazeStatus.isAbsent ? 'YES' : 'ABSENT' }}
+                </span>
+            </div>
+
+            <!-- 시선 시각화 플롯 -->
+            <div class="mt-3 border-t border-slate-700 pt-3">
+                <div class="text-[10px] text-slate-400 mb-1">Live Gaze Plot</div>
+                <div
+                    class="relative w-[140px] h-[100px] bg-slate-900 border border-slate-600 rounded overflow-hidden mx-auto">
+                    <!-- Monitor Area (Safe Zone) : x 0.2~0.8, y 0.1~0.9 -->
+                    <!-- Width: 60% (0.8-0.2), Left: 20% | Height: 80% (0.9-0.1), Top: 10% -->
+                    <div class="absolute border-2 border-dashed border-green-500/50"
+                        style="left: 20%; top: 10%; width: 60%; height: 80%;">
+                        <div class="absolute top-1 left-1 text-[8px] text-green-500/70">Monitor</div>
+                    </div>
+
+                    <!-- Center Crosshair -->
+                    <div class="absolute top-1/2 left-0 w-full h-[1px] bg-slate-700/50"></div>
+                    <div class="absolute left-1/2 top-0 h-full w-[1px] bg-slate-700/50"></div>
+
+                    <!-- Gaze Point -->
+                    <!-- Flip X coordinate because camera is mirrored? Usually webcam preview is mirrored. -->
+                    <!-- Let's assume raw coordinates: x:0 is left, x:1 is right. -->
+                    <div class="absolute w-2.5 h-2.5 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)] transition-all duration-75 ease-out transform -translate-x-1/2 -translate-y-1/2"
+                        :style="{
+                            left: `${currentGaze.x * 100}%`,
+                            top: `${currentGaze.y * 100}%`
+                        }">
+                    </div>
+                </div>
+                <div class="text-[9px] text-slate-500 text-center mt-1">
+                    X: {{ currentGaze.x.toFixed(2) }} / Y: {{ currentGaze.y.toFixed(2) }}
+                </div>
+            </div>
+
+            <div class="mt-2 text-[10px] text-slate-500 border-t border-slate-700 pt-1">
+                Last Update: {{ debugGazeStatus.timestamp }}
+            </div>
+        </div>
 
         <LiveSessionHeader sessionTitle="인공지능 윤리와 실제 실습" sessionSubtitle="디지털 비즈니스 전략 강의 (4주차)"
             :elapsedTime="elapsedTime" />
@@ -42,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useVideoRoomStore } from '@/stores/videoRoom';
 import { useWorkspaceStore } from '@/stores/workspace';
@@ -50,7 +108,6 @@ import { useUserStore } from '@/stores/user';
 import { MediaPipeManager } from '@/utils/mediapipe';
 import type { GazeResult } from '@/utils/gazeTracker';
 import SockJS from 'sockjs-client';
-import Stomp from 'stompjs';
 import { Client } from '@stomp/stompjs';
 
 // Components
@@ -78,10 +135,17 @@ const engagementScore = ref(35);
 const focusStatus = ref('집중도 낮음 (Warning)');
 const activeTab = ref<'chat' | 'qa'>('qa');
 const newMessage = ref('');
-const isAnonymous = ref(false);
 
+// Time Sync (서버 시간 동기화)
+const lectureStartTime = ref<Date | null>(null); // 서버에서 받은 강의 시작 시간
+const isSynced = ref<boolean>(false); // 시간 동기화 완료 여부
+const timeOffset = ref<number>(0); // 클라이언트-서버 시간 오프셋 (ms)
+const isAnalysisActive = ref<boolean>(false); // ✅ 분석 활성화 여부 (강사 시작 신호 후에만 true)
+const lastAnalysisTime = ref<number>(0);
+const isAnonymous = ref(false);
+// [REMOVED] diffInSeconds - 미사용 변수 제거
 // WebSocket 상태 관리
-// const stompClient = ref<Client | null>(null);
+const stompClient = ref<Client | null>(null);
 const chatList = ref<any[]>([]);
 const qaList = ref<any[]>([]);
 const surpriseQuizData = ref<any>(null);
@@ -99,6 +163,17 @@ const currentEmotion = ref({
 let timerInterval: number | null = null;
 const isSetupComplete = ref(false);
 
+// 디버깅용 상태
+const debugGazeStatus = ref({
+    isLookingAtMonitor: false,
+    isStable: true,
+    isAbsent: false,
+    timestamp: '-'
+});
+
+const currentGaze = ref({ x: 0.5, y: 0.5 }); // [NEW] 실시간 시선 좌표
+const lastRawGaze = ref({ x: 0.5, y: 0.5 }); // Store raw gaze for calibration
+
 //================================================================================
 
 // MediaPipe
@@ -112,60 +187,104 @@ const base_url = import.meta.env.VITE_SOCKET_BASE_URL;
 console.log(base_url);
 const sessionId = route.params.sessionId;
 const userStore = useUserStore();
-const memberId = userStore.user.memberId;
+
+// ✅ computed로 변경하여 userStore가 업데이트될 때 자동으로 가져옴
+const memberId = computed(() => userStore.user?.memberId || 0);
 const accessToken = localStorage.getItem('accessToken');
 
+console.log('[Init] memberId:', memberId.value, 'sessionId:', sessionId);
 
-let stompClient: any = null;
+// [REMOVED] sessionStartTime - lectureStartTime으로 대체
+
+
+
 let binarySocket: WebSocket | null = null;
 
-// STOMP 연결 (결과 수신)
-const connectStomp = () => {
-    const socketUrl = `https://${base_url}/message`
+// STOMP 연결 및 구독 통합
+const connectWebSocket = () => {
+    // base_url이 이미 https://를 포함하는지 확인
+    const socketUrl = base_url.startsWith('http')
+        ? `${base_url}/message`
+        : `https://${base_url}/message`;
 
-    console.log(`[STOMP] Connecting to: ${socketUrl}`);
-    const socket = new SockJS(socketUrl);
-    stompClient = Stomp.over(socket);
-    stompClient.debug = () => { }; // 디버그 로그 끄기
+    console.log(`[Learner Live] Connecting to: ${socketUrl}`);
 
-    stompClient.connect({ Authorization: `Bearer ${accessToken}` }, () => {
-        console.log("STOMP Connected!");
-        isConnected.value = true; // 연결 상태 업데이트
-        // 결과 구독
-        stompClient.subscribe(`/topic/analysis/${sessionId}/${memberId}`, (res: any) => {
-            const result = JSON.parse(res.body);
-            console.log("분석 결과 수신:", result);
+    stompClient.value = new Client({
+        webSocketFactory: () => new SockJS(socketUrl),
+        connectHeaders: {
+            Authorization: `Bearer ${accessToken}`
+        },
+        reconnectDelay: 5000,
+        debug: () => { }, // 디버그 로그 끄기
+        onConnect: () => {
+            console.log("[Learner Live] STOMP Connected! ✅");
+            isConnected.value = true;
 
-            // 1. 강의 시작 시간 수신
-            if (result.startTime) {
-                console.log("강의 시작 시간:", result.startTime);
-                // 필요한 경우 시작 시간 처리 로직 추가
-            }
+            // 1. 분석 결과 구독 (memberId 포함)
+            stompClient.value?.subscribe(`/topic/analysis/${sessionId}/${memberId.value}`, (res) => {
+                const result = JSON.parse(res.body);
+                console.log("[Learner Live] 분석 결과 수신:", result);
 
-            // 2. 통합 분석 결과 수신 (TrainerSessionTest 구조 참조)
-            console.log(`[Emotion Detail] 
-                1위: ${result.emotion1} (${result.confidence1}%)
-                2위: ${result.emotion2} (${result.confidence2}%)
-                3위: ${result.emotion3} (${result.confidence3}%)`);
+                // 강의 시작 시간 수신 (강사가 녹화 시작 버튼 클릭 시)
+                if (result.startTime) {
+                    handleLectureStartTime(result.startTime);
+                    return;
+                }
+                // 집중도 데이터
+                if (result.concentrateValue !== undefined) {
+                    engagementScore.value = result.concentrateValue;
+                    console.log("[Learner Live] 집중도 데이터 수신:", result.concentrateValue);
+                }
+            });
 
-            // 3. 몰입도 분석 결과 수신 (concentrateValue 존재 시)
-            if (result.concentrateValue !== undefined) {
-                engagementScore.value = result.concentrateValue;
+            // 2. 채팅/질문 구독
+            stompClient.value?.subscribe(`/topic/chat-room/${sessionId}`, (res) => {
+                console.log('[Learner Live] Chat/QA Message:', res.body);
+                const msg = JSON.parse(res.body);
+                if (!msg.questionId) {
+                    chatList.value.push(msg);
+                } else {
+                    qaList.value.push(msg);
+                }
+            });
 
-            }
-        });
-        connectBinarySocket();
+            // 3. 서프라이즈 퀴즈 구독
+            stompClient.value?.subscribe(`/topic/surprise-quiz/${sessionId}`, (res) => {
+                console.log('[Learner Live] Surprise Quiz:', res.body);
+                surpriseQuizData.value = JSON.parse(res.body);
+                isQuizModalOpen.value = true;
+            });
 
-    }, (error: any) => {
-        console.error("STOMP Connection Error:", error);
-    })
+            // 4. 수업 시작 시간 구독 (강사가 브로드캐스트)
+            stompClient.value?.subscribe(`/topic/session/${sessionId}/start-time`, (res) => {
+                console.log('[Learner Live] Start Time Received:', res.body);
+                const data = JSON.parse(res.body);
+                if (data.startTime) {
+                    handleLectureStartTime(data.startTime);
+                }
+            });
+
+            // Binary Socket 연결 트리거
+            connectBinarySocket();
+        },
+        onStompError: (frame) => {
+            console.error('[Learner Live] Broker error:', frame.headers['message']);
+        },
+        onWebSocketClose: () => {
+            console.log('[Learner Live] Connection Closed ❌');
+            isConnected.value = false;
+        }
+    });
+
+    stompClient.value.activate();
 }
 
 // Binary WebSocket 연결 (이미지 전송)
 const connectBinarySocket = () => {
     // 쿼리 파라미터로 토큰 전송
-    const url = `wss://i14a309.p.ssafy.io/emotion/${sessionId}?member-id=${memberId}`;
+    const url = `wss://i14a309.p.ssafy.io/emotion/${sessionId}?member-id=${memberId.value}`;
     console.log(`[Binary] Connecting to: ${url}`);
+
 
     try {
         binarySocket = new WebSocket(url);
@@ -194,28 +313,48 @@ const connectBinarySocket = () => {
 
 // Callbacks
 const handleCropReady = (arrayBuffer: ArrayBuffer) => {
-    console.log(`[MediaPipe] Cropped data ready: ${arrayBuffer.byteLength} bytes`);
-    // TODO: Send to backend if needed
     const socket = binarySocket;
-    if (!socket) {
-        console.warn("[Debug] 소켓 객체가 아직 생성되지 않음");
+
+    // 1. 소켓 및 권한 상태 확인
+    if (!socket || socket.readyState !== WebSocket.OPEN || !isAuthorized.value) {
         return;
     }
 
-    // socket이 열려있고, 우리가 만든 isAuthorize가 true일 때 전송
-    if (!socket || socket.readyState !== WebSocket.OPEN || !isAuthorized.value) return;
+    // 2. 타임라인 계산 (안전 장치 추가)
+    let currentTimeline = 0;
+    if (isSynced.value && lectureStartTime.value) {
+        const now = Date.now();
+        const serverTime = now - (timeOffset.value || 0);
+        const startTime = lectureStartTime.value.getTime();
+        // 경과 시간 계산 (ms -> s)
+        const elapsed = Math.floor((serverTime - startTime) / 1000);
+        // 음수 방지 및 숫자 여부 체크 (NaN 방어)
+        currentTimeline = isNaN(elapsed) ? 0 : Math.max(0, elapsed);
+    }
 
+    // 3. 패킷 생성 (4바이트 타임라인 + 이미지 데이터)
     const packet = new ArrayBuffer(4 + arrayBuffer.byteLength);
-    const view = new DataView(packet);
+    const uint8View = new Uint8Array(packet);
 
-    // 기존 HTML 방식과 동일하게 타임라인(elapsedTime)을 헤더에 삽입
-    view.setFloat32(0, elapsedTime.value, false);
+    // 4. 타임라인 주입 (Big-endian 방식 수동 기록)
+    // shift 연산자를 사용하면 Int32를 가장 확실하게 4개 바이트로 쪼갤 수 있습니다.
+    uint8View[0] = (currentTimeline >>> 24) & 0xFF;
+    uint8View[1] = (currentTimeline >>> 16) & 0xFF;
+    uint8View[2] = (currentTimeline >>> 8) & 0xFF;
+    uint8View[3] = currentTimeline & 0xFF;
 
-    const uint8View = new Uint8Array(packet, 4);
-    uint8View.set(new Uint8Array(arrayBuffer));
+    // 5. 이미지 데이터 복사 (인덱스 4부터 끝까지)
+    uint8View.set(new Uint8Array(arrayBuffer), 4);
 
+    // 6. 전송 및 디버깅
     socket.send(packet);
-    console.log(`[Sent] Timeline: ${elapsedTime.value}s, Size: ${packet.byteLength} bytes`);
+
+    // [디버그 로그] 콘솔에서 실제 전송되는 첫 4바이트를 직접 확인 가능
+    console.log(
+        `[Sent] Time: ${currentTimeline}s | ` +
+        `Size: ${packet.byteLength} bytes | ` +
+        `Header: [${uint8View.slice(0, 4).join(', ')}]`
+    );
 };
 
 const startMediaPipe = async () => {
@@ -253,14 +392,9 @@ const disconnectAll = () => {
     stopMediaPipe();
 
     // STOMP 연결 해제
-    if (stompClient) {
-        try {
-            stompClient.disconnect(() => {
-                console.log("✅ STOMP Disconnected");
-            });
-        } catch (e) {
-            console.error("STOMP Disconnect Error", e);
-        }
+    if (stompClient.value) {
+        stompClient.value.deactivate();
+        console.log("✅ STOMP Deactivated");
     }
 
     // Binary Socket 연결 해제
@@ -279,7 +413,7 @@ const disconnectAll = () => {
 watch(
     () => videoStore.localStream,
     (newStream) => {
-        if (newStream && isSetupComplete.value) {
+        if (newStream) {
             startMediaPipe();
         } else {
             stopMediaPipe();
@@ -290,79 +424,91 @@ watch(
 
 // 집중도 분석결과 전송
 const handleAnalysisResult = (focusData: GazeResult) => {
+    // 0. Update Last Raw Gaze (for calibration) - Always update
+    if (focusData.rawGaze) {
+        lastRawGaze.value = focusData.rawGaze;
+    }
+
+    // 1. Update Gaze UI (Always update this for feedback - 30fps for smooth calibration)
+    currentGaze.value = focusData.gaze;
+
+    // ✅ 1초 Throttling: 이후 로직은 1초에 한 번만 실행
+    const now = Date.now();
+    if (now - lastAnalysisTime.value < 1000) {
+        return;
+    }
+    lastAnalysisTime.value = now;
+
+    // 2. Debug 상태 업데이트 (1초마다)
+    debugGazeStatus.value = {
+        isLookingAtMonitor: focusData.isLookingAtMonitor,
+        isStable: focusData.isStable,
+        isAbsent: focusData.isAbsent,
+        timestamp: new Date().toLocaleTimeString()
+    };
+
     // Spring Boot로 전송할 데이터 포맷 매핑
     // timeline: string
     // focusOn: boolean (시선이 강의화면 내부)
     // movement: boolean (움직임 여부 -> !isStable)
     // empty: boolean (자리비움)
 
-    if (!stompClient || !stompClient.connected) return;
+    if (!stompClient.value || !stompClient.value.connected) return;
+
+    // ✅ 강사가 강의 시작하지 않았으면 전송하지 않음
+    if (!isSynced.value || !lectureStartTime.value) {
+        console.log('[Analysis] 강의 시작 대기 중... (분석은 계속, 전송 안 함)');
+        return;
+    }
+
+    // 타임라인 계산: 동기화된 시간 기준
+    const elapsed = Date.now() - lectureStartTime.value.getTime() - timeOffset.value;
+    const currentDiff = Math.max(0, Math.round(elapsed / 1000));
 
     const payload = {
-        timeline: elapsedTime.value,
+        timeline: currentDiff,
         focusOn: focusData.isLookingAtMonitor,
         movement: !focusData.isStable,
         empty: focusData.isAbsent
     }
+    console.log("세션 시작 시간: ", lectureStartTime.value, "현재 timeline:", currentDiff);
 
-    console.log(`📤 [Learner] Sending analysis data to /app/concentrate/${sessionId}/${memberId}`, payload);
+    console.log(`📤 [Learner] Sending analysis data to /app/concentrate/${sessionId}/${memberId.value}`, payload);
 
-    stompClient.send(
-        `/app/concentrate/${sessionId}/${memberId}`,
-        {},
-        JSON.stringify(payload)
-    );
+    stompClient.value.publish({
+        destination: `/app/concentrate/${sessionId}/${memberId.value}`,
+        body: JSON.stringify(payload)
+    });
     console.log("집중도 데이터 전송", JSON.stringify(payload))
+
 }
+
+// 캘리브레이션 핸들러 (시선 추적 보정)
+const handleCalibration = (avgGaze?: { x: number, y: number }) => {
+    if (mediaPipeManager) {
+        // If averaged gaze is provided (from 3s intent), use it. Otherwise use last raw gaze.
+        const currentRaw = avgGaze || lastRawGaze.value;
+
+        // Calibrate: Map "Current/Averaged Raw Gaze" to "Center Target (0.5, 0.5)"
+        console.log("Creating Calibration Profile...", currentRaw);
+        mediaPipeManager.calibrate(0.5, 0.5, currentRaw.x, currentRaw.y);
+        alert("✅ 시선 중앙 보정이 완료되었습니다.");
+    }
+};
 
 //================================================================================
 
-// --- WebSocket 연결 ---
-const connectWebSocket = () => {
-    const sessionId = route.params.sessionId as string;
-
-    stompClient.value = new Client({
-        webSocketFactory: () => new SockJS(socketUrl),
-        connectHeaders: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`
-        },
-        reconnectDelay: 5000,
-        onConnect: () => {
-            console.log('[Learner] WebSocket Connected ✅');
-
-            // 1. 채팅/질문 구독
-            stompClient.value?.subscribe(`/topic/chat-room/${sessionId}`, (res: any) => {
-                console.log('[Learner] Chat/QA Message:', res.body);
-                const msg = JSON.parse(res.body);
-
-                if (!msg.questionId) {
-                    chatList.value.push(msg);
-                } else {
-                    qaList.value.push(msg);
-                }
-            });
-
-            // 2. 서프라이즈 퀴즈 구독
-            stompClient.value?.subscribe(`/topic/surprise-quiz/${sessionId}`, (res: any) => {
-                console.log('[Learner] Surprise Quiz:', res.body);
-                surpriseQuizData.value = JSON.parse(res.body);
-                isQuizModalOpen.value = true;
-            });
-        },
-        onStompError: (frame) => {
-            console.error('[Learner] Broker error:', frame.headers['message']);
-        },
-        onWebSocketClose: () => {
-            console.log('[Learner] Connection Closed ❌');
-        }
-    });
-
-    stompClient.value.activate();
-};
 
 // 메시지 전송
 const sendChatMessage = (content: string, type: string, questionId?: number | string | null) => {
-    if (!content.trim() || !stompClient.value?.connected) return;
+    console.log('[Chat] sendChatMessage 호출됨:', { content, type, questionId });
+    console.log('[Chat] stompClient:', stompClient.value);
+    console.log('[Chat] stompClient connected:', stompClient.value?.connected);
+
+    if (!content.trim() || !stompClient.value?.connected) {
+        console.warn('[Chat] 메시지 전송 실패: content 비어있거나 연결 안됨');
+        return;
+    }
     const sessionId = route.params.sessionId as string;
 
     const payload = {
@@ -371,10 +517,15 @@ const sendChatMessage = (content: string, type: string, questionId?: number | st
         questionId: questionId || null
     };
 
+    console.log('[Chat] 메시지 전송 시도:', payload, 'to:', `/app/chat-room/${sessionId}`);
+
+    // @stomp/stompjs Client는 publish() 메서드 사용
     stompClient.value.publish({
         destination: `/app/chat-room/${sessionId}`,
         body: JSON.stringify(payload)
     });
+
+    console.log('[Chat] 메시지 전송 완료');
 };
 
 // 퀴즈 모달 닫기
@@ -391,8 +542,26 @@ const handleJoinSession = async () => {
     if (sessionId) {
         try {
             await videoStore.initJanus(sessionId as string);
-            console.log("방 입장 성공")
-            connectStomp();
+            console.log("방 입장 성공 - 카메라 송출 대기 중...");
+
+            // ✅ Janus Publish 완료 대기 (최대 10초)
+            const checkPublish = setInterval(() => {
+                if (videoStore.isPublished) {
+                    console.log("✅ Janus Publish 완료! STOMP 연결 시작");
+                    clearInterval(checkPublish);
+                    connectWebSocket();
+                }
+            }, 500);
+
+            // 10초 후에도 안되면 강제 연결 (Fallback)
+            setTimeout(() => {
+                if (!videoStore.isPublished) {
+                    console.warn("⚠️ Janus Publish 타임아웃. 강제 연결 시도.");
+                    clearInterval(checkPublish);
+                    connectWebSocket();
+                }
+            }, 10000);
+
         } catch (e) {
             console.error("Session Entry Failed", e);
             // TODO: User notification UI
@@ -400,16 +569,63 @@ const handleJoinSession = async () => {
     }
 };
 
+// 시간 동기화 핸들러
+const handleLectureStartTime = (startTimeString: string) => {
+    console.log('[Time Sync] startTime 수신:', startTimeString);
+
+    // 중복 수신 방지
+    if (isSynced.value) {
+        console.warn('[Time Sync] 이미 동기화됨, 무시');
+        return;
+    }
+
+    // Java LocalDateTime.toString() 파싱
+    const serverTime = new Date(startTimeString);
+    const clientTime = new Date();
+
+    lectureStartTime.value = serverTime;
+    timeOffset.value = clientTime.getTime() - serverTime.getTime();
+    isSynced.value = true;
+
+    console.log('[Time Sync] 동기화 완료');
+    console.log('[Time Sync] 서버 시작 시간:', serverTime);
+    console.log('[Time Sync] 시간 오프셋:', timeOffset.value, 'ms');
+
+    // ✅ 분석 시작! (MediaPipe 시작)
+    isAnalysisActive.value = true;
+    console.log('[Analysis] 분석 활성화! MediaPipe 시작...');
+    startMediaPipe();
+
+    // 타이머 재시작
+    restartTimer();
+};
+
 const startSessionTimer = () => {
     timerInterval = window.setInterval(() => {
-        elapsedTime.value++;
+        if (isSynced.value && lectureStartTime.value) {
+            // 동기화된 시간 기준으로 경과 시간 계산
+            const now = new Date();
+            const elapsed = now.getTime() - lectureStartTime.value.getTime() - timeOffset.value;
+            elapsedTime.value = Math.floor(elapsed / 1000); // 초 단위
+        } else {
+            // 동기화 안됐으면 기존 방식 (페이지 로드 시점 기준)
+            elapsedTime.value++;
+        }
     }, 1000);
+};
+
+const restartTimer = () => {
+    // 기존 타이머 정리
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+    // 동기화된 시간으로 타이머 재시작
+    startSessionTimer();
 }
 
 onMounted(async () => {
     // 1. 타이머 시작 -> 입장 후 시작으로 변경
     // startSessionTimer();
-
     // 2. 방 정보 사전 로딩 (Device Setup 중에도 방 존재 여부는 확인 가능)
     // await videoStore.fetchRoomInfo(route.params.sessionId);
 });
@@ -418,6 +634,10 @@ onUnmounted(() => {
     if (timerInterval) clearInterval(timerInterval);
     stopMediaPipe();
     stompClient.value?.deactivate();
+
+    // ✅ 분석 상태 초기화
+    isAnalysisActive.value = false;
+    isSynced.value = false;
 });
 
 // 화면 컨트롤 토글

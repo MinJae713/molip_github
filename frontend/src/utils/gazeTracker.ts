@@ -120,8 +120,9 @@ export class GazeTracker {
         this.HEAD_STD_THRESHOLD = 0.01;
 
         // Smoothing Tuning (More stable when still, responsive when moving)
-        this.filterX = new OneEuroFilter(0.005, 0.5); // minCutoff decreased, beta increased
-        this.filterY = new OneEuroFilter(0.005, 0.5);
+        // User requested smoother tracking -> Decrease beta significantly
+        this.filterX = new OneEuroFilter(0.01, 0.1);
+        this.filterY = new OneEuroFilter(0.01, 0.1);
 
         // Head buffer
         this.headBuffer = [];
@@ -142,6 +143,7 @@ export class GazeTracker {
 
     _getLandmarkPoint(landmarks: NormalizedLandmarkList, idx: number): Point {
         const lm = landmarks[idx];
+        if (!lm) return { x: 0, y: 0 };
         return { x: lm.x, y: lm.y, z: lm.z, visibility: lm.visibility };
     }
 
@@ -163,6 +165,7 @@ export class GazeTracker {
     _calculateRelativeGaze(irisCenter: Point, eyeCorners: Point[], gain: number = 1.0): Point {
         const p1 = eyeCorners[0];
         const p2 = eyeCorners[1];
+        if (!p1 || !p2) return { x: 0.5, y: 0.5 };
 
         const eyeWidth = this._distance(p1, p2);
         if (eyeWidth === 0) return { x: 0.5, y: 0.5 };
@@ -179,8 +182,9 @@ export class GazeTracker {
         const dxAmp = dx * gain * this.SENSITIVITY_X;
         const dyAmp = dy * gain * this.SENSITIVITY_Y;
 
+        // 0.5 + dxAmp -> 0.5 - dxAmp (Flip X axis)
         return {
-            x: 0.5 + dxAmp,
+            x: 0.5 - dxAmp,
             y: 0.5 + dyAmp
         };
     }
@@ -224,11 +228,20 @@ export class GazeTracker {
     }
 
     _calculateEAR(landmarks: NormalizedLandmarkList, indices: number[]): number {
+        const p1 = landmarks[indices[1]];
+        const p2 = landmarks[indices[5]];
+        const p3 = landmarks[indices[2]];
+        const p4 = landmarks[indices[4]];
+        const p0 = landmarks[indices[0]];
+        const p5 = landmarks[indices[3]];
+
+        if (!p1 || !p2 || !p3 || !p4 || !p0 || !p5) return 0.0;
+
         // Vertical
-        const v1 = this._distance(landmarks[indices[1]], landmarks[indices[5]]);
-        const v2 = this._distance(landmarks[indices[2]], landmarks[indices[4]]);
+        const v1 = this._distance({ x: p1.x, y: p1.y }, { x: p2.x, y: p2.y });
+        const v2 = this._distance({ x: p3.x, y: p3.y }, { x: p4.x, y: p4.y });
         // Horizontal
-        const h = this._distance(landmarks[indices[0]], landmarks[indices[3]]);
+        const h = this._distance({ x: p0.x, y: p0.y }, { x: p5.x, y: p5.y });
 
         if (h === 0) return 0.0;
         return (v1 + v2) / (2.0 * h);
@@ -241,12 +254,13 @@ export class GazeTracker {
     }
 
     _isBodyStable(poseLandmarks: NormalizedLandmarkList): boolean {
-        if (!poseLandmarks || poseLandmarks.length === 0) return false;
+        if (!poseLandmarks || poseLandmarks.length <= 12) return false;
 
         const leftShoulder = poseLandmarks[11];
         const rightShoulder = poseLandmarks[12];
 
-        // Should check visibility here if strictly typed, but let's assume valid for now or usage in JS context
+        if (!leftShoulder || !rightShoulder) return false;
+
         // Construct points compatible with our Point interface
         const lPoint: Point = { x: leftShoulder.x, y: leftShoulder.y, z: leftShoulder.z, visibility: leftShoulder.visibility };
         const rPoint: Point = { x: rightShoulder.x, y: rightShoulder.y, z: rightShoulder.z, visibility: rightShoulder.visibility };
