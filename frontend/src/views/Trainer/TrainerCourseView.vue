@@ -26,6 +26,10 @@
                 <!-- 수강생 명단 -->
                 <TrainerStudentList />
             </div>
+            <!-- 교육통계 -->
+            <div v-else-if="activeTab === 'stats'">
+                <TrainerCourseStatistics />
+            </div>
             <!-- 다른 탭 placeholder -->
             <div v-else class="py-20 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
                 <p class="text-slate-500">준비 중인 페이지입니다.</p>
@@ -43,6 +47,7 @@ import TrainerCourseDetailHeader from '@/components/Trainer/TrainerCourseView/Tr
 import TrainerSessionList from '@/components/Trainer/TrainerCourseView/TrainerSessionList.vue';
 import TrainerStudentRequestList from '@/components/Trainer/TrainerCourseView/TrainerStudentRequestList.vue';
 import TrainerStudentList from '@/components/Trainer/TrainerCourseView/TrainerStudentList.vue';
+import TrainerCourseStatistics from '@/components/Trainer/TrainerCourseView/TrainerCourseStatistics.vue';
 const router = useRouter();
 const route = useRoute();
 

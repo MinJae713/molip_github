@@ -322,3 +322,25 @@ export interface MemberDetail {
   finishedCourse: number;
   courses: MemberCourse[];
 }
+
+export interface StudentRequest {
+  memberId: number;
+  workspaceMemberId: number;
+  courseApplyId: number;
+  email: string; // [Added]
+  profileImageUrl: string | null;
+  name: string;
+  position: string;
+  createdAt: string;
+}
+
+export interface CourseStudent {
+  memberId: number;
+  workspaceMemberId: number;
+  courseLearnerId: number;
+  email: string; // [Added]
+  profileImageUrl: string | null;
+  name: string;
+  position: string;
+  attandanceRate: string | number; // API returns string "0.43", flexibility for number
+}

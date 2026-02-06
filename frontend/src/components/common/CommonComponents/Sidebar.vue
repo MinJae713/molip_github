@@ -4,7 +4,7 @@
       <div class="flex items-center gap-3 px-3 py-3 bg-indigo-50/50 rounded-xl border border-indigo-100 mb-6">
         <div class="size-10 bg-white rounded-lg border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden">
           <img v-if="displayLogo" :src="displayLogo" :alt="displayName" class="w-full h-full object-contain" />
-          <span v-else class="material-symbols-outlined text-indigo-600">domain</span>
+          <span v-else class="text-lg font-bold text-indigo-600">{{ displayName ? displayName.substring(0, 1).toUpperCase() : 'W' }}</span>
         </div>
         <div class="min-w-0">
           <div class="text-xs font-bold text-indigo-800 mb-0.5">Current Workspace</div>
@@ -13,7 +13,7 @@
       </div>
 
       <nav class="space-y-1">
-        <a v-for="item in studyMenus.slice(0, 1)" :key="item.id"
+        <a v-for="item in displayedStudyMenus.slice(0, 1)" :key="item.id"
            :class="['sidebar-item', { active: currentActiveId === item.id }]" href="#"
            @click.prevent="handleNavigate(item.id)">
           <span class="material-symbols-outlined text-[20px]">{{ item.icon }}</span>
@@ -24,7 +24,7 @@
           <div class="mt-4 mb-1 px-3">
             <span class="text-xs font-bold uppercase tracking-wider text-slate-400">학습 관리</span>
           </div>
-          <a v-for="item in studyMenus.slice(1)" :key="item.id"
+          <a v-for="item in displayedStudyMenus.slice(1)" :key="item.id"
              :class="['sidebar-item', { active: currentActiveId === item.id }]" href="#"
              @click.prevent="handleNavigate(item.id)">
             <span class="material-symbols-outlined text-[20px]">{{ item.icon }}</span>
@@ -98,7 +98,7 @@ const route = useRoute();
 const router = useRouter();
 const workspaceStore = useWorkspaceStore();
 
-const displayLogo = computed(() => workspaceStore.currentWorkspace?.logo_url);
+const displayLogo = computed(() => workspaceStore.currentWorkspace?.logoUrl);
 const displayName = computed(() => workspaceStore.currentWorkspace?.name || '워크스페이스 선택 안됨');
 
 // 워크스페이스 정보 갱신 함수
@@ -122,12 +122,22 @@ watch(() => route.params.id, (newId) => {
   if (newId) updateCurrentWorkspace();
 });
 
-// 현재 사용자 역할 감지 (route name 기반)
+// 현재 사용자 역할 감지 (Store 기반)
 const currentRole = computed(() => {
+  const role = workspaceStore.currentRole;
+  if (role) return role.toLowerCase(); // 'TRAINER' -> 'trainer'
+
+  // 스토어 정보가 없을 때(새로고침 직후 등) 라우트 기반 폴백
   const name = route.name as string;
   if (name?.toLowerCase().includes('admin')) return 'admin';
   if (name?.toLowerCase().includes('trainer')) return 'trainer';
   return 'learner';
+});
+
+// 역할에 따라 메뉴 필터링
+const displayedStudyMenus = computed(() => {
+  // 모든 사용자에게 모든 학습 메뉴 표시
+  return studyMenus;
 });
 
 // 현재 활성화된 메뉴 ID를 route 경로에 따라 자동으로 계산
@@ -155,7 +165,7 @@ const emit = defineEmits<{
 
 const handleNavigate = (id: string) => {
   const workspaceId = route.params.id as string;
-  const role = currentRole.value; // 자동으로 현재 역할 감지
+  const role = currentRole.value; // Store 기반 역할
 
   // 1. 관리자 메뉴 처리
   const adminItem = adminMenus.find(m => m.id === id);
@@ -172,7 +182,11 @@ const handleNavigate = (id: string) => {
     const target = role === 'trainer' ? 'workspaceTrainerCourses' : 'workspaceLearnerCourses';
     router.push({ name: target, params: { id: workspaceId } });
   } else if (id === 'my-stats' && workspaceId) {
-    router.push({ name: 'workspaceLearnerMyStats', params: { id: workspaceId } });
+    if (role === 'learner') {
+        router.push({ name: 'workspaceLearnerMyStats', params: { id: workspaceId } });
+    } else if (role === 'trainer') {
+        router.push({ name: 'workspaceTrainerStatistics', params: { id: workspaceId } });
+    }
   } else {
     // 다른 메뉴는 기존대로 emit 이벤트 발생
     emit('navigate', id);

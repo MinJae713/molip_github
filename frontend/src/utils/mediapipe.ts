@@ -109,7 +109,6 @@ export class MediaPipeManager {
         this.animationId = requestAnimationFrame(loop);
         return;
       }
-
       // Send to both models
       await this.faceMesh?.send({ image: this.videoElement });
       await this.pose?.send({ image: this.videoElement });

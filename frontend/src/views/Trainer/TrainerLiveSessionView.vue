@@ -95,7 +95,7 @@ const processedEmotions = computed(() => {
       return {
         label: data?.label || 'Unknown',
         emoji: data?.emoji || '❓',
-        percentage: Math.round(emo.confidence),
+        percentage: Math.round(emo.confidence), // HEAD used this, keeping consistent
         color: data?.color || 'bg-slate-400'
       };
     });
@@ -111,6 +111,10 @@ watch(() => analysisData.value?.concentrateMessage, (newMsg) => {
     }
   }
 });
+
+// [Merge Resolution] Added from fe-develop, mapped to trainerlive types
+const warningCount = computed(() => trainerLiveStore.participants.filter(p => p.status === 'NORMAL').length);
+const absentCount = computed(() => trainerLiveStore.participants.filter(p => p.status === 'EMPTY').length);
 
 // --- AI 분석 결과만 구독 (채팅/퀴즈는 스토어에서 처리) ---
 let stompClient: Client | null = null;

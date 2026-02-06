@@ -24,6 +24,7 @@
                 <span :class="debugGazeStatus.isStable ? 'text-green-400' : 'text-yellow-400 font-bold'">
                     {{ debugGazeStatus.isStable ? 'YES' : 'NO (!)' }}
                 </span>
+
                 <span class="text-slate-400">User Present:</span>
                 <span :class="!debugGazeStatus.isAbsent ? 'text-blue-400' : 'text-red-500 font-bold'">
                     {{ !debugGazeStatus.isAbsent ? 'YES' : 'ABSENT' }}
@@ -376,7 +377,6 @@ const handleCropReady = (arrayBuffer: ArrayBuffer) => {
         // 음수 방지 및 숫자 여부 체크 (NaN 방어)
         currentTimeline = isNaN(elapsed) ? 0 : Math.max(0, elapsed);
     }
-
     // 3. 패킷 생성 (4바이트 타임라인 + 이미지 데이터)
     const packet = new ArrayBuffer(4 + arrayBuffer.byteLength);
     const uint8View = new Uint8Array(packet);
