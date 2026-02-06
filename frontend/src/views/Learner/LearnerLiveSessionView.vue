@@ -96,6 +96,9 @@
 
         <!-- 서프라이즈 퀴즈 모달 -->
         <LearnerQuizModal :isOpen="isQuizModalOpen" :quizData="surpriseQuizData" @close="handleQuizClose" />
+
+        <!-- 퇴실 퀴즈 모달 -->
+        <LearnerExitQuizModal :isOpen="isExitQuizOpen" :sessionId="sessionId as string" @close="handleExitQuizClose" />
     </div>
 </template>
 
@@ -121,6 +124,7 @@ import EngagementStats from '@/components/Learner/LearnerLiveSession/EngagementS
 import LiveChatContainer from '@/components/Learner/LearnerLiveSession/LiveChatContainer.vue';
 import DeviceSetupModal from '@/components/Learner/LearnerLiveSession/DeviceSetupModal.vue';
 import LearnerQuizModal from '@/components/Learner/LearnerLiveSession/LearnerQuizModal.vue';
+import LearnerExitQuizModal from '@/views/Learner/LearnerExitQuizModal.vue';
 
 const route = useRoute();
 const videoStore = useVideoRoomStore();
@@ -152,6 +156,7 @@ const chatList = ref<any[]>([]);
 const qaList = ref<any[]>([]);
 const surpriseQuizData = ref<any>(null);
 const isQuizModalOpen = ref(false);
+const isExitQuizOpen = ref(false);
 
 const socketUrl = import.meta.env.VITE_CHAT_SOCKET_URL;
 
@@ -273,6 +278,22 @@ const connectWebSocket = () => {
                 if (data.startTime) {
                     handleLectureStartTime(data.startTime);
                 }
+            });
+
+            // 5. 수업 종료 신호 구독 [NEW]
+            stompClient.value?.subscribe(`/topic/session/${sessionId}/end`, (res) => {
+                console.log('[Learner Live] 강의 종료 신호 수신');
+                isAnalysisActive.value = false; // 분석 중지
+                stopMediaPipe(); // 미디어파이프 중지
+
+                // 기존 연결 해제 (단, 퀴즈 전송 등 필요한 소켓 연결은 유지해야 할 수도 있음. 
+                // 하지만 요구사항이 "분석이고 뭐고 다 끊어라" 이므로 disconnectAll 호출)
+                // disconnectAll(); <-- 이걸 부르면 STOMP도 끊겨서 퀴즈 제출이 안될 수 있음.
+                // 퀴즈 제출은 axios(videoApi)를 쓰므로 STOMP 끊어도 상관없음.
+                disconnectAll();
+
+                alert("강의가 종료되었습니다. 퇴실 퀴즈를 풀어주세요!");
+                isExitQuizOpen.value = true;
             });
 
             // Binary Socket 연결 트리거
@@ -467,6 +488,27 @@ watch(
     { immediate: true }
 );
 
+// [NEW] Watch for Session End (Janus Destroyed)
+watch(
+    () => videoStore.isLiveEnded,
+    (isEnded) => {
+        if (isEnded) {
+            console.log("[Learner] Session Ended via Janus (isLiveEnded=true)");
+            // 이미 cleanup이 안되어 있다면 수행
+            if (isConnected.value || isAnalysisActive.value) {
+                isAnalysisActive.value = false;
+                disconnectAll();
+
+                // 퇴실 퀴즈 모달 오픈 (이미 열려있지 않다면)
+                if (!isExitQuizOpen.value) {
+                    // videoRoom.ts에서 이미 alert가 떴을 수 있으므로 중복 alert는 생략하거나 필요한 경우 추가
+                    isExitQuizOpen.value = true;
+                }
+            }
+        }
+    }
+);
+
 // 집중도 분석결과 전송
 const handleAnalysisResult = (focusData: GazeResult) => {
     // 0. Update Last Raw Gaze (for calibration) - Always update
@@ -573,9 +615,21 @@ const sendChatMessage = (content: string, type: string, questionId?: number | st
     console.log('[Chat] 메시지 전송 완료');
 };
 
-// 퀴즈 모달 닫기
 const handleQuizClose = () => {
     isQuizModalOpen.value = false;
+};
+
+// 퇴실 퀴즈 종료 (확인 완료) -> 페이지 닫기 or 홈 이동
+const handleExitQuizClose = () => {
+    isExitQuizOpen.value = false;
+    // 1. 창 닫기 시도
+    window.close();
+
+    // 2. 창이 안 닫히면 (스크립트로 열지 않은 경우) 홈으로 이동
+    // 약간의 딜레이를 줘서 window.close()가 작동할 시간을 줌
+    setTimeout(() => {
+        window.location.href = '/';
+    }, 100);
 };
 
 const handleJoinSession = async () => {

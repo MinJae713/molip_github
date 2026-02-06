@@ -433,6 +433,8 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
     console.log(`[Janus] handleMessage event: ${event}`, msg); // ✅ 모든 이벤트 로그 출력
 
     if (event === "destroyed") {
+      console.log("[Janus] Room Destroyed Event");
+      isLiveEnded.value = true; // 세션 종료 상태 업데이트
       alert("수업이 종료되었습니다.");
       // 필요 시 라우터 이동 로직 추가 (Router 인스턴스가 스토어 내부에 없으므로 컴포넌트 레벨에서 watch하거나, window.location 사용)
     }
@@ -714,5 +716,6 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
     selectedStudentId,
     selectStudent,
     isPublished,
+    isLiveEnded,
   };
 });

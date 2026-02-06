@@ -3,14 +3,15 @@
         <!-- 학습 중인 과정 -->
         <div class="stat-card group">
             <div class="icon-wrapper bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white">
-                <span class="material-symbols-outlined text-2xl">play_circle</span>
+                <span class="material-symbols-outlined text-2xl">{{ ongoingIcon }}</span>
             </div>
             <div class="content">
                 <div class="label text-slate-500">{{ ongoingLabel }}</div>
                 <div class="value-wrapper">
                     <span class="value text-slate-900">{{ ongoingCount }}</span>
-                    <span class="unit text-slate-400">개</span>
+                    <span class="unit text-slate-400">{{ ongoingUnit }}</span>
                 </div>
+                <div v-if="ongoingDesc" class="text-xs text-slate-400 mt-1">{{ ongoingDesc }}</div>
             </div>
             <div class="card-glow bg-indigo-400"></div>
         </div>
@@ -18,14 +19,15 @@
         <!-- 수료 완료 -->
         <div class="stat-card group">
             <div class="icon-wrapper bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white">
-                <span class="material-symbols-outlined text-2xl">verified</span>
+                <span class="material-symbols-outlined text-2xl">{{ completedIcon }}</span>
             </div>
             <div class="content">
                 <div class="label text-slate-500">{{ completedLabel }}</div>
                 <div class="value-wrapper">
                     <span class="value text-slate-900">{{ completedCount }}</span>
-                    <span class="unit text-slate-400">개</span>
+                    <span class="unit text-slate-400">{{ completedUnit }}</span>
                 </div>
+                <div v-if="completedDesc" class="text-xs text-slate-400 mt-1">{{ completedDesc }}</div>
             </div>
             <div class="card-glow bg-emerald-400"></div>
         </div>
@@ -33,14 +35,15 @@
         <!-- 평균 출석률 -->
         <div class="stat-card group">
             <div class="icon-wrapper bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white">
-                <span class="material-symbols-outlined text-2xl">trending_up</span>
+                <span class="material-symbols-outlined text-2xl">{{ attendanceIcon }}</span>
             </div>
             <div class="content">
                 <div class="label text-slate-500">{{ attendanceLabel }}</div>
                 <div class="value-wrapper">
                     <span class="value text-slate-900">{{ attendanceRate }}</span>
-                    <span class="unit text-slate-400">%</span>
+                    <span class="unit text-slate-400">{{ attendanceUnit }}</span>
                 </div>
+                <div v-if="attendanceDesc" class="text-xs text-slate-400 mt-1">{{ attendanceDesc }}</div>
             </div>
             <div class="card-glow bg-amber-400"></div>
         </div>
@@ -52,15 +55,30 @@ interface Props {
     ongoingCount: number;
     completedCount: number;
     attendanceRate: number;
-    ongoingLabel?: string;
-    completedLabel?: string;
-    attendanceLabel?: string;
+    ongoingUnit?: string;
+    completedUnit?: string;
+    attendanceUnit?: string;
+    ongoingIcon?: string;
+    completedIcon?: string;
+    attendanceIcon?: string;
+    ongoingDesc?: string;
+    completedDesc?: string;
+    attendanceDesc?: string;
 }
 
 withDefaults(defineProps<Props>(), {
     ongoingLabel: '학습 중인 과정',
     completedLabel: '수료 완료',
-    attendanceLabel: '이번 달 평균 출석률'
+    attendanceLabel: '이번 달 평균 출석률',
+    ongoingUnit: '개',
+    completedUnit: '개',
+    attendanceUnit: '%',
+    ongoingIcon: 'play_circle',
+    completedIcon: 'verified',
+    attendanceIcon: 'trending_up',
+    ongoingDesc: '',
+    completedDesc: '',
+    attendanceDesc: ''
 });
 </script>
 

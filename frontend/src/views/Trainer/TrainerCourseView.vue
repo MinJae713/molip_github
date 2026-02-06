@@ -22,9 +22,9 @@
             <!-- 수강생 관리 -->
             <div v-else-if="activeTab === 'student'" class="space-y-6">
                 <!-- 참가 신청 현황 -->
-                <TrainerStudentRequestList />
+                <TrainerStudentRequestList :data="trainerCourseStore.studentRequests" />
                 <!-- 수강생 명단 -->
-                <TrainerStudentList />
+                <TrainerStudentList :data="trainerCourseStore.students" />
             </div>
             <!-- 교육통계 -->
             <div v-else-if="activeTab === 'stats'">
@@ -78,8 +78,6 @@ const handleTabChange = async (tabId: string) => {
 onMounted(async () => {
     const courseId = route.params.courseId;
     const workspaceId = route.params.id;
-    console.log("courseId", courseId);
-    console.log("workspaceId", workspaceId);
     if (courseId) {
         sessionList.value = await trainerCourseStore.fetchCourseSessions(Number(courseId));
         trainerCourseStore.fetchCourseInfo(courseId as string);
@@ -89,6 +87,9 @@ onMounted(async () => {
                 trainerCourseStore.fetchStudentRequests(courseId as string),
                 trainerCourseStore.fetchStudents(courseId as string)
             ]);
+        } else if (activeTab.value === 'student') {
+            await trainerCourseStore.fetchApplyStudents(courseId as string);
+            await trainerCourseStore.fetchStudents(courseId as string);
         }
     }
 });

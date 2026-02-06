@@ -12,11 +12,8 @@
                     <span class="ml-auto text-xs text-slate-400">전체 세션 기준</span>
                 </div>
                 <div class="flex items-end gap-3 mt-4">
-                    <span class="text-4xl font-bold text-slate-900">95.2%</span>
-                    <span class="flex items-center text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full mb-1">
-                        <span class="material-symbols-outlined text-sm mr-0.5">trending_up</span>
-                        +2.4%
-                    </span>
+                    <span class="text-4xl font-bold text-slate-900">{{ (courseStatistics?.avgAttandance || 0).toFixed(1)
+                        }}%</span>
                 </div>
             </div>
 
@@ -30,10 +27,8 @@
                     <span class="ml-auto text-xs text-slate-400">전체 세션 기준</span>
                 </div>
                 <div class="flex items-end gap-3 mt-4">
-                    <span class="text-4xl font-bold text-slate-900">82<span class="text-xl ml-1">점</span></span>
-                    <span class="flex items-center text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-full mb-1">
-                        - 변동 없음
-                    </span>
+                    <span class="text-4xl font-bold text-slate-900">{{ (courseStatistics?.avgConcentrate ||
+                        0).toFixed(1) }}<span class="text-xl ml-1">점</span></span>
                 </div>
             </div>
 
@@ -47,11 +42,8 @@
                     <span class="ml-auto text-xs text-slate-400">지난주 대비</span>
                 </div>
                 <div class="flex items-end gap-3 mt-4">
-                    <span class="text-4xl font-bold text-slate-900">88.5%</span>
-                    <span class="flex items-center text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full mb-1">
-                        <span class="material-symbols-outlined text-sm mr-0.5">trending_up</span>
-                        +5.1%
-                    </span>
+                    <span class="text-4xl font-bold text-slate-900">{{ (courseStatistics?.avgQuizCorrect ||
+                        0).toFixed(1) }}%</span>
                 </div>
             </div>
         </div>
@@ -61,18 +53,10 @@
             <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="font-bold text-slate-900 text-lg">세션별 평균 집중도 추이</h3>
-                    <div class="flex items-center gap-2">
-                         <button class="flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50">
-                            최근 5회차
-                         </button>
-                         <button class="size-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg">
-                            <span class="material-symbols-outlined text-sm">download</span>
-                         </button>
-                    </div>
                 </div>
                 <div class="h-80 w-full relative">
-                     <!-- Chart.js Mockup -->
-                     <Line :data="chartData" :options="chartOptions" />
+                    <!-- Chart.js Mockup -->
+                    <Line :data="chartData" :options="chartOptions" />
                 </div>
             </div>
 
@@ -80,9 +64,9 @@
             <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="font-bold text-slate-900 text-lg">참여 우수 수강생</h3>
-                    <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-xs font-bold rounded">Top 5</span>
+                    <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-xs font-bold rounded">Top 3</span>
                 </div>
-                
+
                 <div class="flex-1 overflow-y-auto pr-1 custom-scrollbar">
                     <div class="border-b border-slate-100 flex text-xs font-bold text-slate-400 pb-2 mb-2">
                         <span class="w-10 text-center">순위</span>
@@ -90,7 +74,7 @@
                         <span class="w-12 text-right">점수</span>
                     </div>
 
-                    <div class="space-y-4">
+                    <div class="space-y-5">
                         <div v-for="(student, index) in topStudents" :key="student.id" class="flex items-center py-2">
                             <div class="w-10 flex justify-center">
                                 <span class="size-6 rounded flex items-center justify-center text-xs font-bold"
@@ -99,13 +83,15 @@
                                 </span>
                             </div>
                             <div class="flex-1 flex items-center gap-3">
-                                <div class="size-9 rounded-full bg-slate-100 text-slate-500 font-bold flex items-center justify-center text-xs">
+                                <div
+                                    class="size-9 rounded-full bg-slate-100 text-slate-500 font-bold flex items-center justify-center text-xs">
                                     {{ student.initial }}
                                 </div>
                                 <div>
                                     <div class="text-sm font-bold text-slate-900">{{ student.name }}</div>
                                     <div class="text-[11px] text-slate-400 flex items-center gap-1">
-                                        <span v-if="index === 0" class="text-amber-500 material-symbols-outlined text-[10px]">bolt</span>
+                                        <span v-if="index === 0"
+                                            class="text-amber-500 material-symbols-outlined text-[10px]">bolt</span>
                                         {{ student.badge }}
                                     </div>
                                 </div>
@@ -116,122 +102,176 @@
                         </div>
                     </div>
                 </div>
-                
-                <button class="mt-6 w-full py-2.5 text-xs font-bold text-slate-500 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-100 flex items-center justify-center gap-1">
-                    전체 랭킹 보기
-                    <span class="material-symbols-outlined text-sm">chevron_right</span>
-                </button>
             </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { useTrainerCourseStore } from '@/stores/trainerCourse';
+import { storeToRefs } from 'pinia';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler
 } from 'chart.js';
 import { Line } from 'vue-chartjs';
 
 ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler
 );
 
-// 차트 데이터
-const chartData = {
-  labels: ['Session 1', 'Session 2', 'Session 3', 'Session 4', 'Session 5'],
-  datasets: [
-    {
-      label: '평균 집중도',
-      backgroundColor: (ctx: any) => {
-        const canvas = ctx.chart.ctx;
-        const gradient = canvas.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, 'rgba(79, 70, 229, 0.2)'); // Indigo
-        gradient.addColorStop(1, 'rgba(79, 70, 229, 0)');
-        return gradient;
-      },
-      borderColor: '#4F46E5',
-      pointBackgroundColor: '#ffffff',
-      pointBorderColor: '#4F46E5',
-      pointBorderWidth: 4,
-      pointRadius: 6,
-      data: [40, 55, 50, 70, 65],
-      fill: true,
-      tension: 0.4
-    }
-  ]
-};
+const route = useRoute();
+const trainerCourseStore = useTrainerCourseStore();
+const { courseStatistics } = storeToRefs(trainerCourseStore);
 
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      backgroundColor: 'rgba(15, 23, 42, 0.9)',
-      padding: 12,
-      cornerRadius: 8,
-      callbacks: {
-        label: (context: any) => `${context.parsed.y}%`
-      }
+const courseId = computed(() => route.params.courseId);
+
+onMounted(async () => {
+    if (courseId.value) {
+        await trainerCourseStore.fetchCourseStats(courseId.value as string);
     }
-  },
-  scales: {
-    y: {
-      min: 0,
-      max: 100,
-      grid: {
-        color: '#f1f5f9',
-        borderDash: [5, 5]
-      },
-      ticks: {
-        font: { size: 11 },
-        color: '#94a3b8',
-        stepSize: 25
-      }
+});
+
+// 차트 데이터 (세션별 집중도 + 출석률)
+const chartData = computed(() => {
+    if (!courseStatistics.value?.sessionAnalysis) return { labels: [], datasets: [] };
+
+    const sessions = courseStatistics.value.sessionAnalysis;
+    console.log("Session Analysis Data:", sessions); // Debugging log
+    const labels = sessions.map(s => `Session ${s.sessionId}`);
+
+    // 집중도 데이터
+    const concentrateData = sessions.map(s => s.avgConcentrate);
+    // 출석률 데이터
+    const attendanceData = sessions.map(s => s.avgAttandance); // Note: typo in API response 'attandance' kept as is
+
+    return {
+        labels,
+        datasets: [
+            {
+                label: '평균 집중도',
+                backgroundColor: (ctx: any) => {
+                    const canvas = ctx.chart.ctx;
+                    const gradient = canvas.createLinearGradient(0, 0, 0, 300);
+                    gradient.addColorStop(0, 'rgba(79, 70, 229, 0.2)'); // Indigo
+                    gradient.addColorStop(1, 'rgba(79, 70, 229, 0)');
+                    return gradient;
+                },
+                borderColor: '#4F46E5',
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#4F46E5',
+                pointBorderWidth: 4,
+                pointRadius: 6,
+                data: concentrateData,
+                fill: true,
+                tension: 0.4
+            },
+            {
+                label: '평균 출석률',
+                backgroundColor: 'transparent',
+                borderColor: '#EF4444', // Red-500
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#EF4444',
+                pointBorderWidth: 4,
+                pointRadius: 6,
+                data: attendanceData,
+                fill: false,
+                tension: 0.4
+            }
+        ]
+    };
+});
+
+const chartOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            display: true,
+            position: 'top',
+            align: 'end',
+            labels: {
+                usePointStyle: true,
+                boxWidth: 8,
+                font: { size: 12 }
+            }
+        },
+        tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+            padding: 12,
+            cornerRadius: 8,
+            callbacks: {
+                label: (context: any) => `${context.dataset.label}: ${context.parsed.y.toFixed(1)}%`
+            }
+        }
     },
-    x: {
-      grid: { display: false },
-      ticks: {
-        font: { size: 11, weight: 'bold' },
-        color: '#64748b'
-      }
+    scales: {
+        y: {
+            min: 0,
+            max: 100,
+            grid: {
+                color: '#f1f5f9',
+                borderDash: [5, 5]
+            },
+            ticks: {
+                font: { size: 11 },
+                color: '#94a3b8',
+                stepSize: 20
+            }
+        },
+        x: {
+            grid: { display: false },
+            ticks: {
+                font: { size: 11, weight: 'bold' },
+                color: '#64748b'
+            }
+        }
     }
-  }
 };
 
-// 우수 수강생 데이터
-const topStudents = ref([
-    { id: 1, name: '김민수', initial: 'MD', score: 98, badge: '스피드 퀴즈 1위' },
-    { id: 2, name: '박수진', initial: 'SJ', score: 95, badge: '참여도 매우 높음' },
-    { id: 3, name: '이재영', initial: 'JY', score: 92, badge: '퀴즈 정답률 100%' },
-    { id: 4, name: '최현주', initial: 'HJ', score: 88, badge: '' },
-    { id: 5, name: '강동훈', initial: 'DH', score: 86, badge: '' },
-]);
+// 우수 수강생 데이터 (퀴즈 점수 합계 기준 정렬 예시)
+const topStudents = computed(() => {
+    if (!courseStatistics.value?.courseLearnerAnalysis) return [];
+
+    // 점수(sumQuizCorrect) 내림차순 정렬 후 상위 5명
+    // (만약 점수 기준이 아니면 sumConcentrate 등 다른 기준으로 변경 가능)
+    const sorted = [...courseStatistics.value.courseLearnerAnalysis].sort((a, b) => b.sumQuizCorrect - a.sumQuizCorrect).slice(0, 5);
+
+    return sorted.map((student, index) => ({
+        id: student.memberId,
+        name: student.name,
+        initial: student.name.substring(0, 1), // 이름 첫 글자 (Mock Logic)
+        score: student.sumQuizCorrect,
+        badge: index === 0 ? '퀴즈 1위' : '' // 단순 뱃지 예시
+    }));
+});
 </script>
 
 <style scoped>
 .custom-scrollbar::-webkit-scrollbar {
     width: 4px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
     background-color: #e2e8f0;
     border-radius: 20px;

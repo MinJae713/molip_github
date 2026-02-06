@@ -145,7 +145,9 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   async function setCurrentWorkspaceById(id: string | number) {
     // 관리자 목록에서도 검색 (createdAt 등 관리자 정보 포함 가능성)
     const found =
-      adminWorkspaces.value.find((ws) => String(ws.workspaceId) === String(id)) ||
+      adminWorkspaces.value.find(
+        (ws) => String(ws.workspaceId) === String(id),
+      ) ||
       myWorkspaces.value.find((ws) => String(ws.workspaceId) === String(id));
 
     if (found) {
@@ -156,7 +158,10 @@ export const useWorkspaceStore = defineStore("workspace", () => {
           const detail = mapApiToWorkspace(response.data);
           // 기존 정보와 상세 정보 병합 (내 역할 정보 등 보존)
           currentWorkspace.value = { ...found, ...detail };
-          console.log("워크스페이스 상세 정보 보강 완료:", currentWorkspace.value);
+          console.log(
+            "워크스페이스 상세 정보 보강 완료:",
+            currentWorkspace.value,
+          );
         } catch (error) {
           console.warn("워크스페이스 상세 보강 실패, 기존 데이터 사용");
           currentWorkspace.value = found;
@@ -185,18 +190,17 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     );
   };
   // 워크스페이스 진입 시 상단 통계 요약정보 호출
+  const trainerWorkspaceStats = ref<any>(null);
   async function fetchWorkspaceStats(workspaceId: string | number) {
     try {
       // json-server의 관계형 쿼리 활용: /workspaces/1/my-stats
-      const response = await api.get(`/workspaces/${workspaceId}/my-stats`);
-      const data = Array.isArray(response.data)
-        ? response.data[0]
-        : response.data;
-      workspaceStats.value = data || null;
-      console.log("통계 호출 성공!", workspaceStats.value);
+      const response = await api.get(`/workspaces/${workspaceId}/stats`);
+      trainerWorkspaceStats.value = response.data;
+      console.log("통계 호출 성공!", trainerWorkspaceStats.value);
+      return response.data;
     } catch (error) {
       console.error("통계 로드 실패:", error);
-      workspaceStats.value = null;
+      return null;
     }
   }
 
@@ -251,7 +255,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
         );
         // 관리자 목록에서도 제거
         adminWorkspaces.value = adminWorkspaces.value.filter(
-          (ws) => String(ws.workspaceId) !== String(id)
+          (ws) => String(ws.workspaceId) !== String(id),
         );
 
         if (
@@ -270,14 +274,18 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   }
 
   // 워크스페이스 생성 (관리자용)
-  async function createWorkspace(payload: { name: string; description: string }) {
+  async function createWorkspace(payload: {
+    name: string;
+    description: string;
+  }) {
     try {
       const response = await api.post("/workspaces", payload);
       const newWorkspace = mapApiToWorkspace(response.data);
       // 생성자는 자동으로 가입될 수 있으므로 myWorkspaces 갱신
       await fetchMyWorkspaces(true);
       // 관리자 목록 갱신
-      if (adminWorkspaces.value.length > 0) adminWorkspaces.value.push(newWorkspace);
+      if (adminWorkspaces.value.length > 0)
+        adminWorkspaces.value.push(newWorkspace);
 
       return true; // 성공
     } catch (error) {
@@ -293,6 +301,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     currentRole,
     workspaceStats,
     isLoaded,
+    trainerWorkspaceStats,
     fetchMyWorkspaces,
     fetchAllWorkspaces,
     searchWorkspaces,
@@ -302,6 +311,6 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     fetchWorkspaceStats,
     createWorkspace,
     updateWorkspace,
-    deleteWorkspace
+    deleteWorkspace,
   };
 });

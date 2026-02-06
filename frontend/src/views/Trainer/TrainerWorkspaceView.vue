@@ -3,8 +3,12 @@
     <div class="space-y-8">
         <!-- Stats Section -->
         <section>
-            <TrainerMyCoursesStats :ongoingCount="ongoingCount" :completedCount="completedCount" :attendanceRate="0"
-                ongoingLabel="운영 중인 강의" completedLabel="종료된 강의" attendanceLabel="전체 강의 진척도" />
+            <TrainerMyCoursesStats :ongoingCount="workspaceStore.trainerWorkspaceStats?.activeCourseCount || 0"
+                :completedCount="workspaceStore.trainerWorkspaceStats?.learnersCount || 0"
+                :attendanceRate="workspaceStore.trainerWorkspaceStats?.todaySessionCount || 0" ongoingLabel="운영 중인 강의"
+                completedLabel="전체 수강생" attendanceLabel="오늘 예정된 세션" ongoingUnit="개" completedUnit="명" attendanceUnit="개"
+                ongoingIcon="school" completedIcon="groups" attendanceIcon="calendar_month"
+                ongoingDesc="현재 진행 중인 활성 강의 수" completedDesc="등록된 전체 수강생 수" attendanceDesc="오늘 예정된 라이브/코스 세션 수" />
         </section>
         <!-- Course List Section -->
         <section>
@@ -63,37 +67,30 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
-
-// 워크스페이스 스토어
-import { useTrainerCourseStore } from '@/stores/trainerCourse';
-const trainerCourseStore = useTrainerCourseStore();
-const { workspaceAllCourses } = storeToRefs(trainerCourseStore);
-
-// 통계 데이터 직접 가공 (computed)
-const ongoingCount = computed(() =>
-    workspaceAllCourses.value.filter(c => c.status === 'PROCEED' || !c.status).length
-);
-// 끝난 강의
-const completedCount = computed(() =>
-    workspaceCourses.value.filter(c => c.status === 'FINISH').length
-);
-// 학생 코스 스토어(워크스페이스 모달용)
-import { useLearnerCourseStore } from '@/stores/learnerCourse';
-const learnerCourseStore = useLearnerCourseStore();
-const { workspaceCourses } = storeToRefs(learnerCourseStore);
-
-
+import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import type { TrainerCourse, Session } from '@/types';
-import { useRouter } from 'vue-router';
+
+import { useTrainerCourseStore } from '@/stores/trainerCourse';
+import { useLearnerCourseStore } from '@/stores/learnerCourse';
+import { useWorkspaceStore } from '@/stores/workspace';
+
 import TrainerMyCoursesStats from '@/components/Trainer/TrainerMyCoursesView/TrainerMyCoursesStats.vue';
 import TrainerDashboardCourseCard from '@/components/Trainer/TrainerWorkspace/TrainerDashboardCourseCard.vue';
 import TrainerCourseCurriculumModal from '@/components/Trainer/TrainerWorkspace/TrainerCourseCurriculumModal.vue';
 
+const route = useRoute();
 const router = useRouter();
 
-const route = useRoute();
+// 워크스페이스 스토어
+const trainerCourseStore = useTrainerCourseStore();
+const { workspaceAllCourses } = storeToRefs(trainerCourseStore);
+
+const workspaceStore = useWorkspaceStore();
+
+// 학생 코스 스토어(워크스페이스 모달용)
+const learnerCourseStore = useLearnerCourseStore();
+
 // 현재 워크스페이스 아이디 획득
 const currentWorkspaceId = computed(() => {
     const id = route.params.id;
@@ -108,7 +105,6 @@ const sortOption = ref<'newest' | 'deadline' | 'oldest'>('newest');
 // 모달 상태관리
 const isModalOpen = ref(false);
 const selectedCourse = ref<TrainerCourse>({} as TrainerCourse);
-const mockSessions = ref<Session[]>([]);
 
 // 커리큘럼 확인 모달 열기
 const selectedCourseSessions = ref<Session[]>([]);
@@ -153,32 +149,6 @@ const sortOptionLabel = computed(() => {
 const setSort = (option: 'newest' | 'deadline' | 'oldest') => {
     sortOption.value = option;
 };
-// 검색 기능
-const filteredCourses = computed(() => {
-    let result = [...workspaceCourses.value];
-    // 검색어로 찾기
-    if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase();
-        result = result.filter(course =>
-            course.title.toLowerCase().includes(query) ||
-            course.description.toLowerCase().includes(query)
-        );
-    }
-    // 정렬
-    switch (sortOption.value) {
-        case 'newest':
-            result.sort((a, b) => Number(b.courseId) - Number(a.courseId));
-            break;
-        case 'oldest':
-            result.sort((a, b) => Number(a.courseId) - Number(b.courseId));
-            break;
-        case 'deadline':
-            result.sort((a, b) => Number(a.dDay || 999) - Number(b.dDay || 999));
-            break;
-    }
-    return result;
-});
-
 
 // 대시보드 초기화
 const initDashboard = async () => {
