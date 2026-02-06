@@ -4,6 +4,7 @@ import axios from "axios";
 import adapter from "webrtc-adapter";
 import JanusPkg from "janus-gateway";
 import { useWorkspaceStore } from "@/stores/workspace";
+import { useUserStore } from "@/stores/user";
 
 import type { VideoRoom } from "@/types";
 
@@ -379,11 +380,18 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
    */
   function joinRoom(handle: JanusHandle) {
     if (!roomInfo.value) return;
+
+    // ✅ userStore에서 사용자 정보 가져오기
+    const userStore = useUserStore();
+    const memberId = userStore.user?.memberId || 0;
+    const userName = userStore.user?.name || "학생";
+    const displayName = `${memberId}|[학생] ${userName}`;
+
     const register = {
       request: "join",
       room: roomInfo.value.janusRoomId,
       ptype: "publisher",
-      display: "",
+      display: displayName, // ✅ "memberId|[학생] 이름" 형식
       pin: roomInfo.value.pin,
     };
     console.log("[Janus] 방 입장 요청:", register);

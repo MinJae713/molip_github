@@ -26,28 +26,22 @@
                 </div>
 
                 <!-- AI Sentiment -->
-                <div class="flex-1 bg-indigo-50 border border-indigo-100 rounded-xl p-2.5 flex items-center gap-3">
+                <div v-if="currentEmotion && currentEmotion.length > 0"
+                    class="flex-1 bg-indigo-50 border border-indigo-100 rounded-xl p-2.5 flex items-center gap-3">
                     <div class="flex-1">
                         <div class="text-[10px] text-indigo-600 font-bold leading-tight mb-1">실시간 감정 분석</div>
                         <div class="flex items-center gap-2">
-                            <span class="text-2xl">{{ currentEmotion.emoji }}</span>
+                            <span class="text-2xl">{{ currentEmotion[0]?.emoji }}</span>
                             <div class="flex flex-col">
-                                <span class="text-[11px] font-bold text-slate-800">{{ currentEmotion.label }}</span>
+                                <span class="text-[11px] font-bold text-slate-800">{{ currentEmotion[0]?.label }}</span>
                                 <span class="text-[9px] text-slate-500">AI 분석 결과</span>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Warning -->
-            <div v-if="focusStatus.includes('낮음')"
-                class="bg-red-50 rounded-lg p-2.5 border border-red-100 shadow-sm relative overflow-hidden flex items-start gap-2">
-                <div class="absolute top-0 left-0 w-0.5 h-full bg-red-400"></div>
-                <span class="material-symbols-outlined text-red-500 text-base shrink-0 mt-0.5">warning</span>
-                <div class="flex flex-col">
-                    <span class="text-[10px] font-bold text-red-600 mb-0.5">주의 필요</span>
-                    <p class="text-[10px] text-red-600/90 leading-tight">집중도가 낮아지고 있습니다. 스트레칭이 필요합니다.</p>
+                <div v-else
+                    class="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-2.5 flex items-center justify-center">
+                    <span class="text-[10px] text-slate-400 font-bold italic">감정 분석 대기 중...</span>
                 </div>
             </div>
         </div>
@@ -57,7 +51,7 @@
 <script setup lang="ts">
 defineProps<{
     engagementScore: number;
-    currentEmotion: { emoji: string; label: string };
+    currentEmotion: any;
     focusStatus: string;
 }>();
 </script>

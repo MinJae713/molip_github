@@ -579,22 +579,18 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
           console.log("[Participants] Parsed data:", data);
 
           if (data.type === "JOIN") {
+            // ✅ STOMP JOIN 이벤트로 Participant를 미리 생성 (정확한 memberId 확보)
+            console.log(
+              "👉 Student JOIN (STOMP):",
+              data.name,
+              "memberId:",
+              data.memberId,
+              "feedId:",
+              data.feedId,
+            );
+
             if (data.role === "STUDENT" && data.feedId) {
-              console.log(
-                "👉 Student JOIN:",
-                data.name,
-                "feedId:",
-                data.feedId,
-              );
-              const publisher: Publisher = {
-                id: data.feedId,
-                display: `${data.memberId}|${data.name}`,
-              };
-              console.log(
-                "[Participants] Calling subscribeToStudent with:",
-                publisher,
-              );
-              subscribeToStudent(publisher);
+              addParticipantFromStomp(data);
             }
           } else if (data.type === "LEAVE") {
             console.log("👈 Student LEAVE:", data.name, "feedId:", data.feedId);
@@ -965,6 +961,10 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
         // Display 이름 파싱
         // 형식: "memberId|[학생] 이름"
         let displayStr = publisher.display || `학생 ${feedId}`;
+        console.log(
+          `[subscribeToStudent] 🔍 Parsing display name for feed ${feedId}: "${displayStr}"`,
+        );
+
         let pMemberId = String(feedId); // Fallback
         let pName = displayStr;
 
@@ -973,27 +973,65 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
           if (parts.length >= 2) {
             pMemberId = parts[0]!; // 실제 회원 ID
             pName = parts[1]!; // "[학생] 이름"
+            console.log(
+              `[subscribeToStudent] ✅ Parsed memberId: ${pMemberId}, name: ${pName}`,
+            );
           }
+        } else {
+          console.warn(
+            `[subscribeToStudent] ⚠️ Display name does not contain '|'. Using feedId as memberId.`,
+          );
         }
 
         const pIdStr = String(feedId); // Feed ID를 문자열로 사용
-        console.log("[subscribeToStudent] Adding participant:", {
-          id: pIdStr,
-          memberId: pMemberId,
-          name: pName,
-        });
 
-        // participants 목록에 추가
-        participants.value.push({
-          id: pIdStr,
-          memberId: pMemberId, // 실제 회원 ID
-          name: pName,
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${pMemberId}`, // 아바타 (회원 ID 기반)
-          isCameraOn: true,
-          isMicOn: true,
-          concentrationScore: 50, // 초기 집중도 (백엔드에서 업데이트 예정)
-          status: "NORMAL", // 초기 상태
-        });
+        // ✅ 이미 존재하는지 확인
+        const existingParticipant = participants.value.find(
+          (p) => p.id === pIdStr,
+        );
+
+        if (existingParticipant) {
+          console.log(
+            `[subscribeToStudent] ♻️ Participant already exists. Updating stream info...`,
+          );
+          // 이미 존재하면 정보 업데이트 (혹시 display 파싱으로 더 정확한 정보가 있다면)
+          if (pMemberId !== String(feedId))
+            existingParticipant.memberId = pMemberId;
+          // 스트림 연결 로직은 아래에서 계속 진행됨 (Janus attach)
+        } else {
+          // 존재하지 않으면 신규 추가 (Janus만으로 입장한 경우)
+          console.log(
+            "[subscribeToStudent] ✅ Adding NEW participant (Janus-only):",
+            {
+              feedId: pIdStr,
+              memberId: pMemberId,
+              name: pName,
+              originalDisplay: publisher.display,
+            },
+          );
+
+          // participants 목록에 추가
+          participants.value.push({
+            id: pIdStr, // ⚠️ feedId를 id로 사용!
+            memberId: pMemberId, // 실제 회원 ID
+            name: pName,
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${pMemberId}`, // 아바타 (회원 ID 기반)
+            isCameraOn: true,
+            isMicOn: true,
+            concentrationScore: 50, // 초기 집중도 (백엔드에서 업데이트 예정)
+            status: "NORMAL", // 초기 상태
+            isVideoStreamReady: false, // ✅ 초기값: 스트림 준비 안됨
+          });
+        }
+
+        console.log(
+          "[subscribeToStudent] 📋 All participants:",
+          participants.value.map((p) => ({
+            id: p.id,
+            memberId: p.memberId,
+            name: p.name,
+          })),
+        );
 
         console.log(
           "[subscribeToStudent] participants updated:",
@@ -1048,20 +1086,35 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
 
         // 스트림이 없으면 생성
         if (!stream) {
-          console.log("[onremotetrack] Creating new stream for:", pIdStr);
+          console.log(
+            "[onremotetrack] 🎥 Creating new stream for feedId:",
+            pIdStr,
+          );
           stream = new MediaStream();
           studentStreams.value.set(pIdStr, stream);
         }
 
         stream.addTrack(track); // 트랙 추가
         console.log(
-          "[onremotetrack] Track added. studentStreams.size:",
+          "[onremotetrack] ✅ Track added. Total streams:",
           studentStreams.value.size,
         );
         console.log(
-          "[onremotetrack] studentStreams keys:",
+          "[onremotetrack] 🔑 studentStreams keys (feedIds):",
           Array.from(studentStreams.value.keys()),
         );
+
+        // ✅ 비디오 트랙을 받으면 스트림 준비 완료로 표시
+        if (track.kind === "video") {
+          const participant = participants.value.find((p) => p.id === pIdStr);
+          if (participant) {
+            participant.isVideoStreamReady = true;
+            console.log(
+              "[onremotetrack] 📹 Video stream ready for participant:",
+              participant.name,
+            );
+          }
+        }
       },
       // ❌ oncleanup 제거: 무한 루프 원인!
       // Janus leaving/unpublished 이벤트와 STOMP LEAVE로 충분함
@@ -1115,6 +1168,43 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
   }
 
   /**
+   * STOMP JOIN 메시지로 학생 추가
+   * - memberId와 name의 진실(Truth)은 여기서 온다
+   */
+  function addParticipantFromStomp(data: any) {
+    const memberIdStr = String(data.memberId);
+    const feedIdStr = String(data.feedId);
+
+    // 이미 존재하는지 확인 (id = feedId 기준)
+    const existing = participants.value.find((p) => p.id === feedIdStr);
+
+    if (existing) {
+      console.log(
+        `[STOMP] ♻️ Participant already exists: ${data.name} (memberId: ${existing.memberId} -> ${memberIdStr})`,
+      );
+      existing.memberId = memberIdStr; // memberId 업데이트 (가장 중요)
+      existing.name = data.name;
+      return;
+    }
+
+    console.log(
+      `[STOMP] ✅ Adding new participant: ${data.name} (memberId: ${memberIdStr}, feedId: ${feedIdStr})`,
+    );
+
+    participants.value.push({
+      id: feedIdStr, // Janus Feed ID (매칭 키)
+      memberId: memberIdStr, // 정확한 Member ID
+      name: data.name,
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${memberIdStr}`,
+      isCameraOn: true,
+      isMicOn: true,
+      concentrationScore: 50,
+      status: "NORMAL",
+      isVideoStreamReady: false,
+    });
+  }
+
+  /**
    * PIP에 표시할 학생 선택
    */
   function selectStudent(participantId: string) {
@@ -1130,17 +1220,30 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     newStatus: "NORMAL" | "FEVER" | "EMPTY",
   ) {
     const memberIdStr = String(memberId);
+    console.log(
+      `[updateParticipantStatus] 🔍 Looking for memberId: "${memberIdStr}" (type: ${typeof memberIdStr})`,
+    );
+    console.log(
+      `[updateParticipantStatus] 📋 Current participants:`,
+      participants.value.map((p) => ({
+        id: p.id,
+        memberId: p.memberId,
+        memberIdType: typeof p.memberId,
+        name: p.name,
+      })),
+    );
+
     const participant = participants.value.find(
       (p) => p.memberId === memberIdStr,
     );
     if (participant) {
       console.log(
-        `[Status] Updating ${participant.name}: ${participant.status} → ${newStatus}`,
+        `[Status] ✅ Updating ${participant.name}: ${participant.status} → ${newStatus}`,
       );
       participant.status = newStatus;
     } else {
       console.warn(
-        `[Status] Participant not found for memberId: ${memberIdStr}`,
+        `[Status] ❌ Participant not found for memberId: ${memberIdStr}`,
       );
     }
   }

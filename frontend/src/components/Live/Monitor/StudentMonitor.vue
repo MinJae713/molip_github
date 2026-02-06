@@ -29,13 +29,6 @@ const selectedStudent = computed(() =>
         :srcObject="trainerLiveStore.selectedStudentId ? trainerLiveStore.studentStreams.get(trainerLiveStore.selectedStudentId) : null"
         autoplay playsinline class="w-full h-full object-cover"></video>
 
-      <div
-        class="absolute top-3 right-3 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 flex items-center gap-1.5">
-        <span class="size-1.5 bg-red-500 rounded-full animate-pulse"></span>
-        <p class="text-[9px] text-white font-black tracking-tighter uppercase">Attention: {{
-          selectedStudent.concentrationScore }}%</p>
-      </div>
-
       <!-- 오버레이 안내 (카메라가 꺼져 있을 때) -->
       <div v-if="!selectedStudent.isCameraOn"
         class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80">
@@ -44,12 +37,5 @@ const selectedStudent = computed(() =>
       </div>
     </div>
 
-    <div class="p-4 bg-white">
-      <button
-        class="w-full py-3.5 bg-indigo-600 text-white rounded-2xl font-bold text-[11px] flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-100">
-        <span class="material-symbols-outlined text-base">notifications_active</span>
-        경고 보내기
-      </button>
-    </div>
   </div>
 </template>

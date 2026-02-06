@@ -17,6 +17,7 @@ export interface Participant {
     | "EMPTY" // 자리비움
     | "FEVER" // 집중
     | "NORMAL"; // 일반
+  isVideoStreamReady: boolean; // Janus 스트림 준비 완료 여부
 }
 
 // 자누스

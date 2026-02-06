@@ -1,11 +1,7 @@
 <template>
     <div class="max-w-7xl mx-auto space-y-6">
         <!-- 헤더 (타이틀 및 버튼) -->
-        <TrainerCourseDetailHeader title="데이터 기반 고객 경험 최적화 전략" />
-
-        <!-- 통계 요약 (기간, 수강생, 상태) -->
-        <TrainerCourseStats />
-
+        <TrainerCourseDetailHeader :title="trainerCourseStore.currentManagedCourse?.title as string" />
         <!-- 탭 네비게이션 -->
         <div class="border-b border-slate-200">
             <div class="flex space-x-8">
@@ -44,7 +40,6 @@ import { useRouter, useRoute } from 'vue-router';
 import type { Session } from '@/types';
 // 컴포넌트
 import TrainerCourseDetailHeader from '@/components/Trainer/TrainerCourseView/TrainerCourseDetailHeader.vue';
-import TrainerCourseStats from '@/components/Trainer/TrainerCourseView/TrainerCourseStats.vue';
 import TrainerSessionList from '@/components/Trainer/TrainerCourseView/TrainerSessionList.vue';
 import TrainerStudentRequestList from '@/components/Trainer/TrainerCourseView/TrainerStudentRequestList.vue';
 import TrainerStudentList from '@/components/Trainer/TrainerCourseView/TrainerStudentList.vue';
@@ -75,12 +70,14 @@ const handleTabChange = async (tabId: string) => {
         ]);
     }
 };
-
 onMounted(async () => {
     const courseId = route.params.courseId;
+    const workspaceId = route.params.id;
     console.log("courseId", courseId);
+    console.log("workspaceId", workspaceId);
     if (courseId) {
         sessionList.value = await trainerCourseStore.fetchCourseSessions(Number(courseId));
+        trainerCourseStore.fetchCourseInfo(courseId as string);
         // 초기 로드 시 탭에 따라 데이터 로드
         if (activeTab.value === 'student') {
             await Promise.all([

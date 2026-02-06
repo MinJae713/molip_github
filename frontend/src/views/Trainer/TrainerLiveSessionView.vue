@@ -86,7 +86,6 @@ const processedEmotions = computed(() => {
       });
     }
   }
-
   return emotions
     .sort((a, b) => b.confidence - a.confidence)
     .slice(0, 2)
@@ -96,7 +95,7 @@ const processedEmotions = computed(() => {
       return {
         label: data?.label || 'Unknown',
         emoji: data?.emoji || '❓',
-        percentage: Math.round(emo.confidence * 100),
+        percentage: Math.round(emo.confidence),
         color: data?.color || 'bg-slate-400'
       };
     });
@@ -112,9 +111,6 @@ watch(() => analysisData.value?.concentrateMessage, (newMsg) => {
     }
   }
 });
-
-const warningCount = computed(() => trainerLiveStore.participants.filter(p => p.status === 'distracted').length); // 집중도 저하(distracted) 학생 수
-const absentCount = computed(() => trainerLiveStore.participants.filter(p => p.status === 'away').length);
 
 // --- AI 분석 결과만 구독 (채팅/퀴즈는 스토어에서 처리) ---
 let stompClient: Client | null = null;
@@ -217,6 +213,10 @@ const handleEndSession = async () => {
       <!-- 메인 강의 영역 (전체 너비 사용) -->
       <main class="flex-1 flex flex-col p-6 gap-6 overflow-y-auto bg-slate-50">
         <LiveVideoConsole />
+
+        <!-- 📹 학생 모니터링 (선택 시에만 표시) -->
+        <StudentMonitor v-if="trainerLiveStore.selectedStudentId" />
+
         <div class="grid grid-cols-12 gap-6 min-h-70">
           <GlobalEngagementCard class="col-span-7" :history="engagementHistory" />
           <SessionEmotionAnalysis class="col-span-5" :emotions="processedEmotions" />

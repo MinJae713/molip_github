@@ -91,7 +91,24 @@ export class MediaPipeManager {
       .catch((err) => console.error("Video play error:", err));
 
     const loop = async () => {
+      // ✅ 비디오 상태 체크 강화
       if (this.videoElement.paused || this.videoElement.ended) return;
+
+      // ✅ 비디오가 준비되지 않았으면 대기
+      if (this.videoElement.readyState < 2) {
+        // HAVE_CURRENT_DATA = 2
+        this.animationId = requestAnimationFrame(loop);
+        return;
+      }
+
+      // ✅ 비디오 크기가 0이면 대기 (WASM abort 방지)
+      if (
+        this.videoElement.videoWidth === 0 ||
+        this.videoElement.videoHeight === 0
+      ) {
+        this.animationId = requestAnimationFrame(loop);
+        return;
+      }
 
       // Send to both models
       await this.faceMesh?.send({ image: this.videoElement });

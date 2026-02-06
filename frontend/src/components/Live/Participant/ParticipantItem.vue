@@ -23,12 +23,38 @@ const getStatusInfo = (status: string) => {
 
 /** 3. 모니터링 시작 핸들러 */
 const handleMonitor = (studentId: string | number) => {
-  // 카메라를 켠 학생만 모니터링 가능
-  if (isPublishing(studentId)) {
-    trainerLiveStore.selectStudent(String(studentId));
-  } else {
-    alert("해당 학생의 카메라가 꺼져 있어 모니터링할 수 없습니다.");
+  const studentIdStr = String(studentId);
+  const participant = trainerLiveStore.participants.find(p => p.id === studentIdStr);
+
+  if (!participant) {
+    console.warn('[ParticipantItem] ⚠️ Participant not found:', studentIdStr);
+    return;
   }
+
+  console.log('[ParticipantItem] 🖱️ handleMonitor called:', {
+    studentId: studentIdStr,
+    isVideoStreamReady: participant.isVideoStreamReady,
+    isCameraOn: participant.isCameraOn,
+    studentStreamsKeys: Array.from(trainerLiveStore.studentStreams.keys()),
+  });
+
+  // 1. 카메라가 꺼져 있는 경우
+  if (!participant.isCameraOn) {
+    console.warn('[ParticipantItem] ❌ Camera is off for:', studentIdStr);
+    alert("해당 학생이 카메라를 켜지 않았습니다.");
+    return;
+  }
+
+  // 2. 스트림이 아직 준비되지 않은 경우
+  if (!participant.isVideoStreamReady) {
+    console.warn('[ParticipantItem] ⏳ Stream not ready yet for:', studentIdStr);
+    alert("학생의 영상 스트림을 연결하는 중입니다. 잠시 후 다시 시도해주세요.");
+    return;
+  }
+
+  // 3. 모든 조건 충족 - 모니터링 시작
+  console.log('[ParticipantItem] ✅ Starting monitor for:', studentIdStr);
+  trainerLiveStore.selectStudent(studentIdStr);
 };
 </script>
 
@@ -55,6 +81,7 @@ const handleMonitor = (studentId: string | number) => {
         getStatusInfo(student.status).bgClass
       ]">
         <div class="flex items-center gap-3">
+
           <div class="relative">
             <div class="size-11 rounded-full overflow-hidden bg-slate-100 border border-slate-200">
               <img v-if="student.avatar" :src="student.avatar" class="w-full h-full object-cover" />
@@ -62,7 +89,7 @@ const handleMonitor = (studentId: string | number) => {
                 class="material-symbols-outlined flex items-center justify-center h-full text-slate-400">person</span>
             </div>
             <div class="absolute -bottom-0.5 -right-0.5 size-3.5 border-2 border-white rounded-full transition-colors"
-              :class="isPublishing(student.id) ? 'bg-emerald-500' : 'bg-slate-300'"></div>
+              :class="[getStatusInfo(student.status).color, 'text-white']"></div>
           </div>
 
           <div class="flex flex-col gap-0.5">
@@ -84,10 +111,16 @@ const handleMonitor = (studentId: string | number) => {
               {{ student.isMicOn ? 'mic' : 'mic_off' }}
             </span>
             <span class="material-symbols-outlined text-[18px]"
-              :class="isPublishing(student.id) ? 'text-indigo-400' : 'text-slate-300'">
-              {{ isPublishing(student.id) ? 'videocam' : 'videocam_off' }}
+              :class="student.isVideoStreamReady ? 'text-indigo-400' : 'text-slate-300'">
+              {{ student.isVideoStreamReady ? 'videocam' : 'videocam_off' }}
             </span>
           </div>
+
+          <!-- 스트림 로딩 중 표시 -->
+          <span v-if="student.isCameraOn && !student.isVideoStreamReady"
+            class="material-symbols-outlined text-amber-500 text-[18px] animate-spin">
+            progress_activity
+          </span>
 
           <span v-if="trainerLiveStore.selectedStudentId === String(student.id)"
             class="material-symbols-outlined text-indigo-500 animate-bounce">

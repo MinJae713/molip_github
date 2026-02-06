@@ -1,4 +1,5 @@
 <template>
+    <p>{{ data }}</p>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <!-- 교육 기간 -->
         <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
@@ -42,5 +43,9 @@
 </template>
 
 <script setup lang="ts">
+defineProps<{
+    data: any;
+}>();
+
 // Props can be added here for dynamic data
 </script>

@@ -77,11 +77,7 @@ const handleEndSession = async () => {
             </button>
           </div>
 
-          <SidebarStats 
-            :focus-count="focusCount" 
-            :warning-count="warningCount" 
-            :absent-count="absentCount" 
-          />
+          <SidebarStats :focus-count="focusCount" :warning-count="warningCount" :absent-count="absentCount" />
           <SidebarTabs v-model="activeTab" />
         </div>
 

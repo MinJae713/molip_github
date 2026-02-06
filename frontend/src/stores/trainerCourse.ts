@@ -25,6 +25,37 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
     description: data.description,
     status: data.status,
   });
+  const topStatsBoxValues = ref<any>(null);
+  // 강사 상단 통계박스 조회
+  async function fetchCourseStats(
+    workspaceId: string | number,
+    courseId: string | number,
+  ) {
+    try {
+      isLoading.value = true;
+      const response = await api.get(`/workspaces/${workspaceId}/stats`);
+      topStatsBoxValues.value = response.data;
+    } catch (error) {
+      console.error("상단 코스정보 조회 실패:", error);
+      topStatsBoxValues.value = null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // 코스 정보 가져오기
+  async function fetchCourseInfo(courseId: string | number) {
+    isLoading.value = true;
+    try {
+      const response = await api.get(`/courses/${courseId}`);
+      currentManagedCourse.value = mapTrainerCourse(response.data);
+    } catch (error) {
+      console.error("코스 상세 정보 로드 실패:", error);
+      currentManagedCourse.value = null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
 
   // 워크스페이스의 모든 코스 목록 가져오기(강사)
   async function fetchWorkspaceAllCourses(workspaceId: string | number) {
@@ -219,5 +250,8 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
     approveStudent,
     rejectStudent,
     fetchStudents,
+    fetchCourseInfo,
+    fetchCourseStats,
+    topStatsBoxValues,
   };
 });

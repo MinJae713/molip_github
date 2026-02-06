@@ -24,7 +24,6 @@
                 <span :class="debugGazeStatus.isStable ? 'text-green-400' : 'text-yellow-400 font-bold'">
                     {{ debugGazeStatus.isStable ? 'YES' : 'NO (!)' }}
                 </span>
-
                 <span class="text-slate-400">User Present:</span>
                 <span :class="!debugGazeStatus.isAbsent ? 'text-blue-400' : 'text-red-500 font-bold'">
                     {{ !debugGazeStatus.isAbsent ? 'YES' : 'ABSENT' }}
@@ -66,9 +65,9 @@
                 Last Update: {{ debugGazeStatus.timestamp }}
             </div>
         </div>
-
-        <LiveSessionHeader sessionTitle="인공지능 윤리와 실제 실습" sessionSubtitle="디지털 비즈니스 전략 강의 (4주차)"
-            :elapsedTime="elapsedTime" />
+        <LiveSessionHeader :sessionTitle="learnerSessionStore.currentSessionInfo?.title as string"
+            :sessionSubtitle="learnerSessionStore.currentSessionInfo?.description as string" :elapsedTime="elapsedTime"
+            :userName="userStore.user?.name" />
         <main class="flex flex-1 overflow-hidden p-6 gap-6 relative">
             <LiveVideoArea :focusStatus="focusStatus" :showWarning="showWarning" @close-warning="showWarning = false"
                 :mainStream="videoStore.mainStream" :pipStream="videoStore.pipStream"
@@ -84,7 +83,7 @@
                 <!-- 라이브 퀴즈 관련 -->
                 <LiveQuizCard title="LIVE QUIZ 진행중" subtitle="인공지능 윤리 가이드라인 핵심..." timeRemaining="00:15" />
                 <!-- 참여도 -->
-                <EngagementStats :engagementScore="engagementScore" :currentEmotion="currentEmotion"
+                <EngagementStats :engagementScore="engagementScore" :currentEmotion="processedEmotions"
                     :focusStatus="focusStatus" />
                 <!-- 채팅/질문 -->
                 <LiveChatContainer :chatList="chatList" :qaList="qaList" @send-message="sendChatMessage" />
@@ -104,6 +103,7 @@ import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useVideoRoomStore } from '@/stores/videoRoom';
 import { useWorkspaceStore } from '@/stores/workspace';
+import { useLearnerSessionStore } from '@/stores/learnerSession';
 import { useUserStore } from '@/stores/user';
 import { MediaPipeManager } from '@/utils/mediapipe';
 import type { GazeResult } from '@/utils/gazeTracker';
@@ -124,6 +124,7 @@ import LearnerQuizModal from '@/components/Learner/LearnerLiveSession/LearnerQui
 const route = useRoute();
 const videoStore = useVideoRoomStore();
 const workspaceStore = useWorkspaceStore();
+const learnerSessionStore = useLearnerSessionStore();
 
 // State
 const elapsedTime = ref(0); // seconds (00:45:12)
@@ -153,12 +154,6 @@ const isQuizModalOpen = ref(false);
 
 const socketUrl = import.meta.env.VITE_CHAT_SOCKET_URL;
 
-
-// 실시간 감정분석 이모지 라벨링
-const currentEmotion = ref({
-    emoji: '🤩',
-    label: '흥미로움'
-});
 // Timer
 let timerInterval: number | null = null;
 const isSetupComplete = ref(false);
@@ -199,6 +194,17 @@ console.log('[Init] memberId:', memberId.value, 'sessionId:', sessionId);
 
 
 let binarySocket: WebSocket | null = null;
+// 이모지 처리 관련
+const analysisData = ref({ emotionMessage: null })
+const emotionMap: Record<string, { label: string, emoji: string, color: string }> = {
+    happy: { label: '행복 (Happy)', emoji: '😊', color: 'bg-yellow-400' },
+    sad: { label: '슬픔 (Sad)', emoji: '😢', color: 'bg-blue-400' },
+    angry: { label: '분노 (Angry)', emoji: '😠', color: 'bg-red-500' },
+    surprise: { label: '놀람 (Surprise)', emoji: '😲', color: 'bg-purple-400' },
+    fear: { label: '공포 (Fear)', emoji: '😨', color: 'bg-indigo-700' },
+    disgust: { label: '혐오 (Disgust)', emoji: '🤢', color: 'bg-green-500' },
+    neutral: { label: '평온 (Neutral)', emoji: '😐', color: 'bg-slate-400' }
+};
 
 // STOMP 연결 및 구독 통합
 const connectWebSocket = () => {
@@ -224,6 +230,10 @@ const connectWebSocket = () => {
             stompClient.value?.subscribe(`/topic/analysis/${sessionId}/${memberId.value}`, (res) => {
                 const result = JSON.parse(res.body);
                 console.log("[Learner Live] 분석 결과 수신:", result);
+                analysisData.value = {
+                    ...analysisData.value,
+                    emotionMessage: result
+                }; // 수신한 result(emotion1, confidence1 등)를 할당
 
                 // 강의 시작 시간 수신 (강사가 녹화 시작 버튼 클릭 시)
                 if (result.startTime) {
@@ -279,6 +289,36 @@ const connectWebSocket = () => {
     stompClient.value.activate();
 }
 
+const lastValidEmotion = ref({
+    label: '대기 중...',
+    emoji: '⌛',
+    percentage: 0,
+    color: 'bg-slate-400'
+});
+
+const processedEmotions = computed(() => {
+    const msg = analysisData.value?.emotionMessage as any;
+
+    // 1. 값이 있고, emotion1이 존재할 때만 업데이트 로직 실행
+    if (msg && msg.emotion1 && emotionMap[msg.emotion1]) {
+        const key = msg.emotion1;
+        const confidence = msg.confidence1 || 0;
+        const data = emotionMap[key];
+        if (data) {
+            // 이전 값을 새 값으로 덮어씀 (데이터가 없으면 이 로직을 안 타서 이전 값 유지)
+            lastValidEmotion.value = {
+                label: data.label,
+                emoji: data.emoji,
+                percentage: Math.round(confidence), // 63.78 -> 64
+                color: data.color
+            };
+        }
+    }
+    // 2. 항상 마지막으로 유효했던 감정 값을 반환 (배열 형태 유지)
+    return [lastValidEmotion.value];
+});
+
+
 // Binary WebSocket 연결 (이미지 전송)
 const connectBinarySocket = () => {
     // 쿼리 파라미터로 토큰 전송
@@ -317,6 +357,11 @@ const handleCropReady = (arrayBuffer: ArrayBuffer) => {
 
     // 1. 소켓 및 권한 상태 확인
     if (!socket || socket.readyState !== WebSocket.OPEN || !isAuthorized.value) {
+        return;
+    }
+
+    // ✅ 강의 시작 전에는 이미지 전송하지 않음 (STOMP와 동일한 로직)
+    if (!isSynced.value || !lectureStartTime.value) {
         return;
     }
 
@@ -541,13 +586,20 @@ const handleJoinSession = async () => {
     const sessionId = route.params.sessionId;
     if (sessionId) {
         try {
-            await videoStore.initJanus(sessionId as string);
-            console.log("방 입장 성공 - 카메라 송출 대기 중...");
+            // ✅ 1. 먼저 localStream 설정 (카메라/마이크 준비)
+            console.log("[Join] 1. LocalStream 준비 중...");
+            await videoStore.startLocalPreview();
+            console.log("[Join] ✅ LocalStream 준비 완료");
 
-            // ✅ Janus Publish 완료 대기 (최대 10초)
+            // ✅ 2. 그 다음 Janus 방 입장
+            console.log("[Join] 2. Janus 방 입장 시작...");
+            await videoStore.initJanus(sessionId as string);
+            console.log("[Join] ✅ 방 입장 성공 - 카메라 송출 시작됨");
+
+            // ✅ 3. Janus Publish 완료 대기 (최대 10초)
             const checkPublish = setInterval(() => {
                 if (videoStore.isPublished) {
-                    console.log("✅ Janus Publish 완료! STOMP 연결 시작");
+                    console.log("[Join] ✅ Janus Publish 완료! STOMP 연결 시작");
                     clearInterval(checkPublish);
                     connectWebSocket();
                 }
@@ -556,14 +608,14 @@ const handleJoinSession = async () => {
             // 10초 후에도 안되면 강제 연결 (Fallback)
             setTimeout(() => {
                 if (!videoStore.isPublished) {
-                    console.warn("⚠️ Janus Publish 타임아웃. 강제 연결 시도.");
+                    console.warn("[Join] ⚠️ Janus Publish 타임아웃. 강제 연결 시도.");
                     clearInterval(checkPublish);
                     connectWebSocket();
                 }
             }, 10000);
 
         } catch (e) {
-            console.error("Session Entry Failed", e);
+            console.error("[Join] Session Entry Failed", e);
             // TODO: User notification UI
         }
     }
@@ -624,10 +676,9 @@ const restartTimer = () => {
 }
 
 onMounted(async () => {
-    // 1. 타이머 시작 -> 입장 후 시작으로 변경
-    // startSessionTimer();
-    // 2. 방 정보 사전 로딩 (Device Setup 중에도 방 존재 여부는 확인 가능)
-    // await videoStore.fetchRoomInfo(route.params.sessionId);
+    if (route.params.sessionId) {
+        await learnerSessionStore.fetchSessionInfo(route.params.sessionId as string);
+    }
 });
 
 onUnmounted(() => {
