@@ -24,6 +24,7 @@
                     :class-mood-data="ClassMood"
                     :script-data="ScriptData"
                     :qa-list="qaList"
+                    :quiz-list="quizList"
                     @jump-to-time="handleJumpToTime"
                     @send-message="handleSendMessage"
                 />
@@ -54,7 +55,7 @@ import SockJS from 'sockjs-client';
 
 //  Data Load & Processing
 // import apiResponse from '../../../updata/up_data.json';
-import { fetchReviewData, fetchMoodData, fetchScriptData, fetchChatData, type DataItem, type MoodGraphDataItem, type ScriptDataItem, type ChatDataItem } from '@/api/review';
+import { fetchReviewData, fetchMoodData, fetchScriptData, fetchChatData, fetchQuizData, type DataItem, type MoodGraphDataItem, type ScriptDataItem, type ChatDataItem, type QuizData } from '@/api/review';
 
 // 라우터
 const route = useRoute();
@@ -70,6 +71,7 @@ defineEmits(['close']);
 const playerRef = ref<any>(null);
 const stompClient = ref<Client | null>(null);
 const qaList = ref<any[]>([]);
+const quizList = ref<any[]>([]); // [NEW] Quiz List State
 
 // 임시 쉬는 시간 데이터 (15분~20분, 45분~50분)
 const RestPeriods = ref<{ start: number, end: number }[]>([]);
@@ -342,7 +344,7 @@ async function loadReviewData(sessionId: string) {
             console.warn("[Review] No trainerTimelineData found.");
         }
 
-        const moodData = await fetchMoodData(1);
+        const moodData = await fetchMoodData(sessionId);
         console.log("[Review] Mood Data:", moodData);
 
         if (moodData) {
@@ -361,7 +363,7 @@ async function loadReviewData(sessionId: string) {
         }
 
         // Script Data 
-        const scriptData = await fetchScriptData(1);
+        const scriptData = await fetchScriptData(sessionId);
         console.log("[Review] Script Data:", scriptData);
 
         if (scriptData && Array.isArray(scriptData)) {
@@ -374,7 +376,7 @@ async function loadReviewData(sessionId: string) {
              console.warn("[Review] Script data is empty or invalid structure", scriptData);
         }
 
-        const chatDataResponse = await fetchChatData(1, 2);
+        const chatDataResponse = await fetchChatData(sessionId, memberId);
         console.log("[Review] Chat Data:", chatDataResponse);
 
 
@@ -411,6 +413,25 @@ async function loadReviewData(sessionId: string) {
             
             console.log("[Review] Mapped Chat Data:", mappedChat);
             qaList.value = mappedChat;
+        }
+
+        // 퀴즈 데이터 처리
+        const quizDataArray = await fetchQuizData(sessionId);
+        console.log("[Review] Quiz Data:", quizDataArray);
+
+        if (quizDataArray && Array.isArray(quizDataArray)) {
+             quizList.value = quizDataArray.map((quiz: QuizData) => ({
+                id: quiz.exitQuizId,
+                question: quiz.question,
+                // 옵션을 번호 순서대로 정렬 후 텍스트만 추출
+                options: quiz.exitQuizAnswers
+                    .sort((a, b) => a.number - b.number)
+                    .map(a => a.answer),
+                // 정답 번호 (1-based -> 0-based index)
+                answer: (quiz.answerNumber || 1) - 1,
+                submittedAnswer: null
+             }));
+             console.log("[Review] Mapped Quiz List:", quizList.value);
         }
 
     } catch (error) {

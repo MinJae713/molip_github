@@ -46,7 +46,18 @@ export interface ChatDataItem {
     senderId: number;
 }
 
+export interface QuizData {
+    exitQuizId: number;
+    question: string;
+    answerNumber: number;
+    exitQuizAnswers: QuizAnswerData[];
+}
 
+export interface QuizAnswerData {
+    exitQuizAnswerId: number;
+    number: number;
+    answer: string;
+}
 
 export const fetchReviewData = async (sessionId: string | number, memberId: string | number): Promise<ApiResponse> => {
     // 엔드포인트는 실제 백엔드 명세에 따라 수정 필요할 수 있음
@@ -83,3 +94,9 @@ export const fetchChatData = async (sessionId: string | number, memberId: string
     // axios response.data가 ApiResponse 구조를 가진다고 가정
     return response.data;
 };
+
+export const fetchQuizData = async (sessionId: string | number) => {
+    const response = await api.get<QuizData[]>(`/quiz/${sessionId}/exit`);
+
+    return response.data;
+}

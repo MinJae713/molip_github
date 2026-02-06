@@ -121,14 +121,7 @@
 
                 <!-- 모달 푸터 -->
                 <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-                    <button v-if="isUnsubmitted(selectedQuiz)" 
-                            @click="submitAnswer"
-                            :disabled="tempSelectedAnswer === null"
-                            class="px-5 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                        제출하기
-                    </button>
-                    <button v-else 
-                            @click="closeModal" 
+                    <button @click="closeModal" 
                             class="px-5 py-2.5 bg-slate-800 text-white text-sm font-bold rounded-xl hover:bg-slate-700 transition-colors shadow-lg shadow-slate-200">
                         닫기
                     </button>
@@ -149,49 +142,17 @@ interface Quiz {
     submittedAnswer: number | null; // null if not submitted
 }
 
-// Mock Data
-const quizList = ref<Quiz[]>([
-    {
-        id: 1,
-        question: "다음 중 Vue.js의 라이프사이클 훅이 아닌 것은?",
-        options: ["onMounted", "onCreated", "onUpdate", "onRender"],
-        answer: 3,
-        submittedAnswer: 3 // Correct
-    },
-    {
-        id: 2,
-        question: "반응형 상태를 선언하기 위해 사용하는 API는?",
-        options: ["reactive", "response", "state", "redux"],
-        answer: 0,
-        submittedAnswer: 0 // Correct
-    },
-    {
-        id: 3,
-        question: "Pinia는 무엇을 위한 라이브러리인가?",
-        options: ["라우팅", "상태 관리", "HTTP 통신", "UI 컴포넌트"],
-        answer: 1,
-        submittedAnswer: 2 // Incorrect (wrong answer)
-    },
-    {
-        id: 4,
-        question: "v-bind 디렉티브의 약어는?",
-        options: ["@", ":", "#", "$"],
-        answer: 1,
-        submittedAnswer: null // Unsubmitted
-    },
-    {
-        id: 5,
-        question: "SPA의 약자는?",
-        options: ["Single Page Application", "Simple Page Action", "Server Protocol API", "Standard Process App"],
-        answer: 0,
-        submittedAnswer: 0 // Correct
-    }
-]);
-
 // State
 const isModalOpen = ref(false);
 const selectedQuiz = ref<Quiz | null>(null);
-const tempSelectedAnswer = ref<number | null>(null); // For unsubmitted quizzes
+
+// Props
+const props = defineProps<{
+    quizList: Quiz[];
+}>();
+
+// Computed for Template & Script Access
+const quizList = computed(() => props.quizList);
 
 // Computed
 const totalQuestions = computed(() => quizList.value.length);
@@ -202,7 +163,6 @@ const correctCount = computed(() =>
 // Methods
 function openModal(quiz: Quiz) {
     selectedQuiz.value = quiz;
-    tempSelectedAnswer.value = null; // Reset temp answer
     isModalOpen.value = true;
 }
 
@@ -214,21 +174,12 @@ function closeModal() {
 }
 
 function selectOption(idx: number) {
-    if (!selectedQuiz.value || !isUnsubmitted(selectedQuiz.value)) return;
-    tempSelectedAnswer.value = idx;
+    // Review mode: disable selection
+    return;
 }
 
-function submitAnswer() {
-    if (!selectedQuiz.value || tempSelectedAnswer.value === null) return;
-    
-    // Update the actual quiz object
-    selectedQuiz.value.submittedAnswer = tempSelectedAnswer.value;
-    
-    // Find in list and update (reactivity should handle this since we reference the object, but explicit update ensures safety if copies were used)
-    const quizInList = quizList.value.find(q => q.id === selectedQuiz.value!.id);
-    if (quizInList) {
-        quizInList.submittedAnswer = tempSelectedAnswer.value;
-    }
+function checkClose() {
+    isModalOpen.value = false;
 }
 
 function getStatusText(quiz: Quiz) {
@@ -241,7 +192,7 @@ function isUnsubmitted(quiz: Quiz) {
 }
 
 function canSelect(quiz: Quiz) {
-    return isUnsubmitted(quiz);
+    return false; // Disable selection in review mode
 }
 
 // Style Helpers (퀴즈 옵션 스타일)
@@ -256,7 +207,7 @@ function isWrongSelection(quiz: Quiz, idx: number) {
 }
 
 function isTempSelected(idx: number) {
-    return tempSelectedAnswer.value === idx;
+    return false;
 }
 
 function getOptionClass(quiz: Quiz, idx: number) {

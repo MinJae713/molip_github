@@ -9,22 +9,6 @@
                     : 'text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-50'">
                 <span class="material-symbols-outlined text-[18px]">{{ tab.icon }}</span>
                 <span>{{ tab.label }}</span>
-                
-                <!-- Red Notification Dot -->
-                <div v-if="tab.id === 'quiz' && unsubmittedQuizCount > 0"
-                     class="absolute top-2 right-[20%] w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] flex items-center justify-center animate-bounce shadow-sm ring-2 ring-white z-20">
-                    {{ unsubmittedQuizCount }}
-                </div>
-
-                <!-- Speech Bubble Notification (Above Tab) -->
-                <div v-if="tab.id === 'quiz' && unsubmittedQuizCount > 0 && currentTab !== 'quiz'"
-                     class="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-32 bg-slate-800 text-white text-[10px] py-1.5 px-2 rounded-lg shadow-xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-300 pointer-events-none">
-                    <div class="text-center font-medium leading-tight">
-                        <span class="text-amber-300 font-bold">{{ unsubmittedQuizCount }}건</span>의 미제출 퀴즈!
-                    </div>
-                    <!-- Arrow Pointing Down -->
-                    <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
-                </div>
             </button>
         </div>
         <!-- 2. 선택된 탭별 콘텐츠 -->
@@ -34,8 +18,7 @@
                 :class-mood-data="classMoodData" 
             />
             <SidebarQuiz v-else-if="currentTab === 'quiz'" 
-                :quiz-list="quizList"
-                @update:quizList="(newList) => quizList = newList"
+                :quiz-list="props.quizList || []"
             />
             <SidebarScript v-else-if="currentTab === 'script'" 
                 :script-list="scriptData"
@@ -79,6 +62,7 @@ const props = defineProps<{
     classMoodData?: number[];
     scriptData?: ScriptItem[];
     qaList?: any[]; // Chat list is not needed for QnA only sidebar
+    quizList?: any[]; // [NEW] Quiz Data passed from parent
 }>();
 
 watch(() => props.qaList, (newVal) => {
@@ -136,10 +120,6 @@ const quizList = ref<Quiz[]>([
         submittedAnswer: 0 // Correct
     }
 ]);
-
-const unsubmittedQuizCount = computed(() => 
-    quizList.value.filter(q => q.submittedAnswer === null).length
-);
 
 const tabs = [
     { id: 'mood', label: '세션 분위기', icon: 'mood' },
