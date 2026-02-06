@@ -8,10 +8,10 @@ import com.edumax.molip.domain.course.dto.response.GetCertificatedCourseResponse
 import com.edumax.molip.domain.course.dto.response.GetCourseApplyResponse;
 import com.edumax.molip.domain.course.dto.response.GetCourseLearnerResponse;
 import com.edumax.molip.domain.course.dto.response.GetMyCertificationResponse;
-import com.edumax.molip.domain.course.dto.response.GetMyCourseStatsResponse;
 import com.edumax.molip.domain.course.dto.response.GetTrainerCourseResponse;
 import com.edumax.molip.domain.course.dto.response.GetZzimCourseResponse;
 import com.edumax.molip.domain.course.dto.response.ZzimCourseResponse;
+import com.edumax.molip.domain.course.dto.response.get_my_course_stats.GetMyCourseStatsResponse;
 import java.util.List;
 
 public interface CourseService {
@@ -43,7 +43,7 @@ public interface CourseService {
 
   List<GetMyCertificationResponse> getMyCertifications(Long memberId); // 일단 보류 (후순위)
 
-  GetMyCourseStatsResponse getMyCourseStats(
+  GetMyCourseStatsResponse getCourseStats(
       Long courseId, Long memberId); // 강의 통계 조회 (수강생 완성, 강사 구현 예정)
 
   List<GetCourseApplyResponse> getCourseAppliesResponse(Long courseId, Long memberId);

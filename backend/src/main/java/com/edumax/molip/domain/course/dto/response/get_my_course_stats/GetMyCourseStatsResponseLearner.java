@@ -1,4 +1,4 @@
-package com.edumax.molip.domain.course.dto.response;
+package com.edumax.molip.domain.course.dto.response.get_my_course_stats;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -7,13 +7,14 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class GetMyCourseStatsResponse {
+@SuperBuilder
+public class GetMyCourseStatsResponseLearner extends GetMyCourseStatsResponse {
   private Integer totalLearningTime;
   private Integer exitQuizAverage;
   private Integer concentrateMyAverage;

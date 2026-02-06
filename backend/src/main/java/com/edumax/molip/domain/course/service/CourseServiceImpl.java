@@ -8,13 +8,18 @@ import com.edumax.molip.domain.course.dto.response.GetCertificatedCourseResponse
 import com.edumax.molip.domain.course.dto.response.GetCourseApplyResponse;
 import com.edumax.molip.domain.course.dto.response.GetCourseLearnerResponse;
 import com.edumax.molip.domain.course.dto.response.GetMyCertificationResponse;
-import com.edumax.molip.domain.course.dto.response.GetMyCourseStatsResponse;
-import com.edumax.molip.domain.course.dto.response.GetMyCourseStatsResponse.SessionRecord;
 import com.edumax.molip.domain.course.dto.response.GetTrainerCourseResponse;
 import com.edumax.molip.domain.course.dto.response.GetZzimCourseResponse;
 import com.edumax.molip.domain.course.dto.response.ZzimCourseResponse;
+import com.edumax.molip.domain.course.dto.response.get_my_course_stats.GetMyCourseStatsResponse;
+import com.edumax.molip.domain.course.dto.response.get_my_course_stats.GetMyCourseStatsResponseLearner;
+import com.edumax.molip.domain.course.dto.response.get_my_course_stats.GetMyCourseStatsResponseLearner.SessionRecord;
+import com.edumax.molip.domain.course.dto.response.get_my_course_stats.GetMyCourseStatsResponseTrainer;
+import com.edumax.molip.domain.course.dto.response.get_my_course_stats.GetMyCourseStatsResponseTrainer.CourseLearnerAnalysisResponse;
+import com.edumax.molip.domain.course.dto.response.get_my_course_stats.GetMyCourseStatsResponseTrainer.SessionAnalysisResponse;
 import com.edumax.molip.domain.course.entity.Course;
 import com.edumax.molip.domain.course.entity.CourseApply;
+import com.edumax.molip.domain.course.entity.CourseLearnerAnalysis;
 import com.edumax.molip.domain.course.entity.Zzim;
 import com.edumax.molip.domain.course.exception.IncorrectCourseTrainerException;
 import com.edumax.molip.domain.course.exception.IncorrectWorkspaceCourseException;
@@ -414,7 +419,7 @@ public class CourseServiceImpl implements CourseService {
   }
 
   @Override
-  public GetMyCourseStatsResponse getMyCourseStats(Long courseId, Long memberId) {
+  public GetMyCourseStatsResponse getCourseStats(Long courseId, Long memberId) {
     Member member =
         memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(NoMemberException::new);
     Course course = courseRepository.findById(courseId).orElseThrow(NoCourseException::new);
@@ -423,6 +428,13 @@ public class CourseServiceImpl implements CourseService {
         workspaceMemberRepository
             .findByMemberAndWorkspace(member, workspace)
             .orElseThrow(NoWorkspaceException::new);
+    return workspaceMember.getRole() == WorkspaceMemberRole.LEARNER
+        ? getMyCourseStatsResponseLearner(course, workspaceMember)
+        : getMyCourseStatsResponseTrainer(course, workspaceMember);
+  }
+
+  private GetMyCourseStatsResponseLearner getMyCourseStatsResponseLearner(
+      Course course, WorkspaceMember workspaceMember) {
     CourseLearner courseLearner =
         courseLearnerRepository
             .findByCourseAndWorkspaceMember(course, workspaceMember)
@@ -476,11 +488,55 @@ public class CourseServiceImpl implements CourseService {
       exitQuizAverage /= finishedSessionCount; // 세션별 퇴실 퀴즈 평균
       concentrateMyAverage /= finishedSessionCount; // 세션별 몰입도 평균
     }
-    return GetMyCourseStatsResponse.builder()
+    return GetMyCourseStatsResponseLearner.builder()
+        .courseId(course.getCourseId())
         .totalLearningTime(totalLearningTime)
         .exitQuizAverage(exitQuizAverage)
         .concentrateMyAverage(concentrateMyAverage)
         .sessionRecords(sessionRecords)
+        .build();
+  }
+
+  private GetMyCourseStatsResponseTrainer getMyCourseStatsResponseTrainer(
+      Course course, WorkspaceMember workspaceMember) {
+    Float avgAttandance = course.getAvgAttendance();
+    Float avgConcentrate = course.getAvgConcentrate();
+    Float avgQuizCorrect = course.getAvgQuizCorrect();
+
+    List<Session> sessions = course.getSessions();
+    List<SessionAnalysisResponse> sessionAnalysis =
+        sessions.stream()
+            .map(session -> learnerAnalysisRepository.findById(session.getSessionId()))
+            .filter(Optional::isPresent)
+            .map(learnerAnalysis -> learnerAnalysis.orElse(null))
+            .map(SessionAnalysisResponse::from)
+            .toList();
+
+    List<CourseLearnerAnalysis> courseLearnerAnalyses = course.getLearnerAnalysis();
+    Workspace workspace = workspaceMember.getWorkspace();
+    List<CourseLearnerAnalysisResponse> courseLearnerAnalysisResponse =
+        courseLearnerAnalyses.stream()
+            .map(
+                courseLearnerAnalysis -> {
+                  Long memberId = courseLearnerAnalysis.getMemberId();
+                  Member member =
+                      memberRepository.findById(memberId).orElseThrow(NoMemberException::new);
+                  WorkspaceMember targetWorkspaceMember =
+                      workspaceMemberRepository
+                          .findByMemberAndWorkspace(member, workspace)
+                          .orElseThrow(NoWorkspaceMemberException::new);
+                  return CourseLearnerAnalysisResponse.from(
+                      courseLearnerAnalysis, targetWorkspaceMember.getWorkspaceMemberId());
+                })
+            .toList();
+
+    return GetMyCourseStatsResponseTrainer.builder()
+        .courseId(course.getCourseId())
+        .avgAttandance(avgAttandance)
+        .avgConcentrate(avgConcentrate)
+        .avgQuizCorrect(avgQuizCorrect)
+        .sessionAnalysis(sessionAnalysis)
+        .courseLearnerAnalysis(courseLearnerAnalysisResponse)
         .build();
   }
 

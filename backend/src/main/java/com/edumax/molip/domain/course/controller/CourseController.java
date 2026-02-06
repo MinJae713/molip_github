@@ -9,10 +9,10 @@ import com.edumax.molip.domain.course.dto.response.GetCertificatedCourseResponse
 import com.edumax.molip.domain.course.dto.response.GetCourseApplyResponse;
 import com.edumax.molip.domain.course.dto.response.GetCourseLearnerResponse;
 import com.edumax.molip.domain.course.dto.response.GetMyCertificationResponse;
-import com.edumax.molip.domain.course.dto.response.GetMyCourseStatsResponse;
 import com.edumax.molip.domain.course.dto.response.GetTrainerCourseResponse;
 import com.edumax.molip.domain.course.dto.response.GetZzimCourseResponse;
 import com.edumax.molip.domain.course.dto.response.ZzimCourseResponse;
+import com.edumax.molip.domain.course.dto.response.get_my_course_stats.GetMyCourseStatsResponse;
 import com.edumax.molip.domain.course.service.CourseService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -148,9 +148,9 @@ public class CourseController {
   }
 
   @GetMapping("/{courseId}/stats")
-  public ResponseEntity<GetMyCourseStatsResponse> getMyCourseStats(
+  public ResponseEntity<GetMyCourseStatsResponse> getCourseStats(
       @PathVariable Long courseId, @AuthenticationPrincipal MemberUserDetails memberDetails) {
-    return ResponseEntity.ok(courseService.getMyCourseStats(courseId, memberDetails.getMemberId()));
+    return ResponseEntity.ok(courseService.getCourseStats(courseId, memberDetails.getMemberId()));
   }
 
   @GetMapping("/{courseId}/applies")
