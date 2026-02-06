@@ -220,6 +220,16 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
       const response = await api.get(`/courses/${courseId}`);
       const data = response.data;
       courseInfo.value = data || null;
+
+      // [추가] 상세 정보(진도율 등 포함)를 수강 목록 스토어에도 반영하여 캐싱 효과
+      if (data && myEnrolledCourses.value.length > 0) {
+        const index = myEnrolledCourses.value.findIndex(c => String(c.courseId) === String(courseId));
+        if (index !== -1) {
+          // 기존 데이터에 상세 정보를 덮어씀 (currentLessons, totalLessons 등)
+          myEnrolledCourses.value[index] = { ...myEnrolledCourses.value[index], ...data };
+        }
+      }
+
       return data || null;
     } catch (error) {
       console.error("강의 상세 정보 로드 실패:", error);

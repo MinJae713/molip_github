@@ -4,7 +4,7 @@
         <!-- 헤더 영역 -->
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h2 class="text-lg font-bold text-slate-900">{{ title }} - {{ session_name }}</h2>
+                <h2 class="text-lg font-bold text-slate-900">{{ title }}</h2>
                 <p class="text-xs text-slate-500">{{ description }}</p>
             </div>
             <div class="flex items-center gap-4 text-xs">
@@ -20,7 +20,7 @@
         </div>
         <!-- 차트(SVG) 영역 -->
         <!-- 데이터가 있을 때만 렌더링 -->
-        <div v-if="stats" class="flex-1 relative flex items-end pb-10 pr-2 pl-8 min-h-[200px]">
+        <div v-if="stats" class="flex-1 relative flex items-end pb-12 pr-2 pl-8 min-h-[200px]">
             <svg class="w-full h-48 overflow-visible" preserveAspectRatio="none" viewBox="0 0 400 150">
 
                 <!-- Y축 라벨 (0%, 50%, 100%) -->
@@ -88,7 +88,7 @@
                 </defs>
             </svg>
             <!-- X축 라벨 (Flex로 균등 분배) -->
-            <div class="absolute bottom-4 w-full flex text-xs text-slate-400 font-medium px-1 left-0 pl-8 box-border"
+            <div class="absolute bottom-4 w-full flex text-[10px] text-slate-400 font-medium px-1 left-0 pl-8 box-border"
                 :class="isAll ? 'justify-around' : 'justify-between'">
                 <span v-for="label in stats.labels" :key="label">{{ label }}</span>
             </div>
@@ -125,8 +125,8 @@ const VIEWBOX_HEIGHT = 150;
 const barGroups = computed(() => {
     if (!props.isAll || !props.stats || !props.stats.labels) return [];
 
-    const { labels, my_scores, avg_scores } = props.stats;
-    if (!my_scores || !avg_scores) return [];
+    const { labels, myScores, avgScores } = props.stats;
+    if (!myScores || !avgScores) return [];
 
     const count = labels.length;
     const groupWidth = VIEWBOX_WIDTH / count;
@@ -135,8 +135,8 @@ const barGroups = computed(() => {
 
     return labels.map((_, i) => {
         const groupCenterX = i * groupWidth + groupWidth / 2;
-        const myScore = my_scores[i] ?? 0;
-        const avgScore = avg_scores[i] ?? 0;
+        const myScore = myScores[i] ?? 0;
+        const avgScore = avgScores[i] ?? 0;
 
         return {
             my: {
@@ -182,9 +182,14 @@ const createPath = (points: { x: number; y: number }[]) => {
 
         if (!p1 || !p2 || !p0 || !p3) continue;
         const cp1x = p1.x + (p2.x - p0.x) * tension;
-        const cp1y = p1.y + (p2.y - p0.y) * tension;
+        let cp1y = p1.y + (p2.y - p0.y) * tension;
         const cp2x = p2.x - (p3.x - p1.x) * tension;
-        const cp2y = p2.y - (p3.y - p1.y) * tension;
+        let cp2y = p2.y - (p3.y - p1.y) * tension;
+
+        // Clamp Y values to stay within chart bounds (0 to VIEWBOX_HEIGHT)
+        cp1y = Math.max(0, Math.min(VIEWBOX_HEIGHT, cp1y));
+        cp2y = Math.max(0, Math.min(VIEWBOX_HEIGHT, cp2y));
+
         d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
     }
     return d;
@@ -206,8 +211,9 @@ const onMouseLeave = () => {
 };
 
 // Computed Properties
-const myPoints = computed(() => getPoints(props.stats?.my_scores || []));
-const avgPoints = computed(() => getPoints(props.stats?.avg_scores || []));
+const myPoints = computed(() => getPoints(props.stats?.myScores || []));
+const avgPoints = computed(() => getPoints(props.stats?.avgScores || []));
+
 const myPath = computed(() => createPath(myPoints.value));
 const avgPath = computed(() => createPath(avgPoints.value));
 </script>

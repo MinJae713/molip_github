@@ -48,8 +48,9 @@
                     </span>
                     {{ session.date }} {{ session.state === 'live' ? '(진행 중)' : '' }}
                 </div>
-                <div v-if="session.duration" class="flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[16px]">schedule</span> {{ session.duration }}
+                <div v-if="session.startAt && session.endAt" class="flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">schedule</span>
+                    {{ session.startAt.substring(0, 5) }} ~ {{ session.endAt.substring(0, 5) }}
                 </div>
             </div>
         </div>

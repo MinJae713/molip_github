@@ -3,14 +3,14 @@
         class="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-card hover:border-indigo-200 transition-all duration-300 flex flex-col h-full relative overflow-hidden">
         <div class="h-1.5 w-full bg-linear-to-r from-indigo-500 to-cyan-400"></div>
         <div class="p-6 flex-1 flex flex-col">
-            <div class="flex justify-between items-start mb-4">
+            <div class="flex justify-between items-start mb-8">
                 <span :class="[
                     'px-2.5 py-1 text-[11px] font-bold rounded-full border uppercase tracking-wide',
                     displayCourse('isMandatory')
                         ? 'bg-indigo-50 text-indigo-600 border-indigo-100'
                         : 'bg-slate-100 text-slate-600 border-slate-200'
                 ]">
-                    {{ displayCourse('tag') }}
+                    {{ displayCourse('category') }}
                 </span>
                 
                 <button @click.prevent.stop="toggleLike" class="transition-colors p-1 group/like"
@@ -24,7 +24,6 @@
                 </button>
             </div>
             <div class="mb-2">
-                <span class="text-xs font-bold text-slate-400 block mb-1">{{ displayCourse('category') }}</span>
                 <h3 class="text-xl font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors">
                     {{ displayCourse('title') }}
                 </h3>

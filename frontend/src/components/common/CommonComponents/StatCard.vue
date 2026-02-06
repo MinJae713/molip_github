@@ -1,7 +1,8 @@
 <template>
     <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex items-center gap-4">
 
-        <div class="size-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center flex-none">
+        <div class="size-12 rounded-full flex items-center justify-center flex-none"
+             :class="[data.iconBgClass || 'bg-indigo-50', data.iconColorClass || 'text-indigo-600']">
             <span class="material-symbols-outlined text-2xl">{{ data.icon }}</span>
         </div>
 
@@ -21,6 +22,8 @@ interface CardData {
     title: string;
     unit: string;
     value: string | number;
+    iconBgClass?: string;
+    iconColorClass?: string;
 }
 const props = defineProps<{
     data: CardData;
