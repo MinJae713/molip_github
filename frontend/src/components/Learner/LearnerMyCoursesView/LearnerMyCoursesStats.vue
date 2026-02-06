@@ -24,15 +24,15 @@
                 </div>
             </div>
         </div>
-        <!-- 평균 출석률 -->
+        <!-- 오늘의 세션 -->
         <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div class="size-12 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center flex-none">
-                <span class="material-symbols-outlined text-2xl">trending_up</span>
+            <div class="size-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-none">
+                <span class="material-symbols-outlined text-2xl">calendar_today</span>
             </div>
             <div>
-                <div class="text-sm font-medium text-slate-500">이번 달 평균 출석률</div>
+                <div class="text-sm font-medium text-slate-500">오늘의 세션</div>
                 <div class="text-2xl font-bold text-slate-900">
-                    {{ attendanceRate }} <span class="text-sm font-normal text-slate-400">%</span>
+                    {{ todaySessionCount }} <span class="text-sm font-normal text-slate-400">개</span>
                 </div>
             </div>
         </div>
@@ -43,7 +43,7 @@
 interface Props {
     ongoingCount: number;
     completedCount: number;
-    attendanceRate: number;
+    todaySessionCount: number;
 }
 const props = defineProps<Props>();
 </script>

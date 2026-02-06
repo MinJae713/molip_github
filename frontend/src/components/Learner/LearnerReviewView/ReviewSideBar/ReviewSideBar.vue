@@ -54,14 +54,14 @@
             </div>
 
             <SidebarChat 
-                :qa-list="qaList || []"
+                :qa-list="props.qaList || []"
                 @send-message="(...args) => $emit('send-message', ...args)"
             />
         </div>
     </div>
 </template>
 <script setup lang="ts">
-import { ref, onUnmounted, computed } from 'vue';
+import { ref, onUnmounted, computed, watch } from 'vue';
 // 하위 컴포넌트 임포트
 import SidebarMood from './SidebarMood.vue';
 import SidebarQuiz from './SidebarQuiz.vue';
@@ -80,6 +80,10 @@ const props = defineProps<{
     scriptData?: ScriptItem[];
     qaList?: any[]; // Chat list is not needed for QnA only sidebar
 }>();
+
+watch(() => props.qaList, (newVal) => {
+    console.log("[ReviewSideBar] received qaList:", newVal);
+}, { deep: true });
 
 const emit = defineEmits(['jump-to-time', 'send-message']);
 

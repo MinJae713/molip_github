@@ -16,7 +16,7 @@
             <LearnerMyCoursesStats 
               :ongoingCount="courseStore.workspaceStats?.learningCourseCount || 0" 
               :completedCount="courseStore.workspaceStats?.certificatedCount || 0"
-              :attendanceRate="courseStore.myCoursesAttendanceRate || 0" 
+              :todaySessionCount="courseStore.workspaceStats?.todaySessionCount || 0" 
             />
         </div>
         <div class="border-b border-slate-200">
@@ -148,7 +148,8 @@ onMounted(async () => {
             courseStore.fetchMyEnrolledCourses(wsId),
             courseStore.fetchLikeCourses(wsId),
             courseStore.fetchCoursesByWorkspace(wsId),
-            courseStore.fetchMyCertificatedCourses(wsId) // 수료 과정 로드
+            courseStore.fetchMyCertificatedCourses(wsId), // 수료 과정 로드
+            courseStore.fetchWorkspaceStats(wsId), // 상단 통계 데이터 로드
         ]);
     }
 });

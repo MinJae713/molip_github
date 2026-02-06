@@ -42,18 +42,23 @@
         </div>
 
         <!-- 타임라인 바 -->
-        <div class="h-24 w-full bg-slate-50 rounded-2xl overflow-hidden flex relative border border-slate-200 shadow-inner">
+        <div class="h-24 w-full bg-slate-50 rounded-2xl flex relative border border-slate-200 shadow-inner">
             <div v-for="(segment, index) in emotionSegments" :key="index"
                  class="h-full flex items-center justify-center transition-all hover:brightness-95 relative group cursor-default"
-                 :class="getEmotionColor(segment.type)"
+                 :class="[
+                    getEmotionColor(segment.type),
+                    index === 0 ? 'rounded-l-2xl' : '',
+                    index === emotionSegments.length - 1 ? 'rounded-r-2xl' : ''
+                 ]"
                  :style="{ width: segment.width + '%' }">
-                <span class="text-2xl sm:text-3xl drop-shadow-sm transform group-hover:scale-125 transition-transform duration-200 select-none">
-                    {{ getEmotionEmoji(segment.type) }}
-                </span>
+                
                 <!-- 툴팁 -->
                 <div class="absolute opacity-0 group-hover:opacity-100 bottom-full mb-3 bg-slate-800 text-white text-xs px-3 py-2 rounded-lg shadow-xl pointer-events-none transition-all transform translate-y-2 group-hover:translate-y-0 whitespace-nowrap z-50">
                     <div class="font-bold mb-0.5 text-center">{{ getEmotionLabel(segment.type) }}</div>
-                    <div class="text-slate-300 text-[10px]">{{ formatTime(segment.start) }} ~ {{ formatTime(segment.end) }}</div>
+                    <div class="text-slate-300 text-[10px] mb-1 text-center">{{ formatTime(segment.start) }} ~ {{ formatTime(segment.end) }}</div>
+                    <div v-if="segment.count !== undefined" class="text-yellow-400 font-medium text-[10px] text-center">
+                        {{ segment.count }}회 감지됨 (약 {{ Math.round((segment.count / 60) * 100) }}%)
+                    </div>
                     <!-- 화살표 -->
                     <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
                 </div>
@@ -78,6 +83,7 @@ interface EmotionSegment {
     start: number;
     end: number;
     type: 'happy' | 'surprise' | 'fear' | 'disgust' | 'sad' | 'anger' | 'neutral';
+    count?: number;
 }
 
 const props = withDefaults(defineProps<{
@@ -125,18 +131,7 @@ function getEmotionColor(type: string) {
     }
 }
 
-function getEmotionEmoji(type: string) {
-    switch (type) {
-        case 'happy': return '😊';
-        case 'surprise': return '😲';
-        case 'fear': return '😨';
-        case 'disgust': return '🤢';
-        case 'sad': return '😢';
-        case 'anger': return '😡';
-        case 'neutral': return '😐';
-        default: return '😐';
-    }
-}
+
 
 function getEmotionLabel(type: string) {
     switch (type) {

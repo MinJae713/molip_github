@@ -32,9 +32,17 @@
                     </div>
                     <!-- 범례 -->
                     <div class="flex items-center gap-3 text-[11px]">
+                         <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 bg-yellow-100 border border-yellow-200"></span>
+                            <span class="text-slate-500">피버(고집중)</span>
+                        </div>
                         <div class="flex items-center gap-1.5">
                             <span class="w-2.5 h-2.5 bg-slate-100 border border-slate-200"></span>
                             <span class="text-slate-500">쉬는 시간</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 bg-gray-100 border border-gray-200"></span>
+                            <span class="text-slate-500">미감지</span>
                         </div>
                         <div class="flex items-center gap-1.5">
                             <span class="w-2.5 h-2.5 bg-red-50 border border-red-100"></span>
@@ -65,6 +73,22 @@
                         <!-- 수평 그리드 라인 -->
                         <div class="absolute inset-0 flex flex-col justify-between pointer-events-none z-0">
                             <div v-for="i in 6" :key="i" class="w-full h-px bg-slate-100"></div>
+                        </div>
+
+                         <!-- Fever Zone (고집중) -->
+                         <div class="absolute inset-0 z-0 pointer-events-none">
+                            <div v-for="(zone, i) in feverZones" :key="'fv-' + i"
+                                class="absolute top-0 bottom-0 bg-yellow-100/40 border-x border-yellow-200"
+                                :style="{ left: zone.left + '%', width: zone.width + '%' }">
+                            </div>
+                        </div>
+
+                        <!-- Empty Zone (미감지) -->
+                         <div class="absolute inset-0 z-0 pointer-events-none">
+                            <div v-for="(zone, i) in emptyZones" :key="'em-' + i"
+                                class="absolute top-0 bottom-0 bg-gray-100/60 border-x border-gray-200 pattern-diagonal-lines"
+                                :style="{ left: zone.left + '%', width: zone.width + '%' }">
+                            </div>
                         </div>
 
                         <!-- 데드존(저조 구간) 표시 (가장 뒤) -->
@@ -145,6 +169,8 @@ import EmotionTimeline from './EmotionTimeline.vue';
 interface DataPoint {
     minute: number;
     value: number;
+    empty?: boolean;
+    fever?: boolean;
 }
 
 interface EmotionSegment {
@@ -159,12 +185,14 @@ const props = withDefaults(defineProps<{
     duration?: number; // 분 단위
     restPeriods?: { start: number, end: number }[]; // 쉬는 시간 (분 단위)
     emotionData?: EmotionSegment[];
+    deadzoneThreshold?: number;
 }>(), {
     data: () => [],
     averageData: () => [],
     duration: 60,
     restPeriods: () => [],
-    emotionData: () => []
+    emotionData: () => [],
+    deadzoneThreshold: 30
 });
 
 const activeTab = ref<'concentration' | 'emotion'>('concentration');
@@ -194,31 +222,29 @@ const chartData = computed(() => {
 
 const totalDuration = computed(() => props.duration || 60);
 
-// 데드존(저조 구간) 자동 감지 로직 (< 30%)
+// 데드존(저조 구간) 자동 감지 로직 (< deadzoneThreshold)
 interface DeadZone {
     left: number;  // %
     width: number; // %
 }
 
-const deadZones = computed(() => {
+// 헬퍼 함수: 특정 조건(conditionFn)을 만족하는 연속 구간 추출
+const getZones = (conditionFn: (pt: DataPoint) => boolean) => {
     const zones: DeadZone[] = [];
     if (!chartData.value || chartData.value.length === 0) return zones;
 
     let start: number | null = null;
-    const threshold = 30;
     const duration = totalDuration.value;
 
-    // 데이터를 순회하며 구간 추출
     for (let i = 0; i < chartData.value.length; i++) {
         const point = chartData.value[i];
         if (!point) continue;
 
-        const isDead = point.value < threshold;
+        const match = conditionFn(point);
 
-        if (isDead && start === null) {
+        if (match && start === null) {
             start = point.minute;
-        } else if (!isDead && start !== null) {
-            // 구간 종료
+        } else if (!match && start !== null) {
             zones.push({
                 left: (start / duration) * 100,
                 width: ((point.minute - start) / duration) * 100
@@ -226,15 +252,36 @@ const deadZones = computed(() => {
             start = null;
         }
     }
-    // 마지막까지 데드존인 경우
     if (start !== null) {
         zones.push({
             left: (start / duration) * 100,
             width: ((duration - start) / duration) * 100
         });
     }
-
     return zones;
+};
+
+// 1. Dead Zone (threshold 미만)
+const deadZones = computed(() => {
+    return getZones((pt) => pt.value < props.deadzoneThreshold);
+});
+
+// 2. Fever Zone (fever == true) - 가장 긴 구간 하나만 노출
+const feverZones = computed(() => {
+    const allZones = getZones((pt) => !!pt.fever);
+    if (allZones.length === 0) return [];
+
+    // 가장 긴 구간 찾기
+    const longest = allZones.reduce((prev, current) => {
+        return (prev.width > current.width) ? prev : current;
+    });
+
+    return [longest];
+});
+
+// 3. Empty Zone (empty == true)
+const emptyZones = computed(() => {
+    return getZones((pt) => !!pt.empty);
 });
 
 // 쉬는 시간 스타일 계산
