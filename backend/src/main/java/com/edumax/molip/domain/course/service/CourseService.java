@@ -1,8 +1,10 @@
 package com.edumax.molip.domain.course.service;
 
+import com.edumax.molip.domain.course.dto.request.ApproveCourseApplicationRequest;
 import com.edumax.molip.domain.course.dto.request.CourseCreateRequest;
 import com.edumax.molip.domain.course.dto.request.CourseUpdateRequest;
 import com.edumax.molip.domain.course.dto.request.ToggleZzimCourseRequest;
+import com.edumax.molip.domain.course.dto.response.ApproveCourseApplicationResponse;
 import com.edumax.molip.domain.course.dto.response.CourseDetailResponse;
 import com.edumax.molip.domain.course.dto.response.GetCertificatedCourseResponse;
 import com.edumax.molip.domain.course.dto.response.GetCourseApplyResponse;
@@ -27,8 +29,10 @@ public interface CourseService {
 
   void applyCourse(Long courseId, Long memberId);
 
-  void approveCourseApplication(
-      Long courseId, Long applicantWorkspaceMemberId, Long instructorMemberId);
+  ApproveCourseApplicationResponse approveCourseApplication(
+      Long courseId,
+      ApproveCourseApplicationRequest approveCourseApplicationRequest,
+      Long instructorMemberId);
 
   List<CourseDetailResponse> getMyCourses(Long memberId, Long workspaceId);
 

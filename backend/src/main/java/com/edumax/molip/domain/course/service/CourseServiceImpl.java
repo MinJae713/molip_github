@@ -1,8 +1,10 @@
 package com.edumax.molip.domain.course.service;
 
+import com.edumax.molip.domain.course.dto.request.ApproveCourseApplicationRequest;
 import com.edumax.molip.domain.course.dto.request.CourseCreateRequest;
 import com.edumax.molip.domain.course.dto.request.CourseUpdateRequest;
 import com.edumax.molip.domain.course.dto.request.ToggleZzimCourseRequest;
+import com.edumax.molip.domain.course.dto.response.ApproveCourseApplicationResponse;
 import com.edumax.molip.domain.course.dto.response.CourseDetailResponse;
 import com.edumax.molip.domain.course.dto.response.GetCertificatedCourseResponse;
 import com.edumax.molip.domain.course.dto.response.GetCourseApplyResponse;
@@ -21,8 +23,10 @@ import com.edumax.molip.domain.course.entity.Course;
 import com.edumax.molip.domain.course.entity.CourseApply;
 import com.edumax.molip.domain.course.entity.CourseLearnerAnalysis;
 import com.edumax.molip.domain.course.entity.Zzim;
+import com.edumax.molip.domain.course.exception.AlreadyAppliedCourseApplyException;
 import com.edumax.molip.domain.course.exception.IncorrectCourseTrainerException;
 import com.edumax.molip.domain.course.exception.IncorrectWorkspaceCourseException;
+import com.edumax.molip.domain.course.exception.NoCourseApplyException;
 import com.edumax.molip.domain.course.exception.NoCourseException;
 import com.edumax.molip.domain.course.exception.NoZzimException;
 import com.edumax.molip.domain.course.repository.CourseApplyRepository;
@@ -241,34 +245,41 @@ public class CourseServiceImpl implements CourseService {
 
   @Override
   @Transactional
-  public void approveCourseApplication(
-      Long courseId, Long applicantWorkspaceMemberId, Long instructorMemberId) {
-    Course course =
-        courseRepository
-            .findById(courseId)
-            .orElseThrow(() -> new IllegalArgumentException("해당 코스를 찾을 수 없습니다."));
+  public ApproveCourseApplicationResponse approveCourseApplication(
+      Long courseId,
+      ApproveCourseApplicationRequest approveCourseApplicationRequest,
+      Long instructorMemberId) {
+    Course course = courseRepository.findById(courseId).orElseThrow(NoCourseException::new);
 
     // 1. 요청자가 강사(Owner)인지 확인
     validateOwner(course, instructorMemberId);
+    Long workspaceMemberId = approveCourseApplicationRequest.getWorkspaceMemberId();
+    Boolean isApply = approveCourseApplicationRequest.getIsApply();
 
     // 2. 신청 내역 조회
     CourseApply courseApply =
         courseApplyRepository
-            .findByCourse_CourseIdAndWorkspaceMember_WorkspaceMemberId(
-                courseId, applicantWorkspaceMemberId)
-            .orElseThrow(() -> new IllegalArgumentException("해당 수강 신청 내역이 없습니다."));
+            .findByCourse_CourseIdAndWorkspaceMember_WorkspaceMemberId(courseId, workspaceMemberId)
+            .orElseThrow(NoCourseApplyException::new);
 
-    // 3. 승인 처리 (isApplied = true)
-    courseApply.setIsApplied(true); // Dirty Checking
+    // 3. 승인/거절 처리
+    if (courseApply.getIsApplied()) {
+      throw new AlreadyAppliedCourseApplyException();
+    }
 
-    // 4. 수강생(CourseLearner) 등록
-    CourseLearner courseLearner =
-        CourseLearner.builder()
-            .course(course)
-            .workspaceMember(courseApply.getWorkspaceMember())
-            .build();
-
-    courseLearnerRepository.save(courseLearner);
+    courseApply.setIsApplied(isApply); // Dirty Checking
+    if (isApply) {
+      // 4. 수강생(CourseLearner) 등록
+      CourseLearner courseLearner =
+          CourseLearner.builder()
+              .course(course)
+              .workspaceMember(courseApply.getWorkspaceMember())
+              .build();
+      courseLearnerRepository.save(courseLearner);
+    }
+    return ApproveCourseApplicationResponse.builder()
+        .message(isApply ? "수강 승인 완료" : "수강 거절 완료")
+        .build();
   }
 
   @Override

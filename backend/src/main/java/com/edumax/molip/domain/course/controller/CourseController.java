@@ -1,9 +1,11 @@
 package com.edumax.molip.domain.course.controller;
 
 import com.edumax.molip.common.model.MemberUserDetails;
+import com.edumax.molip.domain.course.dto.request.ApproveCourseApplicationRequest;
 import com.edumax.molip.domain.course.dto.request.CourseCreateRequest;
 import com.edumax.molip.domain.course.dto.request.CourseUpdateRequest;
 import com.edumax.molip.domain.course.dto.request.ToggleZzimCourseRequest;
+import com.edumax.molip.domain.course.dto.response.ApproveCourseApplicationResponse;
 import com.edumax.molip.domain.course.dto.response.CourseDetailResponse;
 import com.edumax.molip.domain.course.dto.response.GetCertificatedCourseResponse;
 import com.edumax.molip.domain.course.dto.response.GetCourseApplyResponse;
@@ -90,18 +92,14 @@ public class CourseController {
     }
   }
 
-  @PostMapping("/{courseId}/approve/{workspaceMemberId}")
-  public ResponseEntity<String> approveCourseApplication(
+  @PostMapping("/{courseId}/approve")
+  public ResponseEntity<ApproveCourseApplicationResponse> approveCourseApplication(
       @PathVariable Long courseId,
-      @PathVariable Long workspaceMemberId,
+      @Valid @RequestBody ApproveCourseApplicationRequest approveCourseApplicationRequest,
       @AuthenticationPrincipal MemberUserDetails userDetails) {
-    try {
-      courseService.approveCourseApplication(
-          courseId, workspaceMemberId, userDetails.getMemberId());
-      return ResponseEntity.ok("수강 승인 완료");
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.status(400).body(e.getMessage());
-    }
+    return ResponseEntity.ok(
+        courseService.approveCourseApplication(
+            courseId, approveCourseApplicationRequest, userDetails.getMemberId()));
   }
 
   @GetMapping("/me")
