@@ -154,7 +154,7 @@ export const useQuizStore = defineStore("quiz", () => {
         options: q.exitQuizAnswers
           .sort((a: any, b: any) => a.number - b.number) // 번호 순서대로 정렬
           .map((a: any) => a.answer),
-        correctAnswer: [q.answerNumber - 1], // 백엔드(1-based) -> 프론트(0-based)
+        correctAnswer: [q.number - 1], // 백엔드(1-based) -> 프론트(0-based)
         userAnswer: [],
         isEditing: false,
       }));
@@ -162,6 +162,28 @@ export const useQuizStore = defineStore("quiz", () => {
       return mappedQuizzes;
     } catch (error) {
       console.error("퇴실 퀴즈 조회 실패:", error);
+      throw error;
+    }
+  };
+
+  /** [수강생용] 퇴실 퀴즈 제출 (채점 요청) */
+  const submitExitQuiz = async (sessionId: string | number) => {
+    try {
+      // payload 구성: [{ exitQuizId: 1, answerNumber: 1 }]
+      const payload = selectedQuizzes.value.map((q) => ({
+        exitQuizId: q.id,
+        number: Number(q.userAnswer?.[0] ?? -1) + 1, // 0-based index -> 1-based answer number
+      }));
+
+      const res = await videoApi.post(
+        `/quiz/${sessionId}/exit/submit`,
+        payload,
+      );
+
+      // 응답 예시: [{ exitQuizId: 3, result: true }, ...]
+      return res.data;
+    } catch (error) {
+      console.error("퇴실 퀴즈 제출 실패:", error);
       throw error;
     }
   };
@@ -181,5 +203,6 @@ export const useQuizStore = defineStore("quiz", () => {
     resetSelected,
     publishExitQuiz,
     fetchExitQuiz,
+    submitExitQuiz,
   };
 });

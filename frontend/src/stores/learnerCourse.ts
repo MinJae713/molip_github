@@ -271,19 +271,6 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
       isLoading.value = false;
     }
   }
-
-  // [R] 워크스페이스 상단 통계 박스
-  async function fetchWorkspaceStats(workspaceId: string | number) {
-    try {
-      // 백엔드 컨트롤러: @GetMapping("/{workspace_id}/stats")
-      const response = await api.get(`/workspaces/${workspaceId}/stats`);
-      workspaceStats.value = response.data;
-      console.log("[Learner] 통계 데이터 로드 성공:", workspaceStats.value);
-    } catch (error) {
-      console.error("[Learner] 통계 데이터 로드 실패:", error);
-    }
-  }
-
   return {
     myEnrolledCourses,
     workspaceCourses,
@@ -293,7 +280,6 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
     courseInfo,
     courseMaterials,
     workspaceStats,
-    fetchWorkspaceStats,
     fetchMyEnrolledCourses,
     fetchCoursesByWorkspace,
     toggleCourseLike,

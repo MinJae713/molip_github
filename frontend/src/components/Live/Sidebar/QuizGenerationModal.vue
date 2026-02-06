@@ -45,7 +45,6 @@ const handlePublish = async () => {
 
     // 서버에 저장 (REST API)
     const result = await quizStore.publishExitQuiz(sessionId);
-
     if (result.apiResult) {
       alert('퇴실 퀴즈가 성공적으로 저장되었습니다.');
       quizStore.toggleModal(false); // 모달 닫기
