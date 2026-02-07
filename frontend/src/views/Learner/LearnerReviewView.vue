@@ -16,6 +16,7 @@
                             @jump-to-time="handleJumpToTime" 
                             @create-ai-quiz="handleCreateAiQuiz"
                             :deadzone-threshold="deadzoneThreshold"
+                            :duration="timelineDuration"
                         />
                     </div>
                 </div>
@@ -101,6 +102,9 @@ const ClassMood = ref([0, 0, 0, 0, 0, 0, 0]);
 
 // 스크립트 데이터
 const ScriptData = ref<ScriptDataItem[]>([]);
+
+// 타임라인 지속 시간 (분 단위)
+const timelineDuration = ref(60);
 
 // 타임라인 점프 핸들러
 const handleJumpToTime = (timeInSeconds: number) => {
@@ -331,6 +335,15 @@ async function loadReviewData(sessionId: string) {
             const segments = processEmotionSegments(learnerData);
             console.log("[Review] learner Emotion Segments:", segments);
             EmotionData.value = segments;
+
+            // 마지막 데이터의 timeline을 duration으로 설정 (초 -> 분 변환)
+            if (learnerData.length > 0) {
+                const lastItem = learnerData[learnerData.length - 1];
+                if (lastItem) {
+                    timelineDuration.value = (lastItem.timeline + 1) / 60;
+                    console.log(`[Review] Updated Timeline Duration: ${timelineDuration.value} mins (from ${lastItem.timeline}s)`);
+                }
+            }
         } else {
             console.warn("[Review] No learnerTimelineData found.");
         }
