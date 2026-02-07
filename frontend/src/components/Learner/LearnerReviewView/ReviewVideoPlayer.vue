@@ -67,9 +67,9 @@
 </template>
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import djMaxImg from '@/assets/djmax.jpg';
+import djMaxImg from '@/assets/thumbnail.png';
 // 테스트 영상 URL (나중에 S3 URL이 들어올 자리)
-const testVideoUrl = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+const testVideoUrl = "https://d285ryfcbcw5yb.cloudfront.net/ssafy_play_video_1.mp4";
 // 비디오 상태 관련 변수
 const videoRef = ref<HTMLVideoElement | null>(null);
 const isPlaying = ref(false);

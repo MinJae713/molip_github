@@ -75,14 +75,6 @@
                             <div v-for="i in 6" :key="i" class="w-full h-px bg-slate-100"></div>
                         </div>
 
-                         <!-- Fever Zone (고집중) -->
-                         <div class="absolute inset-0 z-0 pointer-events-none">
-                            <div v-for="(zone, i) in feverZones" :key="'fv-' + i"
-                                class="absolute top-0 bottom-0 bg-yellow-100/40 border-x border-yellow-200"
-                                :style="{ left: zone.left + '%', width: zone.width + '%' }">
-                            </div>
-                        </div>
-
                         <!-- Empty Zone (미감지) -->
                          <div class="absolute inset-0 z-0 pointer-events-none">
                             <div v-for="(zone, i) in emptyZones" :key="'em-' + i"
@@ -91,19 +83,41 @@
                             </div>
                         </div>
 
-                        <!-- 데드존(저조 구간) 표시 (가장 뒤) -->
+                        <!-- 데드존(저조 구간) 표시 -->
                         <div class="absolute inset-0 z-0 pointer-events-none">
                             <div v-for="(zone, i) in deadZones" :key="'dz-' + i"
-                                class="absolute top-0 bottom-0 bg-red-50/80 border-x border-red-100 transition-colors hover:bg-red-100/50 flex items-center justify-center pointer-events-auto group"
+                                class="absolute top-0 bottom-0 bg-gradient-to-b from-red-100/60 via-red-50/40 to-red-100/60 border-x-2 border-red-300 transition-colors hover:bg-red-100/70 flex flex-col gap-1 items-center justify-center pointer-events-auto group backdrop-blur-[1px]"
                                 :style="{ left: zone.left + '%', width: zone.width + '%' }">
+                                <div class="absolute top-0 left-1/2 -translate-x-1/2 bg-red-400 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-b-md shadow-sm whitespace-nowrap opacity-70 group-hover:opacity-100 transition-opacity">
+                                    ⚠️ Dead Zone
+                                </div>
                                 <!-- 데드존 이동 버튼 -->
                                 <button 
-                                    @click="$emit('jump-to-time', (zone.left / 100) * totalDuration * 60)"
-                                    class="opacity-0 group-hover:opacity-100 transition-all transform scale-90 group-hover:scale-100 bg-white border border-red-200 text-red-500 rounded-full px-2 py-1 shadow-sm flex items-center gap-1 text-[10px] font-bold whitespace-nowrap z-20 hover:bg-red-50"
+                                    @click.stop="$emit('jump-to-time', (zone.left / 100) * totalDuration * 60)"
+                                    class="opacity-0 group-hover:opacity-100 transition-all transform scale-90 group-hover:scale-100 bg-white border border-red-200 text-red-500 rounded-full px-2.5 py-1 shadow-sm flex items-center gap-1 text-[10px] font-bold whitespace-nowrap z-20 hover:bg-red-50"
                                     title="이 구간으로 이동">
                                     <span class="material-symbols-outlined text-[14px]">play_arrow</span>
                                     <span>이동</span>
                                 </button>
+                                <!-- 데드존 AI 퀴즈 생성 버튼 -->
+                                <button 
+                                    @click.stop="$emit('create-ai-quiz', (zone.left / 100) * totalDuration * 60)"
+                                    class="opacity-0 group-hover:opacity-100 transition-all transform scale-90 group-hover:scale-100 bg-indigo-600 border border-indigo-700 text-white rounded-full px-2.5 py-1 shadow-sm flex items-center gap-1 text-[10px] font-bold whitespace-nowrap z-20 hover:bg-indigo-700"
+                                    title="이 구간 기반 AI 퀴즈 생성">
+                                    <span class="material-symbols-outlined text-[14px]">psychology</span>
+                                    <span>AI 퀴즈</span>
+                                </button>
+                            </div>
+                        </div>
+
+                         <!-- Fever Zone (고집중) - 가장 위에 표시 -->
+                         <div class="absolute inset-0 z-0 pointer-events-none">
+                            <div v-for="(zone, i) in feverZones" :key="'fv-' + i"
+                                class="absolute top-0 bottom-0 bg-gradient-to-b from-yellow-200/50 to-yellow-100/30 border-x-2 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.3)] backdrop-blur-[1px]"
+                                :style="{ left: zone.left + '%', width: zone.width + '%' }">
+                                <div class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900 text-[9px] font-bold px-1.5 py-0.5 rounded-b-md shadow-sm whitespace-nowrap">
+                                    🔥 FEVER
+                                </div>
                             </div>
                         </div>
 
@@ -266,17 +280,9 @@ const deadZones = computed(() => {
     return getZones((pt) => pt.value < props.deadzoneThreshold);
 });
 
-// 2. Fever Zone (fever == true) - 가장 긴 구간 하나만 노출
+// 2. Fever Zone (fever == true) - 모든 구간 노출
 const feverZones = computed(() => {
-    const allZones = getZones((pt) => !!pt.fever);
-    if (allZones.length === 0) return [];
-
-    // 가장 긴 구간 찾기
-    const longest = allZones.reduce((prev, current) => {
-        return (prev.width > current.width) ? prev : current;
-    });
-
-    return [longest];
+    return getZones((pt) => !!pt.fever);
 });
 
 // 3. Empty Zone (empty == true)
@@ -298,7 +304,7 @@ const restPeriodStyles = computed(() => {
     });
 });
 
-defineEmits(['jump-to-time']);
+defineEmits(['jump-to-time', 'create-ai-quiz']);
 
 // 차트 크기 반응형 감지
 const chartRef = ref<HTMLDivElement | null>(null);

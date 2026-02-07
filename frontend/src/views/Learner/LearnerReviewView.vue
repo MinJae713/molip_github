@@ -1,6 +1,6 @@
 <template>
     <div class="fixed inset-0 z-50 bg-white flex flex-col font-sans">
-        <ReviewHeader :title="sessionStore.currentSessionInfo?.title" session-number="01" @close="$emit('close')" />
+        <ReviewHeader :title="sessionStore.currentSessionInfo?.title" session-number="01" @close="handleClose" />
         <main class="flex-1 bg-white min-h-0 relative z-0">
             <div class="h-full flex flex-col lg:flex-row">
                 <!-- 메인 콘텐츠 -->
@@ -13,12 +13,13 @@
                             :average-data="AverageData"
                             :rest-periods="RestPeriods"
                             :emotion-data="EmotionData"
-                            :deadzone-threshold="deadzoneThreshold"
                             @jump-to-time="handleJumpToTime" 
+                            @create-ai-quiz="handleCreateAiQuiz"
+                            :deadzone-threshold="deadzoneThreshold"
                         />
                     </div>
                 </div>
-                <!-- 사이드바 -->
+                <!-- 사이드바 --> 
                 <ReviewSideBar class="w-full lg:w-[340px] xl:w-[380px]" 
                     :personal-mood-data="PersonalMood"
                     :class-mood-data="ClassMood"
@@ -30,6 +31,13 @@
                 />
             </div>
         </main>
+        
+        <!-- AI Quiz Modal -->
+        <AiQuizModal 
+            :is-open="isAiQuizModalOpen"
+            :quiz-data="aiQuizData"
+            @close="closeAiQuizModal"
+        />
     </div>
 </template>
 <script setup lang="ts">
@@ -55,7 +63,8 @@ import SockJS from 'sockjs-client';
 
 //  Data Load & Processing
 // import apiResponse from '../../../updata/up_data.json';
-import { fetchReviewData, fetchMoodData, fetchScriptData, fetchChatData, fetchQuizData, type DataItem, type MoodGraphDataItem, type ScriptDataItem, type ChatDataItem, type QuizData } from '@/api/review';
+import { fetchReviewData, fetchMoodData, fetchScriptData, fetchChatData, fetchQuizData, fetchAiQuiz, type DataItem, type MoodGraphDataItem, type ScriptDataItem, type ChatDataItem, type QuizData, type AiQuizResponse } from '@/api/review';
+import AiQuizModal from '@/components/Learner/LearnerReviewView/AiQuizModal.vue';
 
 // 라우터
 const route = useRoute();
@@ -77,7 +86,7 @@ const quizList = ref<any[]>([]); // [NEW] Quiz List State
 const RestPeriods = ref<{ start: number, end: number }[]>([]);
 
 // 집중도 데드존 기준값
-const deadzoneThreshold = ref(30);
+const deadzoneThreshold = ref(12);
 
 // 타임라인용 샘플 데이터 (내 집중도)
 const TimelineData = ref<{ minute: number, value: number, empty?: boolean, fever?: boolean }[]>([]);
@@ -208,58 +217,37 @@ function processEmotionSegments(data: DataItem[]) {
     
     if (!data || data.length === 0) return segments;
 
-    const DURATION_PER_BLOCK = 60; // 1분 단위로 집계
+    const DURATION_PER_BLOCK = 30; // 30초 단위로 집계
     const totalSeconds = data.length;
     
-    // 데이터를 1분 단위로 순회
+    // 데이터를 30초 단위로 순회
     for (let i = 0; i < totalSeconds; i += DURATION_PER_BLOCK) {
         const chunk = data.slice(i, i + DURATION_PER_BLOCK);
         if (chunk.length === 0) continue;
 
         // 감정 빈도 계산
         const counts: Record<string, number> = {};
-        let nonNeutralTotal = 0;
-
         chunk.forEach(item => {
             let emotion = item.emotionName || 'neutral';
             if (emotion === 'angry') emotion = 'anger';
             
             counts[emotion] = (counts[emotion] || 0) + 1;
-            
-            if (emotion !== 'neutral') {
-                nonNeutralTotal++;
-            }
         });
 
         // 대표 감정 선정 로직
-        // 1. 중립이 아닌 감정들의 합이 전체의 30% 이상이면, 중립 제외 최빈값 선택
-        // 2. 그렇지 않으면, 전체 최빈값 선택
-        const THRESHOLD_RATIO = 0.3;
-        const totalInChunk = chunk.length;
+        // 대표 감정 선정 로직
+        // 가장 빈번하게 발생한 감정을 선택 (중립 포함)
         let dominantEmotion = 'neutral';
         let dominantCount = 0;
+        let maxCount = -1;
 
-        if (nonNeutralTotal / totalInChunk >= THRESHOLD_RATIO) {
-            // 중립 제외하고 가장 빈도 높은 감정 찾기
-            let maxCount = -1;
-            Object.entries(counts).forEach(([emotion, count]) => {
-                if (emotion !== 'neutral' && count > maxCount) {
-                    maxCount = count;
-                    dominantEmotion = emotion;
-                }
-            });
-            dominantCount = maxCount;
-        } else {
-            // 전체에서 가장 빈도 높은 감정 찾기
-            let maxCount = -1;
-            Object.entries(counts).forEach(([emotion, count]) => {
-                if (count > maxCount) {
-                    maxCount = count;
-                    dominantEmotion = emotion;
-                }
-            });
-            dominantCount = maxCount;
-        }
+        Object.entries(counts).forEach(([emotion, count]) => {
+            if (count > maxCount) {
+                maxCount = count;
+                dominantEmotion = emotion;
+            }
+        });
+        dominantCount = maxCount;
 
         // 세그먼트 추가 (Type assertion needed)
         segments.push({
@@ -296,9 +284,20 @@ async function loadReviewData(sessionId: string) {
 
         // Response format assumed: { learnerTimelineData: [], trainerTimelineData: [] }
          // 주의: 백엔드에서 'learner'(오타)로 오는지 'learner'(정상)로 오는지 확인 필요
-        const learnerData = response.learnerTimelineData || (response as any).learnerTimelineData || [];
-        const trainerData = response.trainerTimelineData || [];
-        const { deadzonePercent, pauseElementList } = response;
+        const { learnerTimelineData, trainerTimelineData, deadzonePercent, pauseElementList } = response;
+        
+        console.log("[Review] Destructured Data - deadzonePercent:", deadzonePercent);
+
+        if (typeof deadzonePercent === 'number') {
+            deadzoneThreshold.value = deadzonePercent;
+            console.log(`[Review] Updated Deadzone Threshold to: ${deadzoneThreshold.value}`);
+        } else {
+             // Fallback or keep default 30
+             console.warn("[Review] deadzonePercent missing from response, keeping default:", deadzoneThreshold.value);
+        }
+
+        const learnerData = learnerTimelineData || [];
+        const trainerData = trainerTimelineData || [];
         
         console.log("[Review] Learner Data (Checked typo):", learnerData);
         console.log("[Review] Destructured Data - trainerTimelineData:", trainerData);
@@ -306,8 +305,11 @@ async function loadReviewData(sessionId: string) {
         console.log("[Review] Destructured Data - pauseElementList:", pauseElementList);
 
         // 0. Set Deadzone Threshold & Rest Periods
+        console.log(`[Review] Setting Deadzone Threshold: ${deadzonePercent}`);
         if (typeof deadzonePercent === 'number') {
             deadzoneThreshold.value = deadzonePercent;
+        } else {
+            console.warn("[Review] deadzonePercent is not a number, using default 30");
         }
 
         if (pauseElementList && Array.isArray(pauseElementList)) {
@@ -548,5 +550,39 @@ const sendChatMessage = (content: string, type: string, questionId?: number | st
 const handleSendMessage = (content: string, type: string, questionId?: number | string | null) => {
     // SidebarChat에서 'question' 타입으로 보냄
     sendChatMessage(content, type, questionId);
+};
+
+// AI 퀴즈 모달 관련 상태
+const isAiQuizModalOpen = ref(false);
+const aiQuizData = ref<AiQuizResponse | null>(null);
+
+const handleCreateAiQuiz = async (timeInSeconds: number) => {
+    const sessionId = route.params.sessionId as string;
+    try {
+        console.log(`[Review] Creating AI Quiz for session: ${sessionId}, time: ${timeInSeconds}`);
+        const response = await fetchAiQuiz(sessionId, timeInSeconds);
+        console.log("[Review] AI Quiz Response:", response);
+        
+        if (response) {
+            aiQuizData.value = response;
+            isAiQuizModalOpen.value = true;
+        }
+    } catch (error) {
+        console.error("[Review] Failed to create AI Quiz:", error);
+        alert("AI 퀴즈 생성에 실패했습니다. 다시 시도해주세요.");
+    }
+};
+
+const closeAiQuizModal = () => {
+    isAiQuizModalOpen.value = false;
+    aiQuizData.value = null;
+};
+// 라우터
+import { useRouter } from 'vue-router';
+const router = useRouter();
+
+const handleClose = () => {
+    // 새 창으로 열렸으므로 창 닫기 수행
+    window.close();
 };
 </script>
