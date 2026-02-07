@@ -161,13 +161,13 @@ export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
     status: 'APPROVE' | 'REJECTED'
   ) => {
     if (isLoading.value) return;
-    isLoading.value = true; // 로딩 추가
+    isLoading.value = true;
     error.value = null;
     try {
       // 해당 요청 정보 찾기 (payload 구성을 위해)
       const targetRequest = joinRequests.value.find(req => req.workspaceRegisterId === workspaceRegisterId);
       console.log('Target Request:', targetRequest); // 디버깅용 로그
-
+      
       if (!targetRequest) {
         throw new Error("요청 정보를 찾을 수 없습니다.");
       }
@@ -177,13 +177,22 @@ export const useWorkspaceAdminStore = defineStore('workspaceAdmin', () => {
         memberId: targetRequest.memberId,
         role: targetRequest.role || 'LEARNER',
         status: status, // 'APPROVE' 또는 'REJECTED'
-        appliedAt: targetRequest.createdAt // createdAt을 appliedAt으로 매핑
+        appliedAt: new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString()  // 현재 한국시간으로 전송 (승인/반려 시점) -> 백엔드 수정필요
       };
 
       // 3. POST 요청 전송
       await api.post(`/workspaces/join`, payload);
 
-      // 4. 처리 성공 후 목록 다시 불러오기
+      // 4. 성공 시 로컬 상태 업데이트 (표준 방식: 서버 응답 확인 후 UI 갱신)
+      // 목록에서 해당 요청을 찾아 상태를 변경
+      const requestToUpdate = joinRequests.value.find(req => req.workspaceRegisterId === workspaceRegisterId);
+      if (requestToUpdate) {
+        requestToUpdate.status = status;
+        // 승인/반려 시각 업데이트 (현재 시간으로 추정하거나 서버 응답값 사용 가능)
+        requestToUpdate.approvedAt = new Date().toISOString();
+      }
+
+      // 선택적: 완전한 동기화를 위해 목록 다시 불러오기 (백그라운드 처리)
       await fetchJoinRequests(workspaceId);
 
     } catch (e) {

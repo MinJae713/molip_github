@@ -110,9 +110,11 @@ const adminStats = computed(() => {
     </section>
 
     <section>
-      <div class="mb-5 px-1 flex items-center gap-2">
-        <span class="material-symbols-outlined text-indigo-500 font-bold">analytics</span>
-        <h2 class="text-lg font-bold text-slate-800">워크스페이스 현황 요약</h2>
+      <div class="flex items-center gap-2 mb-5 px-1">
+        <div class="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
+          <span class="material-symbols-outlined text-[20px]">analytics</span>
+        </div>
+        <h3 class="text-xl font-bold text-slate-800 tracking-tight">워크스페이스 현황 요약</h3>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">

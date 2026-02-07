@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useWorkspaceAdminStore } from '@/stores/workspaceAdmin';
 import { useAdminCourseStore } from '@/stores/adminCourse'; // 강의 스토어 변경
@@ -9,46 +9,89 @@ import RoleChangeModal from './RoleChangeModal.vue';
 import ConfirmModal from '@/components/common/CommonComponents/ConfirmModal.vue';
 import type { WorkspaceMember } from '@/types';
 
-// 초기화
+// 확장된 멤버 타입 정의
+interface MemberWithCourses extends WorkspaceMember {
+  courseNames?: string[];
+}
+
 const route = useRoute();
 const adminStore = useWorkspaceAdminStore();
 const courseStore = useAdminCourseStore();
 const workspaceId = route.params.id as string;
 
-// 데이터 연결 (Store 상태 참조)
-const members = computed(() => adminStore.members || []);
-const isLoading = computed(() => adminStore.isLoading || courseStore.isLoading);
+// 강의 정보가 포함된 멤버 목록
+const membersWithCourses = ref<MemberWithCourses[]>([]);
+const isLoadingCourseData = ref(false);
 
-// 필터링 상태
+const members = computed(() => adminStore.members || []);
+const isLoading = computed(() => adminStore.isLoading || courseStore.isLoading || isLoadingCourseData.value);
+
 const searchQuery = ref('');
 const selectedCourseName = ref('전체 강의');
 
-// 초기 데이터 로드 (멤버 및 워크스페이스 내 강의 목록)
-// 멤버는 상위 뷰에서 로드하므로 여기서는 강의만 로드 가능, 혹은 둘 다 안전하게 로드
+// 멤버들의 강의 정보를 불러오는 함수
+const fetchMembersCourseData = async () => {
+  if (!workspaceId || members.value.length === 0) return;
+  
+  isLoadingCourseData.value = true;
+  try {
+    // 모든 멤버의 상세 정보를 병렬로 가져오기
+    const detailPromises = members.value.map(member =>
+      adminStore.fetchMemberDetail(Number(workspaceId), member.workspaceMemberId)
+        .then(detail => ({
+          ...member,
+          courseNames: detail.courses?.map(c => c.title) || []
+        }))
+        .catch(err => {
+          console.error(`멤버 ${member.workspaceMemberId} 강의 정보 로드 실패:`, err);
+          return {
+            ...member,
+            courseNames: []
+          };
+        })
+    );
+
+    membersWithCourses.value = await Promise.all(detailPromises);
+  } catch (error) {
+    console.error('강의 정보 로드 실패:', error);
+    // 실패해도 기본 멤버 정보는 표시
+    membersWithCourses.value = members.value.map(m => ({ ...m, courseNames: [] }));
+  } finally {
+    isLoadingCourseData.value = false;
+  }
+};
+
 onMounted(async () => {
   if (workspaceId) {
-    // memberStore.fetchMembers(workspaceId), -> Parent handles this, but refreshing logic might be needed
     await courseStore.fetchWorkspaceCourses(workspaceId);
+    // 멤버 목록이 이미 로드되어 있다면 강의 정보 가져오기
+    if (members.value.length > 0) {
+      await fetchMembersCourseData();
+    }
   }
 });
 
-// 동적 강의 옵션 생성
+// members가 변경될 때마다 강의 정보 갱신
+watch(members, async (newMembers: WorkspaceMember[])=> {
+  if (newMembers.length > 0) {
+    await fetchMembersCourseData();
+  }
+}, { immediate: true });
+
 const courseOptions = computed(() => {
   const titles = courseStore.workspaceCourses.map(c => c.title);
   return ['전체 강의', ...titles];
 });
 
-// 1. 검색 및 강의 필터링된 목록 (오류 방어 코드 포함)
+// 필터링: membersWithCourses 사용
 const filteredMembers = computed(() => {
-  return members.value.filter(m => {
-    // 이름 검색: undefined 방지
+  return membersWithCourses.value.filter(m => {
     const name = m?.name || '';
     const matchName = name.toLowerCase().includes(searchQuery.value.toLowerCase());
 
-    // 강의 필터: 멤버 객체의 courses 배열 내 선택한 강의명 포함 여부 확인
     const matchCourse = selectedCourseName.value === '전체 강의'
       ? true
-      : (m.courses && m.courses.includes(selectedCourseName.value));
+      : (m.courseNames && m.courseNames.includes(selectedCourseName.value));
 
     return matchName && matchCourse;
   });
@@ -106,9 +149,18 @@ const actionStatus = computed(() => {
 });
 
 const handleStatusChange = async () => {
+  const targetStatus = actionStatus.value; // 상태 변경 전 값 캡처
+
   try {
-    await adminStore.updateMembersStatus(selectedIds.value, actionStatus.value);
+    await adminStore.updateMembersStatus(selectedIds.value, targetStatus);
     
+    // 로컬 상태 즉시 업데이트
+    membersWithCourses.value.forEach(member => {
+      if (selectedIds.value.includes(member.workspaceMemberId)) {
+        member.status = targetStatus;
+      }
+    });
+
     // 성공 시 모달 닫기
     modals.value.status = false;
     selectedIds.value = [];
@@ -125,6 +177,13 @@ const handleRoleChange = async (payload: { ids: number[], role: string }) => {
 
   try {
     await adminStore.changeMembersRole(ids, targetRole);
+    
+    // 로컬 상태 즉시 업데이트
+    membersWithCourses.value.forEach(member => {
+      if (ids.includes(member.workspaceMemberId)) {
+        member.role = targetRole;
+      }
+    });
     
     // 성공 시 모달 닫기 및 초기화
     modals.value.role = false;
@@ -198,13 +257,14 @@ const formatDate = (dateStr?: string) => {
             </th>
             <th class="p-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">참여진 정보</th>
             <th class="p-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">역할</th>
-            <th class="p-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">가입일 / 최근 접속</th>
+            <th class="p-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">가입일</th>
             <th class="p-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">상태</th>
+            <th class="p-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">상세보기</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-50">
           <tr v-if="isLoading">
-            <td colspan="5" class="p-20 text-center">
+            <td colspan="6" class="p-20 text-center">
               <div class="flex flex-col items-center gap-2">
                 <div class="size-8 border-4 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin"></div>
                 <p class="text-xs text-slate-400 font-medium">데이터 로딩 중...</p>
@@ -241,14 +301,16 @@ const formatDate = (dateStr?: string) => {
               </td>
               <td class="p-4 text-center">
                 <div class="text-xs font-bold text-slate-600 mb-0.5">{{ formatDate(member.createdAt) }}</div>
-                <div class="text-[10px] text-slate-400 font-medium">{{ member.connectedAt ? formatDate(member.connectedAt) : '접속 기록 없음' }}</div>
               </td>
               <td class="p-4 text-center">
                 <StatusBadge v-if="member.status" :variant="(member.status.toLowerCase() as any)" show-dot />
               </td>
+              <td class="p-4 text-center">
+                <span class="text-slate-300 group-hover:text-indigo-400 transition-colors font-bold text-lg">›</span>
+              </td>
             </tr>
             <tr v-if="filteredMembers.length === 0">
-              <td colspan="5" class="p-12 text-center text-slate-400 text-sm">검색 결과가 없습니다.</td>
+              <td colspan="6" class="p-12 text-center text-slate-400 text-sm">검색 결과가 없습니다.</td>
             </tr>
           </template>
         </tbody>

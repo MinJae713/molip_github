@@ -46,12 +46,13 @@ const mapStatus = (status: string): 'ongoing' | 'completed' | 'upcoming' => {
 // 데이터 매핑
 const mappedCourses = computed(() => {
   return courseStore.workspaceCourses.map(c => ({
+    
     id: c.courseId,
     title: c.title,
     category: c.category || '미분류',
     trainer: c.trainerName || '미지정', // AdminCourse: trainerName
     studentCount: c.learnersCount || 0, // AdminCourse: learnersCount
-    progress: Math.round((c.progressRate || 0) * 100), // AdminCourse: progressRate
+    progress: Math.round((c.progressRate || (c.totalLessons ? c.currentLessons / c.totalLessons : 0) || 0) * 100), // AdminCourse: progressRate
     status: mapStatus(c.status), // AdminCourse: status
     originalStatus: c.status
   }));
