@@ -13,8 +13,8 @@
                         <span class="material-symbols-outlined text-[24px]">psychology</span>
                     </div>
                     <div>
-                        <h2 class="text-lg font-bold text-slate-800">AI 맞춤 퀴즈</h2>
-                        <p class="text-xs text-slate-500">데드존 구간 내용을 바탕으로 생성된 퀴즈입니다.</p>
+                        <h2 class="text-lg font-bold text-slate-800">AI 데드존 퀴즈</h2>
+                        <p class="text-xs text-slate-500">집중도 저하 구간인 데드존 구간 내용을 바탕으로 생성된 학습내용 확인용 퀴즈입니다.</p>
                     </div>
                 </div>
                 <button @click="$emit('close')" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">

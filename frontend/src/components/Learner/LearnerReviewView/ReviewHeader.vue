@@ -15,12 +15,11 @@
                 </div>
             </div>
         </div>
-        <button @click="$emit('close')"
-            class="flex items-center gap-3 px-5 py-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all duration-300 group">
-            <span class="text-lg font-bold">닫기</span>
-            <span class="material-symbols-outlined text-3xl group-hover:rotate-90 transition-transform">
-                close
-            </span>
+
+        <button @click="$emit('close')" 
+            class="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-all font-bold text-sm shadow-sm hover:shadow-md active:scale-95 group">
+            <span class="text-xs">복습하기 닫기</span>
+            <span class="material-symbols-outlined text-[20px] group-hover:rotate-90 transition-transform duration-300">close</span>
         </button>
     </header>
 </template>
@@ -29,5 +28,6 @@ defineProps<{
     title?: string | null;
     course_id?: string | number;
 }>();
+
 defineEmits(['close']);
 </script>

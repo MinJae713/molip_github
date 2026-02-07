@@ -70,16 +70,7 @@
                 <!-- Footer Actions -->
                 <div
                     class="bg-slate-50 px-6 py-4 flex flex-row-reverse sm:px-6 border-t border-slate-200 rounded-b-2xl gap-3">
-                    <button v-if="course.status === 'recruiting'" @click="$emit('register')"
-                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow-sm shadow-indigo-200 transition-all flex items-center justify-center gap-1 whitespace-nowrap"
-                        type="button">
-                        <span class="material-symbols-outlined text-[18px]">school</span> 수강 신청하기
-                    </button>
-                    <button @click="$emit('register')"
-                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow-sm shadow-indigo-200 transition-all flex items-center justify-center gap-1 whitespace-nowrap"
-                        type="button">
-                        <span class="material-symbols-outlined text-[18px]">school</span> 수강 신청하기
-                    </button>
+                    <!-- 중복 버튼 제거 및 조건 통합 -->
                     <button @click="$emit('close')"
                         class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-5 py-2.5 text-sm font-bold text-slate-600 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto transition-colors"
                         type="button">
@@ -103,7 +94,7 @@ const props = defineProps<{
 
 defineEmits<{
     (e: 'close'): void;
-    (e: 'register'): void;
+    (e: 'enroll', courseId: string | number): void;
 }>();
 
 // 세션 날짜순 정렬 및 순서 할당

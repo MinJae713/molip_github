@@ -41,8 +41,50 @@
             </div>
         </div>
 
+        <!-- 로딩 중일 때 (Skeleton UI) -->
+        <template v-if="isLoading">
+            <!-- 통계 카드 스켈레톤 (3열) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div v-for="n in 3" :key="n" class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm animate-pulse">
+                    <div class="flex items-start justify-between">
+                        <div class="space-y-3 flex-1">
+                            <div class="h-4 bg-slate-100 rounded w-1/3"></div>
+                            <div class="h-8 bg-slate-100 rounded w-1/2"></div>
+                        </div>
+                        <div class="size-12 rounded-xl bg-slate-100"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 차트 영역 스켈레톤 (2열) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- 세션별 학습 시간 스켈레톤 -->
+                <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm animate-pulse h-80">
+                    <div class="h-6 bg-slate-100 rounded w-1/4 mb-6"></div>
+                    <div class="flex items-end justify-between h-48 gap-2">
+                        <div v-for="n in 7" :key="n" class="w-full bg-slate-100 rounded-t" :style="{ height: `${Math.random() * 80 + 20}%` }"></div>
+                    </div>
+                </div>
+                <!-- 세션별 집중도 트렌드 스켈레톤 -->
+                <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm animate-pulse h-80">
+                    <div class="h-6 bg-slate-100 rounded w-1/3 mb-6"></div>
+                    <div class="h-48 bg-slate-100 rounded"></div>
+                </div>
+            </div>
+
+            <!-- 상세 리포트 테이블 영역 스켈레톤 -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm animate-pulse mt-6">
+                <div class="p-6 border-b border-slate-100">
+                    <div class="h-6 bg-slate-100 rounded w-1/4"></div>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div v-for="n in 5" :key="n" class="h-12 bg-slate-100 rounded"></div>
+                </div>
+            </div>
+        </template>
+
         <!-- 통계 데이터가 있는 경우 -->
-        <template v-if="learnerWorkspaceTopCardStats">
+        <template v-else-if="learnerWorkspaceTopCardStats">
             <!-- 통계 카드 그리드 (3열) -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <StatCard v-for="stat in learnerWorkspaceTopCardStats.values" :key="stat.title" :data="stat" />
@@ -106,6 +148,8 @@ const {
 } = storeToRefs(statsStore);
 
 
+const isLoading = ref(true);
+
 // 현재 선택된 코스 이름 찾기 (Computed)
 const currentCourseName = computed(() => {
     const course = courseStore.myEnrolledCourses.find(
@@ -116,37 +160,50 @@ const currentCourseName = computed(() => {
 
 // 통합 데이터 로드 함수
 const loadStatistics = async (courseId: string | number) => {
-    // Single API call now
-    await statsStore.fetchCourseStats(courseId);
+    isLoading.value = true;
+    try {
+        // Single API call now
+        await statsStore.fetchCourseStats(courseId);
+    } finally {
+        isLoading.value = false;
+    }
 };
 
 onMounted(async () => {
-    const workspaceId = route.params.id as string;
-    const userId = userStore.user?.memberId;
+    isLoading.value = true;
+    try {
+        const workspaceId = route.params.id as string;
+        const userId = userStore.user?.memberId;
 
-    // 1. 워크스페이스 정보가 없을 경우 fetch
-    if (workspaceStore.myWorkspaces.length === 0) {
-        await workspaceStore.fetchMyWorkspaces();
-    }
-    
-    // 2. 코스 목록 로드
-    if (workspaceId) {
-        await courseStore.fetchMyEnrolledCourses(workspaceId);
-    }
-    
-    // 3. 초기 코스 선택 (목록이 있으면 첫 번째 코스 선택)
-    if (courseStore.myEnrolledCourses.length > 0) {
-         // 이미 선택된 값이 유효한 코스인지 확인
-        const isValid = courseStore.myEnrolledCourses.some(c => c.courseId == selectedCourseId.value);
-        
-        if (!isValid || selectedCourseId.value === 'all') {
-             selectedCourseId.value = courseStore.myEnrolledCourses[0].courseId;
+        // 1. 워크스페이스 정보가 없을 경우 fetch
+        if (workspaceStore.myWorkspaces.length === 0) {
+            await workspaceStore.fetchMyWorkspaces();
         }
-    }
+        
+        // 2. 코스 목록 로드
+        if (workspaceId) {
+            await courseStore.fetchMyEnrolledCourses(workspaceId);
+        }
+        
+        // 3. 초기 코스 선택 (목록이 있으면 첫 번째 코스 선택)
+        if (courseStore.myEnrolledCourses.length > 0) {
+             // 이미 선택된 값이 유효한 코스인지 확인
+            const isValid = courseStore.myEnrolledCourses.some(c => c.courseId == selectedCourseId.value);
+            
+            const firstCourse = courseStore.myEnrolledCourses[0];
+            if ((!isValid || selectedCourseId.value === 'all') && firstCourse) {
+                 selectedCourseId.value = firstCourse.courseId;
+            }
+        }
 
-    // 4. 통계 로드
-    if (userId && selectedCourseId.value !== 'all') {
-        await loadStatistics(selectedCourseId.value);
+        // 4. 통계 로드
+        if (userId && selectedCourseId.value !== 'all') {
+            await loadStatistics(selectedCourseId.value);
+        } else {
+             isLoading.value = false; // 데이터 로드할 필요가 없는 경우 로딩 종료
+        }
+    } catch (e) {
+        isLoading.value = false;
     }
 
     // 코스 선택 변경 감지 및 데이터 리로드
