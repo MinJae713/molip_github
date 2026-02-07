@@ -72,7 +72,7 @@ export const fetchReviewData = async (sessionId: string | number, memberId: stri
 export const fetchScriptData = async (sessionId: string | number): Promise<ScriptDataItem[]> => {
     // 엔드포인트는 실제 백엔드 명세에 따라 수정 필요할 수 있음
     // 예: /sessions/{sessionId}/analysis 또는 /analysis/{sessionId}
-    const response = await api.get<ScriptDataItem[]>(`/review/script/${sessionId}/test`);
+    const response = await api.get<ScriptDataItem[]>(`/review/script/${sessionId}`);
 
     return response.data;
 };
