@@ -5,7 +5,7 @@
 interface UserInfo {
     name: string;
     email: string;
-    profileImageUrl: string;
+    profileImageUrl?: string | null;
 }
 
 interface Props {
@@ -50,7 +50,7 @@ const handleLogout = () => {
         <div class="w-full px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
 
             <div class="flex items-center gap-12">
-                <router-link to="/workspaces"
+                <router-link :to="userStore.isAuthenticated ? '/workspaces' : '/'"
                     class="flex items-center gap-2 text-indigo-400 w-56 cursor-pointer hover:text-indigo-300 transition-colors">
                     <span class="material-symbols-outlined text-3xl">school</span>
                     <span class="text-xl font-bold font-display tracking-tight text-white">
@@ -105,7 +105,7 @@ const handleLogout = () => {
 
             <!-- 로그인 안 된 경우 -->
             <div v-else class="flex items-center gap-4">
-                <router-link to="/" class="text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-colors">
+                <router-link to="/login" class="text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-colors">
                     로그인
                 </router-link>
             </div>

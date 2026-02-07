@@ -41,7 +41,13 @@ const router = createRouter({
   routes: [
     {
       path: "/",
-      component: OnlyNavbarLayout,
+      name: "landing",
+      component: () => import("@/views/Common/LandingPage.vue"),
+      meta: { guestOnly: true },
+    },
+    {
+      path: "/login",
+      component: () => import("@/layouts/OnlyNavbarLayout.vue"),
       children: [
         {
           path: "",
@@ -50,12 +56,6 @@ const router = createRouter({
           meta: { guestOnly: true },
         },
       ],
-    },
-    {
-      path: "/login",
-      name: "login",
-      component: LoginView,
-      meta: { guestOnly: true },
     },
     {
       path: "/signup",
