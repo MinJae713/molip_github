@@ -12,7 +12,7 @@
                         강의실</router-link></li>
                 <li><span class="material-symbols-outlined text-sm text-slate-400">chevron_right</span></li>
                 <li class="font-medium text-slate-800">{{ courseStore.courseInfo?.title }}</li>
-                < </ol>
+            </ol>
         </nav>
         <!-- Header -->
         <courseHeader />

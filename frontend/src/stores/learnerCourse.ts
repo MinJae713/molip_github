@@ -112,6 +112,19 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
     }
   }
 
+  // [R] 워크스페이스 내 학습 통계 조회 (상단 카드용)
+  async function fetchWorkspaceStats(workspaceId: string | number) {
+    if (!workspaceId) return;
+    try {
+      const response = await api.get(`/workspaces/${workspaceId}/stats`);
+      workspaceStats.value = response.data;
+      console.log("[Learner] 워크스페이스 통계 로드 성공:", workspaceStats.value);
+    } catch (error) {
+      console.error("[Learner] 워크스페이스 통계 로드 실패:", error);
+      workspaceStats.value = null;
+    }
+  }
+
   // [U] 강의 찜하기 토글
   // [수정] 성공 여부를 반환하도록(boolean) 반환 타입 수정
   async function toggleCourseLike(
@@ -291,5 +304,6 @@ export const useLearnerCourseStore = defineStore("learnerCourse", () => {
     fetchCourseMaterials,
     myCertificatedCourses,
     fetchMyCertificatedCourses,
+    fetchWorkspaceStats,
   };
 });

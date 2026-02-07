@@ -69,7 +69,7 @@
                 </button>
 
                 <button v-else-if="courseStatus === '신청가능'"
-                    class="w-full py-2.5 text-sm font-bold rounded-lg bg-indigo-600 text-white border border-indigo-600 hover:bg-indigo-700 shadow-md transition-all flex items-center justify-center gap-2"
+                    class="w-full py-2.5 text-sm font-bold rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center justify-center gap-2"
                     :disabled="isSubmitting"
                     @click.prevent.stop="handleEnrollClick">
                      {{ isSubmitting ? '처리 중...' : '수강 신청하기' }}
@@ -104,7 +104,7 @@ const emit = defineEmits<{
 }>();
 
 const courseStore = useLearnerCourseStore();
-const nowCouse = ref<any>(null);
+const courseDetail = ref<any>(null);
 
 // [추가] 상세 상태값 도출
 const extendedCourseData = computed(() => {
@@ -186,7 +186,7 @@ onMounted(async () => {
     if (props.course.courseId) {
         const detailedData = await courseStore.fetchCourseInfo(props.course.courseId);
         if (detailedData) {
-            nowCouse.value = detailedData;
+            courseDetail.value = detailedData;
         }
     }
 });
@@ -194,7 +194,7 @@ onMounted(async () => {
 // [수정] 찜 목록에서 해제 시 ID를 찾지 못하는 문제 보완
 const toggleLike = async () => {
     // 1. 일반 코스 ID를 먼저 찾고, 없으면 상세 데이터에서 찾음
-    let targetCourseId = props.course.courseId || nowCouse.value?.courseId;
+    let targetCourseId = props.course.courseId || courseDetail.value?.courseId;
 
     // 2. 만약 찜 목록 탭(zzimId만 있는 상태)이라면 제목이 같은 수강 신청 목록에서 courseId를 매칭
     if (!targetCourseId) {
@@ -241,15 +241,15 @@ const getDDayString = (dateStr: string) => {
     const diff = target.getTime() - today.getTime();
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
     
-    if (days === 0) return 'D-Day';
-    if (days > 0) return `D-${days}`;
-    return `D+${Math.abs(days)}`;
+    if (days === 0) return '오늘 개강';
+    if (days > 0) return `개강 D-${days}`;
+    return `개강 ${Math.abs(days) + 1}일차`;
 };
 
 const displayCourse = (field: string) => {
     // 1. 상세 정보 우선
-    if (nowCouse.value && nowCouse.value[field] !== undefined) {
-        return nowCouse.value[field];
+    if (courseDetail.value && courseDetail.value[field] !== undefined) {
+        return courseDetail.value[field];
     }
     
     // 2. 확장된 정보 (workspaceCourses 매칭 결과)

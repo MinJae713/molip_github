@@ -112,7 +112,7 @@ export const useStatsStore = defineStore("stats", () => {
   // ==========================================
   // [MOCK DATA] 개발 확인용 목업 데이터 - 나중에 삭제하거나 false로 변경
   // ==========================================
-  const USE_MOCK_DATA = true;
+  const USE_MOCK_DATA = false;
 
   const MOCK_DATA: CourseStatsResponse = {
     courseId: 2,
