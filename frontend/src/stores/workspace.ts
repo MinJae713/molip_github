@@ -178,9 +178,6 @@ export const useWorkspaceStore = defineStore("workspace", () => {
         currentWorkspace.value = null;
       }
     }
-    if (id) {
-      await fetchWorkspaceStats(id);
-    }
   }
 
   // 프론트단 유효성검사 (fe-develop 기능)

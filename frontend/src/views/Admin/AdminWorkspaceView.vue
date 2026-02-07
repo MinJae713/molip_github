@@ -30,10 +30,8 @@ onMounted(async () => {
     if (wId) {
         await workspaceStore.setCurrentWorkspaceById(Number(wId));
         
-        // [Fix] 생성일(createdAt)이 없는 경우 (User API 캐시 사용 시 발생)
-        // Admin API 리스트를 호출하여 정보를 보강함
+        // 생성일(createdAt)이 없는 경우
         if (!workspaceStore.currentWorkspace?.createdAt) {
-            console.log("생성일 정보 누락 -> 관리자 목록 조회 시도");
             await workspaceStore.fetchAllWorkspaces();
             await workspaceStore.setCurrentWorkspaceById(Number(wId));
         }
