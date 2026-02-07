@@ -85,6 +85,18 @@ const router = createRouter({
           component: MypageView,
           meta: { requiresAuth: true },
         },
+        {
+          path: "certificate",
+          name: "mypageCertificate",
+          component: () => import("@/views/Common/PreparingView.vue"),
+          meta: { requiresAuth: true },
+        },
+        {
+          path: "verification",
+          name: "mypageVerification",
+          component: () => import("@/views/Common/PreparingView.vue"),
+          meta: { requiresAuth: true },
+        },
       ],
     },
     {

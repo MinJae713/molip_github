@@ -3,20 +3,20 @@
         <div class="p-4">
             <nav class="space-y-1">
                 <!-- 1. 내 정보 -->
-                <a href="#" class="sidebar-item active">
+                <router-link to="/mypage" class="sidebar-item" exact-active-class="active">
                     <span class="material-symbols-outlined text-[20px]">manage_accounts</span>
                     내 정보 관리
-                </a>
+                </router-link>
                 <!-- 2. 수료증 보관함 -->
-                <a href="#" class="sidebar-item">
+                <router-link to="/mypage/certificate" class="sidebar-item" active-class="active">
                     <span class="material-symbols-outlined text-[20px]">verified</span>
                     수료증 보관함
-                </a>
+                </router-link>
                 <!-- 3. 수료증 진위확인 -->
-                <a href="#" class="sidebar-item">
+                <router-link to="/mypage/verification" class="sidebar-item" active-class="active">
                     <span class="material-symbols-outlined text-[20px]">fact_check</span>
                     수료증 진위확인
-                </a>
+                </router-link>
             </nav>
         </div>
 
