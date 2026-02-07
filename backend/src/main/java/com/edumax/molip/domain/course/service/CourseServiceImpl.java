@@ -106,7 +106,7 @@ public class CourseServiceImpl implements CourseService {
             .attendance(request.getAttendance())
             .engagement(request.getEngagement()) // Nullable
             .exitQuiz(request.getExitQuiz()) // Nullable
-            .status(CourseStatus.PREPARING) // 기본 상태 PREPARING으로 변경
+            .status(CourseStatus.PROCEED) // 기본 상태 PREPARING으로 변경
             .period(request.getPeriod())
             .category(request.getCategory())
             // 연관관계 매핑

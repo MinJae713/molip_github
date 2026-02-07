@@ -497,7 +497,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         Workspace.builder()
             .name(name)
             .description(description)
-            .logoUrl("더미 - S3 연동 이후 URL이 들어감")
+            .logoUrl(null)
             .isSearchable(true)
             .member(member)
             .build());
