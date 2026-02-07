@@ -25,7 +25,7 @@ export default defineConfig({
     vue(),
     tailwindcss(),
     // Storybook 실행 중이 아닐 때만 vueDevTools를 포함합니다.
-    !isStorybook && vueDevTools(),
+    // !isStorybook && vueDevTools(),
   ].filter(Boolean) as any,
   // false 값을 제거하여 플러그인 목록을 정제합니다.
 

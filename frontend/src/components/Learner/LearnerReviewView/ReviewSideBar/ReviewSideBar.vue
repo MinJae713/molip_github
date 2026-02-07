@@ -14,8 +14,8 @@
         <!-- 2. 선택된 탭별 콘텐츠 -->
         <div class="flex-1 overflow-y-auto relative custom-scrollbar">
             <SidebarMood v-if="currentTab === 'mood'" 
-                :personal-mood-data="personalMoodData"
-                :class-mood-data="classMoodData" 
+                :personal-mood-data="personalMoodData || []"
+                :class-mood-data="classMoodData || []" 
             />
             <SidebarQuiz v-else-if="currentTab === 'quiz'" 
                 :quiz-list="props.quizList || []"
@@ -66,7 +66,7 @@ const props = defineProps<{
 }>();
 
 watch(() => props.qaList, (newVal) => {
-    console.log("[ReviewSideBar] received qaList:", newVal);
+    // console.log("[ReviewSideBar] received qaList:", newVal);
 }, { deep: true });
 
 const emit = defineEmits(['jump-to-time', 'send-message']);
