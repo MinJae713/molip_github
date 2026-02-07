@@ -58,40 +58,39 @@
 
 
                 </div>
-                <div v-if="courseStatus === '수강중'" class="flex flex-col items-stretch gap-2">
-                    <button @click.stop="$emit('enter-course', course.courseId)"
-                        class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-sm font-bold rounded-lg border border-indigo-100 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer">
-                        <span class="material-symbols-outlined text-[18px]">
-                            {{ progressRate > 0 ? 'resume' : 'play_arrow' }}
-                        </span>
+                <div class="mt-auto flex flex-col items-stretch gap-2 w-40">
+                    <!-- 1. 상태별 메인 액션 버튼 -->
+                    <button v-if="courseStatus === '수강중'" @click.stop="$emit('enter-course', course.courseId)"
+                        class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-sm font-bold rounded-lg border border-indigo-100 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer w-full">
+                        <span class="material-symbols-outlined text-[18px]">resume</span>
                         강의실 입장
                     </button>
-                </div>
-                <div v-else-if="courseStatus === '신청가능'" class="flex flex-col items-stretch gap-2">
-                    <button 
+
+                    <button v-else-if="courseStatus === '신청가능'" 
                         @click.stop="handleEnrollClick" 
                         :disabled="isSubmitting"
                         :class="{ 'opacity-50 cursor-not-allowed': isSubmitting }"
-                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg border border-indigo-600 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap shadow-sm"
+                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg border border-indigo-600 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap shadow-sm w-full"
                     >
                         <span class="material-symbols-outlined text-[18px]">
                             {{ isSubmitting ? 'sync' : 'how_to_reg' }} 
                         </span>
                         {{ isSubmitting ? '처리 중...' : '수강 신청하기' }}
                     </button>
+
+                    <div v-else-if="courseStatus === '승인대기'" class="text-center py-2">
+                        <span class="text-xs font-bold text-amber-600/80 flex items-center justify-center gap-1 px-2 py-1 bg-amber-50/50 rounded">
+                            검토 중... 
+                        </span>
+                    </div>
+
+                    <!-- 2. 공통 액션 버튼 (항상 표시) -->
                     <button @click="$emit('open-curriculum', course.courseId)"
-                        class="px-4 py-2 bg-white hover:bg-slate-50 text-indigo-600 text-sm font-bold rounded-lg border border-indigo-200 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap">
+                        class="px-4 py-2 bg-white hover:bg-slate-50 text-indigo-600 text-sm font-bold rounded-lg border border-indigo-200 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap w-full">
                         <span class="material-symbols-outlined text-[18px]">menu_book</span>
                         커리큘럼 확인
                     </button>
                 </div>
-                <div v-else-if="courseStatus === '승인대기'">
-                    <span
-                        class="text-xs font-bold text-amber-600/80 flex items-center gap-1 px-2 py-1 bg-amber-50/50 rounded">
-                        검토 중...
-                    </span>
-                </div>
-
             </div>
         </div>
     </article>

@@ -67,7 +67,7 @@
         </section>
         <!-- 커리큘럼 확인(세션)모달 -->
         <CourseCurriculumModal :isOpen="isModalOpen" :course="selectedCourse" :sessions="selectedCourseSessions"
-            @close="closeModal" @register="handleRegister" />
+            @close="closeModal" @enroll="handleEnrollCourse" />
     </div>
 </template>
 
@@ -91,176 +91,177 @@ const currentWorkspaceId = computed(() => {
     const id = route.params.id;
     return (Array.isArray(id) ? id[0] : id) || '';
 });
-const { workspaceStats } = storeToRefs(workspaceStore);
-const { workspaceCourses } = storeToRefs(learnerCourseStore);
+    const { workspaceStats } = storeToRefs(learnerCourseStore);
+    const { workspaceCourses } = storeToRefs(learnerCourseStore);
 
-const searchQuery = ref('');
-const sortOption = ref<'newest' | 'deadline' | 'oldest'>('newest');
+    const searchQuery = ref('');
+    const sortOption = ref<'newest' | 'deadline' | 'oldest'>('newest');
 
-// 날짜 기준 필터
-const filterStartDate = ref('');
-const filterEndDate = ref('');
+    // 날짜 기준 필터
+    const filterStartDate = ref('');
+    const filterEndDate = ref('');
 
-// 모달 상태
-const isModalOpen = ref(false);
-const selectedCourse = ref<LearnerCourse>({} as LearnerCourse);
+    // 모달 상태
+    const isModalOpen = ref(false);
+    const selectedCourse = ref<LearnerCourse>({} as LearnerCourse);
 
-const selectedCourseSessions = ref<Session[]>([]);
+    const selectedCourseSessions = ref<Session[]>([]);
 
-const openCurriculumModal = async (courseId: string | number) => {
-    const course = workspaceCourses.value.find(c => String(c.courseId) === String(courseId));
-    if (course) {
-        selectedCourse.value = course;
-        console.log("코스정보", course)
-        const sessions = await learnerCourseStore.fetchCourseSessions(courseId);
-        console.log(sessions)
-        selectedCourseSessions.value = sessions;
-        isModalOpen.value = true;
-    }
-};
+    const openCurriculumModal = async (courseId: string | number) => {
+        const course = workspaceCourses.value.find(c => String(c.courseId) === String(courseId));
+        if (course) {
+            selectedCourse.value = course;
+            console.log("코스정보", course)
+            const sessions = await learnerCourseStore.fetchCourseSessions(courseId);
+            console.log(sessions)
+            selectedCourseSessions.value = sessions;
+            isModalOpen.value = true;
+        }
+    };
 
-const closeModal = () => {
-    isModalOpen.value = false;
-};
+    const closeModal = () => {
+        isModalOpen.value = false;
+    };
 
-const handleEnrollCourse = async (courseId: string | number) => {
-    // 1. URL에서 워크스페이스 ID 추출 및 규격화(Normalization)
-    const rawId = route.params.id;
-    const workspaceId = Array.isArray(rawId) ? rawId[0] : rawId;
+    const handleEnrollCourse = async (courseId: string | number) => {
+        // 1. URL에서 워크스페이스 ID 추출 및 규격화(Normalization)
+        const rawId = route.params.id;
+        const workspaceId = Array.isArray(rawId) ? rawId[0] : rawId;
 
-    if (!workspaceId) return;
+        if (!workspaceId) return;
 
-    // 2. 신청할 강의 정보 확인
-    const course = workspaceCourses.value.find(c => String(c.courseId) === String(courseId));
-    if (!course) return;
+        // 2. 신청할 강의 정보 확인
+        const course = workspaceCourses.value.find(c => String(c.courseId) === String(courseId));
+        if (!course) return;
 
-    if (!confirm(`"${course.title}" 강의를 수강 신청하시겠습니까?`)) return;
+        if (!confirm(`"${course.title}" 강의를 수강 신청하시겠습니까?`)) return;
 
-    // 3. 수강 신청 실행
-    const result = await learnerCourseStore.enrollCourse(courseId, workspaceId);
+        // 3. 수강 신청 실행
+        const result = await learnerCourseStore.enrollCourse(courseId, workspaceId);
 
-    if (result && result.success) {
-        alert('수강 신청이 완료되었습니다!\n관리자 승인 후 수강이 가능합니다.');
-        // 스토어 내부에서 fetchCoursesByWorkspace를 재호출하므로 
-        // workspaceCourses가 바뀌며 화면이 자동으로 업데이트됩니다.
-    } else if (result && result.status === 'already_applied') {
-        alert('이미 수강신청된 강의입니다. (승인 대기 중)');
-    } else {
-        alert('❌ 수강 신청 중 오류가 발생했습니다.\n다시 시도해주세요.');
-    }
-};
+        if (result && result.success) {
+            alert('수강 신청이 완료되었습니다!\n관리자 승인 후 수강이 가능합니다.');
+            // 스토어 내부에서 fetchCoursesByWorkspace를 재호출하므로 
+            // workspaceCourses가 바뀌며 화면이 자동으로 업데이트됩니다.
+        } else if (result && result.status === 'already_applied') {
+            alert('이미 수강신청된 강의입니다. (승인 대기 중)');
+        } else {
+            alert('❌ 수강 신청 중 오류가 발생했습니다.\n다시 시도해주세요.');
+        }
+    };
 
-// 강의실 입장
-const handleEnterCourse = (courseId: string | number) => {
-    const currentWorkspaceId = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id;
-    console.log(currentWorkspaceId);
-    console.log(courseId);
-    if (!currentWorkspaceId) return;
-    router.push({
-        name: 'workspaceLearnerCourseDetail',
-        params: {
-            id: currentWorkspaceId,
-            courseId: courseId
+    // 강의실 입장
+    const handleEnterCourse = (courseId: string | number) => {
+        const currentWorkspaceId = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id;
+        console.log(currentWorkspaceId);
+        console.log(courseId);
+        if (!currentWorkspaceId) return;
+        router.push({
+            name: 'workspaceLearnerCourseDetail',
+            params: {
+                id: currentWorkspaceId,
+                courseId: courseId
+            }
+        });
+    };
+
+    const handleRegister = () => {
+        alert('수강 신청이 완료되었습니다! (Mock Action)');
+        closeModal();
+    };
+
+    const sortOptionLabel = computed(() => {
+        switch (sortOption.value) {
+            case 'newest': return '최신순';
+            case 'deadline': return '마감 임박순';
+            case 'oldest': return '오래된순';
+            default: return '정렬';
         }
     });
-};
 
-const handleRegister = () => {
-    alert('수강 신청이 완료되었습니다! (Mock Action)');
-    closeModal();
-};
+    const filteredCourses = computed(() => {
+        let result = [...workspaceCourses.value];
+        // Filter by search query
+        if (searchQuery.value) {
+            const query = searchQuery.value.toLowerCase();
+            result = result.filter(course =>
+                course.title.toLowerCase().includes(query) ||
+                course.description.toLowerCase().includes(query)
+            );
+        }
+        // Filter by date range (last_accessed_at 기준)
+        if (filterStartDate.value || filterEndDate.value) {
+            result = result.filter(course => {
+                if (!course.currentLessons || course.currentLessons === 0) {
+                    // 수강하지 않은 강의는 날짜 필터에서 제외하지 않음
+                    return true;
+                }
+                // last_accessed_at이 없는 경우는 필터링에서 제외
+                const accessedAt = (course as any).last_accessed_at;
+                if (!accessedAt) return false;
 
-const sortOptionLabel = computed(() => {
-    switch (sortOption.value) {
-        case 'newest': return '최신순';
-        case 'deadline': return '마감 임박순';
-        case 'oldest': return '오래된순';
-        default: return '정렬';
-    }
-});
+                const courseDate = new Date(accessedAt);
 
-const filteredCourses = computed(() => {
-    let result = [...workspaceCourses.value];
-    // Filter by search query
-    if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase();
-        result = result.filter(course =>
-            course.title.toLowerCase().includes(query) ||
-            course.description.toLowerCase().includes(query)
-        );
-    }
-    // Filter by date range (last_accessed_at 기준)
-    if (filterStartDate.value || filterEndDate.value) {
-        result = result.filter(course => {
-            if (!course.currentLessons || course.currentLessons === 0) {
-                // 수강하지 않은 강의는 날짜 필터에서 제외하지 않음
+                if (filterStartDate.value) {
+                    const startDate = new Date(filterStartDate.value);
+                    if (courseDate < startDate) return false;
+                }
+
+                if (filterEndDate.value) {
+                    const endDate = new Date(filterEndDate.value);
+                    endDate.setHours(23, 59, 59, 999); // 종료일 포함
+                    if (courseDate > endDate) return false;
+                }
                 return true;
-            }
-            // last_accessed_at이 없는 경우는 필터링에서 제외
-            const accessedAt = (course as any).last_accessed_at;
-            if (!accessedAt) return false;
-
-            const courseDate = new Date(accessedAt);
-
-            if (filterStartDate.value) {
-                const startDate = new Date(filterStartDate.value);
-                if (courseDate < startDate) return false;
-            }
-
-            if (filterEndDate.value) {
-                const endDate = new Date(filterEndDate.value);
-                endDate.setHours(23, 59, 59, 999); // 종료일 포함
-                if (courseDate > endDate) return false;
-            }
-            return true;
-        });
-    }
-    // Sort (Simple implementation)
-    switch (sortOption.value) {
-        case 'newest':
-            result.sort((a, b) => Number(b.courseId) - Number(a.courseId));
-            break;
-        case 'oldest':
-            result.sort((a, b) => Number(a.courseId) - Number(b.courseId));
-            break;
-        case 'deadline':
-            result.sort((a, b) => {
-                const dateA = a.dDay ? new Date(a.dDay).getTime() : Number.MAX_SAFE_INTEGER;
-                const dateB = b.dDay ? new Date(b.dDay).getTime() : Number.MAX_SAFE_INTEGER;
-                return dateA - dateB;
             });
-            break;
-    }
-    return result;
-});
+        }
+        // Sort (Simple implementation)
+        switch (sortOption.value) {
+            case 'newest':
+                result.sort((a, b) => Number(b.courseId) - Number(a.courseId));
+                break;
+            case 'oldest':
+                result.sort((a, b) => Number(a.courseId) - Number(b.courseId));
+                break;
+            case 'deadline':
+                result.sort((a, b) => {
+                    const dateA = a.dDay ? new Date(a.dDay).getTime() : Number.MAX_SAFE_INTEGER;
+                    const dateB = b.dDay ? new Date(b.dDay).getTime() : Number.MAX_SAFE_INTEGER;
+                    return dateA - dateB;
+                });
+                break;
+        }
+        return result;
+    });
 
-const setSort = (option: 'newest' | 'deadline' | 'oldest') => {
-    sortOption.value = option;
-};
+    const setSort = (option: 'newest' | 'deadline' | 'oldest') => {
+        sortOption.value = option;
+    };
 
-const applyDateFilter = () => {
-    // 날짜 필터는 이미 filteredCourses에서 자동으로 적용됨
-    // 드롭다운을 닫기 위한 처리는 CSS로 이미 구현되어 있음
-};
+    const applyDateFilter = () => {
+        // 날짜 필터는 이미 filteredCourses에서 자동으로 적용됨
+        // 드롭다운을 닫기 위한 처리는 CSS로 이미 구현되어 있음
+    };
 
-const resetDateFilter = () => {
-    filterStartDate.value = '';
-    filterEndDate.value = '';
-};
+    const resetDateFilter = () => {
+        filterStartDate.value = '';
+        filterEndDate.value = '';
+    };
 
-const initDashboard = async () => {
-    const workspaceId = route.params.id;
-    if (workspaceId) {
-        const id = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
-        if (!id) return;
-        await workspaceStore.setCurrentWorkspaceById(id);
-        await learnerCourseStore.fetchCoursesByWorkspace(id);
-    }
-};
+    const initDashboard = async () => {
+        const workspaceId = route.params.id;
+        if (workspaceId) {
+            const id = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
+            if (!id) return;
+            await workspaceStore.setCurrentWorkspaceById(id);
+            await learnerCourseStore.fetchCoursesByWorkspace(id);
+            await learnerCourseStore.fetchWorkspaceStats(id); // 통계 데이터 로드
+        }
+    };
 
-onMounted(() => {
-    initDashboard();
-});
+    onMounted(() => {
+        initDashboard();
+    });
 
 watch(() => route.params.id, () => {
     initDashboard();
