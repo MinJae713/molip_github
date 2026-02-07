@@ -119,7 +119,7 @@ const scrollToBottom = async () => {
 
 // 리스트 변경 시 자동 스크롤
 watch(() => props.qaList, (newVal) => {
-    console.log("[SidebarChat] QA List Updated:", newVal);
+    // console.log("[SidebarChat] QA List Updated:", newVal);
     // 메시지 추가될 때만 스크롤하도록 조건 추가 가능하지만, 일단 항상 스크롤
     if (newVal && newVal.length > 0) {
         scrollToBottom();

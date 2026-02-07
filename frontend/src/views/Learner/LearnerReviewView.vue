@@ -116,7 +116,7 @@ const handleJumpToTime = (timeInSeconds: number) => {
 onMounted(async () => {
     const sessionId = route.params.sessionId as string;
     if (sessionId) {
-        console.log(sessionId);
+        // console.log(sessionId);
         await sessionStore.fetchSessionInfo(sessionId);
         await loadReviewData(sessionId);
         connectStomp();
@@ -268,52 +268,52 @@ function processEmotionSegments(data: DataItem[]) {
 async function loadReviewData(sessionId: string) {
     try {
         if (!userStore.user.memberId) {
-            console.warn("[Review] No memberId found, attempting to fetch user info...");
+            // console.warn("[Review] No memberId found, attempting to fetch user info...");
             await userStore.fetchUserInfo();
         }
         
         let memberId: string | number | undefined = userStore.user.memberId;
         if (!memberId) {
-             console.warn("[Review] No memberId in store, using fallback '10002'");
+             // console.warn("[Review] No memberId in store, using fallback '10002'");
         }
         
-        console.log(`[Review] Fetching data for session: ${sessionId}, member: ${memberId}`);
+        // console.log(`[Review] Fetching data for session: ${sessionId}, member: ${memberId}`);
 
         const response = await fetchReviewData(sessionId, memberId);
-        console.log("[Review] Raw API Response:", response);
+        // console.log("[Review] Raw API Response:", response);
         
         if (response) {
-            console.log("[Review] Response Keys:", Object.keys(response));
+            // console.log("[Review] Response Keys:", Object.keys(response));
         }
 
         // Response format assumed: { learnerTimelineData: [], trainerTimelineData: [] }
          // 주의: 백엔드에서 'learner'(오타)로 오는지 'learner'(정상)로 오는지 확인 필요
         const { learnerTimelineData, trainerTimelineData, deadzonePercent, pauseElementList } = response;
         
-        console.log("[Review] Destructured Data - deadzonePercent:", deadzonePercent);
+        // console.log("[Review] Destructured Data - deadzonePercent:", deadzonePercent);
 
         if (typeof deadzonePercent === 'number') {
             deadzoneThreshold.value = deadzonePercent;
-            console.log(`[Review] Updated Deadzone Threshold to: ${deadzoneThreshold.value}`);
+            // console.log(`[Review] Updated Deadzone Threshold to: ${deadzoneThreshold.value}`);
         } else {
              // Fallback or keep default 30
-             console.warn("[Review] deadzonePercent missing from response, keeping default:", deadzoneThreshold.value);
+             // console.warn("[Review] deadzonePercent missing from response, keeping default:", deadzoneThreshold.value);
         }
 
         const learnerData = learnerTimelineData || [];
         const trainerData = trainerTimelineData || [];
         
-        console.log("[Review] Learner Data (Checked typo):", learnerData);
-        console.log("[Review] Destructured Data - trainerTimelineData:", trainerData);
-        console.log("[Review] Destructured Data - deadzonePercent:", deadzonePercent);
-        console.log("[Review] Destructured Data - pauseElementList:", pauseElementList);
+        // console.log("[Review] Learner Data (Checked typo):", learnerData);
+        // console.log("[Review] Destructured Data - trainerTimelineData:", trainerData);
+        // console.log("[Review] Destructured Data - deadzonePercent:", deadzonePercent);
+        // console.log("[Review] Destructured Data - pauseElementList:", pauseElementList);
 
         // 0. Set Deadzone Threshold & Rest Periods
-        console.log(`[Review] Setting Deadzone Threshold: ${deadzonePercent}`);
+        // console.log(`[Review] Setting Deadzone Threshold: ${deadzonePercent}`);
         if (typeof deadzonePercent === 'number') {
             deadzoneThreshold.value = deadzonePercent;
         } else {
-            console.warn("[Review] deadzonePercent is not a number, using default 30");
+            // console.warn("[Review] deadzonePercent is not a number, using default 30");
         }
 
         if (pauseElementList && Array.isArray(pauseElementList)) {
@@ -326,14 +326,14 @@ async function loadReviewData(sessionId: string) {
         // Process Learner Data
         if (learnerData && learnerData.length > 0) {
             const learnerProcessed = processTimelineData(learnerData);
-            console.log("[Review] Processed learner Data:", learnerProcessed);
+            // console.log("[Review] Processed learner Data:", learnerProcessed);
 
             TimelineData.value = learnerProcessed.timeline;
             PersonalMood.value = learnerProcessed.moodDistribution;
             
             // Emotion segments for timeline
             const segments = processEmotionSegments(learnerData);
-            console.log("[Review] learner Emotion Segments:", segments);
+            // console.log("[Review] learner Emotion Segments:", segments);
             EmotionData.value = segments;
 
             // 마지막 데이터의 timeline을 duration으로 설정 (초 -> 분 변환)
@@ -341,26 +341,26 @@ async function loadReviewData(sessionId: string) {
                 const lastItem = learnerData[learnerData.length - 1];
                 if (lastItem) {
                     timelineDuration.value = (lastItem.timeline + 1) / 60;
-                    console.log(`[Review] Updated Timeline Duration: ${timelineDuration.value} mins (from ${lastItem.timeline}s)`);
+                    // console.log(`[Review] Updated Timeline Duration: ${timelineDuration.value} mins (from ${lastItem.timeline}s)`);
                 }
             }
         } else {
-            console.warn("[Review] No learnerTimelineData found.");
+            // console.warn("[Review] No learnerTimelineData found.");
         }
 
         // Process Trainer Data (Class Average)
         if (trainerData && trainerData.length > 0) {
             const trainerProcessed = processTimelineData(trainerData);
-            console.log("[Review] Processed Trainer Data:", trainerProcessed);
+            // console.log("[Review] Processed Trainer Data:", trainerProcessed);
 
             AverageData.value = trainerProcessed.timeline;
             ClassMood.value = trainerProcessed.moodDistribution;
         } else {
-            console.warn("[Review] No trainerTimelineData found.");
+            // console.warn("[Review] No trainerTimelineData found.");
         }
 
         const moodData = await fetchMoodData(sessionId);
-        console.log("[Review] Mood Data:", moodData);
+        // console.log("[Review] Mood Data:", moodData);
 
         if (moodData) {
             // API Response: { learnerEmotionGraph: [], trainerEmotionGraph: [] }
@@ -368,31 +368,31 @@ async function loadReviewData(sessionId: string) {
             
             if (moodData.learnerEmotionGraph) {
                 PersonalMood.value = processMoodGraphData(moodData.learnerEmotionGraph);
-                console.log("[Review] Processed Personal Mood:", PersonalMood.value);
+                // console.log("[Review] Processed Personal Mood:", PersonalMood.value);
             }
 
             if (moodData.trainerEmotionGraph) {
                 ClassMood.value = processMoodGraphData(moodData.trainerEmotionGraph);
-                console.log("[Review] Processed Class Mood:", ClassMood.value);
+                // console.log("[Review] Processed Class Mood:", ClassMood.value);
             }
         }
 
         // Script Data 
         const scriptData = await fetchScriptData(sessionId);
-        console.log("[Review] Script Data:", scriptData);
+        // console.log("[Review] Script Data:", scriptData);
 
         if (scriptData && Array.isArray(scriptData)) {
             ScriptData.value = scriptData.map((item: any) => ({
                 timeline: item.timeline,
                 message: item.message || item.script || "내용 없음"
             }));
-            console.log("[Review] Processed Script Data:", ScriptData.value);
+            // console.log("[Review] Processed Script Data:", ScriptData.value);
         } else {
-             console.warn("[Review] Script data is empty or invalid structure", scriptData);
+             // console.warn("[Review] Script data is empty or invalid structure", scriptData);
         }
 
         const chatDataResponse = await fetchChatData(sessionId, memberId);
-        console.log("[Review] Chat Data:", chatDataResponse);
+        // console.log("[Review] Chat Data:", chatDataResponse);
 
 
         if (chatDataResponse && Array.isArray(chatDataResponse)) {
@@ -426,13 +426,13 @@ async function loadReviewData(sessionId: string) {
                 mappedChat.push(msgObj);
             });
             
-            console.log("[Review] Mapped Chat Data:", mappedChat);
+            // console.log("[Review] Mapped Chat Data:", mappedChat);
             qaList.value = mappedChat;
         }
 
         // 퀴즈 데이터 처리
         const quizDataArray = await fetchQuizData(sessionId);
-        console.log("[Review] Quiz Data:", quizDataArray);
+        // console.log("[Review] Quiz Data:", quizDataArray);
 
         if (quizDataArray && Array.isArray(quizDataArray)) {
              quizList.value = quizDataArray.map((quiz: QuizData) => ({
@@ -446,7 +446,7 @@ async function loadReviewData(sessionId: string) {
                 answer: (quiz.answerNumber || 1) - 1,
                 submittedAnswer: null
              }));
-             console.log("[Review] Mapped Quiz List:", quizList.value);
+             // console.log("[Review] Mapped Quiz List:", quizList.value);
         }
 
     } catch (error) {
@@ -470,7 +470,7 @@ const connectStomp = () => {
         },
         reconnectDelay: 5000,
         onConnect: () => {
-            console.log('[Learner] WebSocket Connected ✅');
+            // console.log('[Learner] WebSocket Connected ✅');
 
             // 1. 일반 채팅 구독 (방송용) - 현재 QnA 모드에서는 사용 안 할 수 있음
              stompClient.value?.subscribe(`/topic/chat-room/${sessionId}`, (res: any) => {
@@ -479,7 +479,7 @@ const connectStomp = () => {
 
             // 2. QnA room 구독 (AI 답변 수신)
             stompClient.value?.subscribe(`/topic/qna-room/${sessionId}/${memberId}`, (res: any) => {
-                console.log('[Learner] QA Answer Message:', res.body);
+                // console.log('[Learner] QA Answer Message:', res.body);
                 try {
                     const msg = JSON.parse(res.body);
                     if (msg) {
@@ -493,7 +493,7 @@ const connectStomp = () => {
                             profileImageUrl: null // AI 아이콘 표시용
                         };
                         
-                        console.log('[Learner] QA Answer Mapped:', answerMsg);
+                        // console.log('[Learner] QA Answer Mapped:', answerMsg);
                         qaList.value.push(answerMsg);
                     }
                 } catch (e) {
@@ -505,7 +505,7 @@ const connectStomp = () => {
             console.error('[Learner] Broker error:', frame.headers['message']);
         },
         onWebSocketClose: () => {
-            console.log('[Learner] Connection Closed ❌');
+            // console.log('[Learner] Connection Closed ❌');
         }
     });
 
@@ -528,7 +528,7 @@ const sendChatMessage = (content: string, type: string, questionId?: number | st
             timestamp: new Date().toISOString(),
             type: 'question'
         };
-        console.log('[Learner] My Question:', myQuestion);
+        // console.log('[Learner] My Question:', myQuestion);
         qaList.value.push(myQuestion);
         
         // 마지막 질문 ID 저장 (답변 매핑용)
@@ -572,9 +572,9 @@ const aiQuizData = ref<AiQuizResponse | null>(null);
 const handleCreateAiQuiz = async (timeInSeconds: number) => {
     const sessionId = route.params.sessionId as string;
     try {
-        console.log(`[Review] Creating AI Quiz for session: ${sessionId}, time: ${timeInSeconds}`);
+        // console.log(`[Review] Creating AI Quiz for session: ${sessionId}, time: ${timeInSeconds}`);
         const response = await fetchAiQuiz(sessionId, timeInSeconds);
-        console.log("[Review] AI Quiz Response:", response);
+        // console.log("[Review] AI Quiz Response:", response);
         
         if (response) {
             aiQuizData.value = response;
