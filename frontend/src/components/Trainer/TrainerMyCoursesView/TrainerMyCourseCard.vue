@@ -31,7 +31,7 @@
                     </div>
                     <div>
                         <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">수강생</div>
-                        <div class="text-base font-bold text-slate-900">{{ displayCourse('learnersCount') || 0 }}명</div>
+                        <div class="text-base font-bold text-slate-900">{{ displayCourse('learnerCount') || 0 }}명</div>
                     </div>
                 </div>
                 <!-- 총 세션 수 -->
@@ -42,7 +42,7 @@
                     </div>
                     <div>
                         <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">세션</div>
-                        <div class="text-base font-bold text-slate-900">{{ displayCourse('totalLessons') || 0 }}개
+                        <div class="text-base font-bold text-slate-900">{{ displayCourse('totalSessionCount') || 0 }}개
                         </div>
                     </div>
                 </div>
@@ -52,7 +52,7 @@
             <div class="mt-auto space-y-4">
                 <div>
                     <div class="flex justify-between items-end mb-2">
-                        <span class="text-xs font-bold text-slate-500">평균 진도율</span>
+                        <span class="text-xs font-bold text-slate-500">수강생 전체 평균 출석률</span>
                         <span class="text-lg font-black text-indigo-600">
                             {{ formattedProgress }}%
                         </span>
