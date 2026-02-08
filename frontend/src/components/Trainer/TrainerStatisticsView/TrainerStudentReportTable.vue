@@ -48,7 +48,7 @@
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-600">{{ student.email }}</td>
                         <td class="px-6 py-4 text-center">
-                            <span class="text-sm font-bold text-slate-900">{{ student.sumAttendance }}회</span>
+                            <span class="text-sm font-bold text-slate-900">{{ student.sumAttendance }}%</span>
                         </td>
                         <td class="px-6 py-4 text-center">
                             <span
