@@ -24,9 +24,11 @@
                     <span class="text-[10px] font-bold text-slate-400 leading-none mb-0.5">LEARNER</span>
                     <span class="text-xs font-bold text-slate-700 uppercase">{{ userName }}</span>
                 </div>
-                <div class="size-8 rounded-full border-2 border-indigo-100 overflow-hidden shadow-sm">
-                    <img class="size-full object-cover"
-                        src="https://ui-avatars.com/api/?name=Student&background=4F46E5&color=fff" />
+                <div
+                    class="size-8 rounded-full border-2 border-indigo-100 overflow-hidden shadow-sm flex items-center justify-center bg-slate-100">
+                    <img v-if="userProfileImage" :src="userProfileImage" :alt="userName"
+                        class="rounded-full w-full h-full object-cover border-2 border-slate-200" />
+                    <span v-else class="material-symbols-outlined text-slate-400 text-xl">person</span>
                 </div>
             </div>
         </div>
@@ -34,13 +36,14 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+interface Props {
     sessionTitle: string | null;
     sessionSubtitle: string;
     elapsedTime: number;
     userName: string;
-}>();
-
+    userProfileImage?: string | null;
+}
+defineProps<Props>();
 const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);

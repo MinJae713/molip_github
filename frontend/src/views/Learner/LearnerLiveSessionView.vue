@@ -68,7 +68,7 @@
         </div>
         <LiveSessionHeader :sessionTitle="learnerSessionStore.currentSessionInfo?.title as string"
             :sessionSubtitle="learnerSessionStore.currentSessionInfo?.description as string" :elapsedTime="elapsedTime"
-            :userName="userStore.user?.name" />
+            :userName="userStore.user?.name" :userProfileImage="userStore.user?.profileImageUrl" />
         <main class="flex flex-1 overflow-hidden p-6 gap-6 relative">
             <LiveVideoArea :focusStatus="focusStatus" :showWarning="showWarning" @close-warning="showWarning = false"
                 :mainStream="videoStore.mainStream" :pipStream="videoStore.pipStream"
