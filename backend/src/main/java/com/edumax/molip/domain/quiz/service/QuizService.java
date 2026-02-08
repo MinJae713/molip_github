@@ -28,7 +28,7 @@ public class QuizService {
         QuizRequest.newBuilder()
             .setSessionId(sessionId.toString())
             .setSttText(
-                "안녕하세요! 오늘은 자바스크립트의 핵심, '변수'를 알아봅니다. 변수는 데이터를 저장하는 공간으로, 다양한 종류가 있습니다. 예를 들어, 숫자를 저장하는 'number', 문자를 저장하는 'string', 참과 거짓을 나타내는 'boolean' 등이 있습니다. 변수를 선언할 때는 'var', 'let', 'const' 키워드를 사용합니다.")
+                "그 다음에 여러분들이 공부하고 있는 동안에 아르바이트나 용돈 걱정하지 말라고 매월 교육지원금을 100만원씩 드리고 있습니다. 뿐만 아니라 서울을 제외한 대전, 광주, 구미, 부울경 캠퍼스는 정부에서 주는 훈련장려금 30만원도 추가로 받으실 수 있습니다.")
             .build();
 
     log.info("Quiz STT Text: {}", request.getSttText());
