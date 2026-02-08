@@ -5,8 +5,8 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                 <div class="flex items-center gap-2 text-indigo-brand">
                     <span class="material-symbols-outlined text-3xl">school</span>
-                    <span class="text-xl font-bold font-display tracking-tight text-slate-900">EduVerse <span
-                            class="text-indigo-brand font-light">Work</span></span>
+                    <span class="text-xl font-bold font-display tracking-tight text-slate-900">Molip <span
+                            class="text-indigo-brand font-light">Space</span></span>
                 </div>
                 <div class="flex items-center gap-4 text-sm font-medium">
                     <span class="hidden sm:inline text-slate-500">이미 계정이 있으신가요?</span>
@@ -22,7 +22,7 @@
                 <div class="text-center mb-6">
                     <h1 class="text-3xl font-bold text-slate-900 mb-2">회원가입</h1>
                     <p class="text-slate-500 text-base">
-                        EduVerse Work의 멤버가 되어 AI 기반 교육 플랫폼을 경험하세요.
+                        Molip Space의 멤버가 되어 AI 기반 교육 플랫폼을 경험하세요.
                     </p>
                 </div>
                 <div class="bg-white border border-slate-200 shadow-card rounded-xl p-8 sm:p-10">
