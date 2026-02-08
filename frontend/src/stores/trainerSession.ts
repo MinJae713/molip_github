@@ -111,7 +111,7 @@ export const useTrainerSessionStore = defineStore("trainerSession", () => {
   // 세션 삭제
   async function deleteSession(sessionId: string | number) {
     try {
-      await api.delete(`/sessions/${sessionId}`);
+      await api.delete(`/session/${sessionId}`);
       return true;
     } catch (error) {
       console.error("세션 삭제 실패:", error);

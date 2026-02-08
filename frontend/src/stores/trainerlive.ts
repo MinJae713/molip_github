@@ -6,7 +6,7 @@ import JanusPkg from "janus-gateway";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { useUserStore } from "@/stores/user";
 import type { Participant } from "@/types/live";
-import Stomp from "stompjs";
+import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 
 // ========================================
@@ -143,11 +143,13 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
   const studentStreams = ref<Map<string, MediaStream>>(new Map()); // 학생별 비디오 스트림 (participantId -> Stream)
   const selectedStudentId = ref<string | null>(null); // PIP(Picture-in-Picture)에 표시할 학생 ID
 
-  // --- 채팅/질문/퀴즈 관리 ---
-  const chatList = ref<any[]>([]); // 채팅 메시지 목록
-  const qaList = ref<any[]>([]); // 질문/답변 메시지 목록
-  const quizData = ref<any>(null); // 퀴즈 데이터
-  let stompClient: any = null; // STOMP 클라이언트
+  // --- 채팅/질문/퀴즈/분석 관리 ---
+  const chatList = ref<any[]>([]);
+  const qaList = ref<any[]>([]);
+  const quizData = ref<any>(null);
+  const analysisData = ref<any>(null); // AI 분석 데이터
+
+  let stompClient: Client | null = null; // STOMP 클라이언트 (New)
 
   // ========================================
   // Actions: 메서드
@@ -418,30 +420,68 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
    * 5. 수업 종료
    */
   async function stopClass() {
-    // MediaPipe 중지
+    console.log("[stopClass] 🛑 Function called");
+    console.log("[stopClass] sessionId:", sessionId.value);
+
+    // 1. 학생들에게 종료 신호 전송 (STOMP - Fallback)
+    if (stompClient && stompClient.connected) {
+      const destination = `/topic/session/${sessionId.value}/end`;
+      const payload = {
+        type: "SESSION_END",
+        sessionId: sessionId.value,
+        timestamp: Date.now(),
+      };
+      try {
+        stompClient.publish({
+          destination: destination,
+          body: JSON.stringify(payload),
+        });
+        console.log("[stopClass] 📤 STOMP Session end signal sent (Fallback)");
+      } catch (error) {
+        console.error("[stopClass] ❌ Error sending STOMP end signal:", error);
+      }
+    }
+
+    // 2. MediaPipe & 음성 분석 중지
     stopVoiceAnalysis();
 
-    // 녹화 중이면 중지
+    // 3. 녹화 중이면 중지
     if (mediaRecorder.value && mediaRecorder.value.state !== "inactive") {
       mediaRecorder.value.stop();
     }
 
+    // 3. 백엔드 API 호출 (분석 종료 -> 세션 종료 통보 -> Janus 방 삭제)
     try {
+      // (1) 분석 종료 API
       await videoApi.post(`/review/end/analysis/${sessionId.value}`, {
         videoUrl: "asda", // 녹화 URL (실제 구현 시 업데이트 필요)
       });
-      console.log("분석 종료됨");
+      console.log("[stopClass] (1) 분석 종료 API 성공");
     } catch (e) {
-      console.error("수업 종료 API 오류", e);
+      console.error("[stopClass] 분석 종료 API 오류", e);
     }
-    await videoApi.post(`/session/${sessionId.value}/stop`);
-    console.log("세션 중지됨 (Janus 방 파괴)");
 
-    // Janus unpublish
+    try {
+      // (2) 실시간 세션 종료 통보 API (스프링 서버 서버 통보)
+      await videoApi.post(`/session/end/${sessionId.value}`);
+      console.log("[stopClass] (2) 세션 종료 통보 API 성공");
+    } catch (e) {
+      console.error("[stopClass] 세션 종료 통보 API 오류", e);
+    }
+
+    try {
+      // (3) Janus 방 삭제 API (학생들이 'destroyed' 이벤트를 받는 트리거)
+      await videoApi.post(`/session/${sessionId.value}/stop`);
+      console.log("[stopClass] (3) Janus 방 삭제 API 성공");
+    } catch (e) {
+      console.error("[stopClass] Janus 방 삭제 API 오류", e);
+    }
+
+    // 5. Janus unpublish
     const unpublish = { request: "unpublish" };
     roomHandle.value?.send({ message: unpublish });
 
-    // 스트림 정리
+    // 6. 스트림 정리
     if (screenStream.value) {
       screenStream.value.getTracks().forEach((track) => track.stop());
       screenStream.value = null;
@@ -451,7 +491,13 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
       micStream.value = null;
     }
 
-    // 상태 초기화
+    // 7. STOMP 연결 종료
+    if (stompClient) {
+      stompClient.deactivate();
+      console.log("[stopClass] ✅ STOMP client deactivated");
+    }
+
+    // 8. 상태 초기화
     isSessionStarted.value = false;
     isAnalysisStarted.value = false;
     participants.value = [];
@@ -502,45 +548,43 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
   /**
    * 7. STOMP 연결 및 구독 (채팅, 질문, 참가자, 퀴즈)
    */
+  /**
+   * 7. STOMP 연결 및 구독 (채팅, 질문, 참가자, 퀴즈, AI 분석)
+   */
   function handleConnectWs() {
-    const socket = new SockJS("https://i12a309.p.ssafy.io/ws-stomp");
-    stompClient = Stomp.over(socket);
-    stompClient.debug = () => {}; // 로그 끄기
+    if (stompClient && stompClient.connected) {
+      console.log("[STOMP] 이미 연결되어 있습니다.");
+      return;
+    }
 
-    stompClient.connect(
-      {},
-      () => {
-        console.log("[STOMP] Connected");
+    const socketUrl =
+      import.meta.env.VITE_CHAT_SOCKET_URL ||
+      "https://i12a309.p.ssafy.io/ws-stomp";
+
+    stompClient = new Client({
+      webSocketFactory: () => new SockJS(socketUrl),
+      connectHeaders: {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      },
+      debug: (str) => {
+        // console.log(str); // 디버그 로그 필요 시 주석 해제
+      },
+      onConnect: () => {
+        console.log("[STOMP] Connected ✅");
 
         // 1. 참가자 목록/입장 구독
-        stompClient.subscribe(
+        stompClient?.subscribe(
           `/topic/session/${sessionId.value}/participants`,
-          (res: any) => {
+          (res) => {
             try {
               const data = JSON.parse(res.body);
-              console.log("[Participants] Parsed data:", data);
+              console.log("[Participants] Event:", data.type);
 
               if (data.type === "JOIN") {
-                // ✅ STOMP JOIN 이벤트로 Participant를 미리 생성 (정확한 memberId 확보)
-                console.log(
-                  "👉 Student JOIN (STOMP):",
-                  data.name,
-                  "memberId:",
-                  data.memberId,
-                  "feedId:",
-                  data.feedId,
-                );
-
                 if (data.role === "STUDENT" && data.feedId) {
                   addParticipantFromStomp(data);
                 }
               } else if (data.type === "LEAVE") {
-                console.log(
-                  "👈 Student LEAVE:",
-                  data.name,
-                  "feedId:",
-                  data.feedId,
-                );
                 if (data.feedId) {
                   removeStudent(data.feedId);
                 }
@@ -552,30 +596,118 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
         );
 
         // 2. 채팅/질문 구독
-        stompClient.subscribe(
-          `/topic/chat-room/${sessionId.value}`,
-          (res: any) => {
+        stompClient?.subscribe(`/topic/chat-room/${sessionId.value}`, (res) => {
+          try {
             const msg = JSON.parse(res.body);
             if (!msg.questionId) {
               chatList.value.push(msg);
             } else {
               qaList.value.push(msg);
             }
-          },
+          } catch (e) {
+            console.error("Chat Parse Error", e);
+          }
+        });
+
+        // 3. 퀴즈 구독
+        const quizTopic1 = `/topic/quiz/${sessionId.value}/test`;
+        const quizTopic2 = `/topic/quiz/${sessionId.value}`;
+        const quizTopic3 = `/topic/quiz/session/${sessionId.value}/test`;
+        const quizTopic4 = `/topic/quiz/session/${sessionId.value}`;
+        const userQueueTopic = `/user/queue/quiz/${sessionId.value}/test`;
+
+        const handleQuizMessage = (res: any, topicName: string) => {
+          console.log("========================================");
+          console.log(`[Trainer] 📥 QUIZ MESSAGE RECEIVED!`);
+          console.log(`[Trainer] Topic: ${topicName}`);
+          console.log(`[Trainer] Raw body:`, res.body);
+          console.log("========================================");
+
+          try {
+            const data = JSON.parse(res.body);
+            if (data) {
+              console.log(`[Trainer] ✅ Parsed quiz data successfully:`, data);
+              quizData.value = data;
+              console.log(`[Trainer] ✅ quizData.value updated!`);
+            } else {
+              console.warn(`[Trainer] ⚠️ Received empty data`);
+            }
+          } catch (e) {
+            console.error(`[Trainer] ❌ Quiz Parse Error (${topicName}):`, e);
+          }
+        };
+
+        console.log(`[STOMP] Starting quiz topic subscriptions...`);
+
+        const sub1 = stompClient?.subscribe(quizTopic1, (res) =>
+          handleQuizMessage(res, "Requested Topic"),
+        );
+        console.log(
+          `[STOMP] ✅ Subscribed to: ${quizTopic1}`,
+          sub1 ? "SUCCESS" : "FAILED",
         );
 
-        // 3. 퀴즈 구독 (학생의 답변 수신용 - 강사는 주로 보냄)
-        stompClient.subscribe(
-          `/topic/quiz/session/${sessionId.value}`,
-          (res: any) => {
-            // 강사가 퀴즈를 보냈을 때의 처리 (필요시)
-          },
+        const sub2 = stompClient?.subscribe(quizTopic2, (res) =>
+          handleQuizMessage(res, "Legacy Topic"),
         );
+        console.log(
+          `[STOMP] ✅ Subscribed to: ${quizTopic2}`,
+          sub2 ? "SUCCESS" : "FAILED",
+        );
+
+        const sub3 = stompClient?.subscribe(quizTopic3, (res) =>
+          handleQuizMessage(res, "Session Pattern Topic"),
+        );
+        console.log(
+          `[STOMP] ✅ Subscribed to: ${quizTopic3}`,
+          sub3 ? "SUCCESS" : "FAILED",
+        );
+
+        const sub4 = stompClient?.subscribe(quizTopic4, (res) =>
+          handleQuizMessage(res, "Session Legacy Topic"),
+        );
+        console.log(
+          `[STOMP] ✅ Subscribed to: ${quizTopic4}`,
+          sub4 ? "SUCCESS" : "FAILED",
+        );
+
+        const sub5 = stompClient?.subscribe(userQueueTopic, (res) =>
+          handleQuizMessage(res, "User Queue Topic"),
+        );
+        console.log(
+          `[STOMP] ✅ Subscribed to: ${userQueueTopic}`,
+          sub5 ? "SUCCESS" : "FAILED",
+        );
+
+        // 4. AI 분석 데이터 구독
+        stompClient?.subscribe(`/topic/analysis/${sessionId.value}`, (res) => {
+          try {
+            const data = JSON.parse(res.body);
+            analysisData.value = data;
+
+            // 학생 상태 변경 반영
+            if (data.stateChangeList && Array.isArray(data.stateChangeList)) {
+              data.stateChangeList.forEach(
+                (change: { memberId: number; newState: string }) => {
+                  // console.log(`[Status Change] memberId: ${change.memberId}, newState: ${change.newState}`);
+                  updateParticipantStatus(
+                    change.memberId,
+                    change.newState as "NORMAL" | "FEVER" | "EMPTY",
+                  );
+                },
+              );
+            }
+          } catch (e) {
+            console.error("Analysis Parse Error", e);
+          }
+        });
       },
-      (error: any) => {
-        console.error("STOMP Connection Error:", error);
+      onStompError: (frame) => {
+        console.error("[STOMP] Broker error:", frame.headers["message"]);
       },
-    );
+    });
+
+    stompClient.activate();
   }
 
   // --- 채팅 전송 ---
@@ -584,7 +716,12 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     type: string = "CHAT",
     questionId?: number | string | null,
   ) {
-    if (stompClient && message.trim()) {
+    console.log("[sendChatMessage] Request received:", {
+      message,
+      type,
+      connected: stompClient?.connected,
+    });
+    if (stompClient && stompClient.connected && message.trim()) {
       const msg = {
         sessionId: sessionId.value,
         content: message,
@@ -592,22 +729,98 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
         type: type,
         questionId: questionId || null,
       };
-      stompClient.send(
-        `/app/chat/session/${sessionId.value}`,
-        {},
-        JSON.stringify(msg),
+
+      const destination = `/app/chat-room/${sessionId.value}`;
+      console.log("[sendChatMessage] Publishing to:", destination);
+      console.log("[sendChatMessage] Payload:", JSON.stringify(msg, null, 2));
+
+      stompClient.publish({
+        destination: destination,
+        body: JSON.stringify(msg),
+      });
+    } else {
+      console.warn("STOMP가 연결되지 않아 메시지를 보낼 수 없습니다.");
+    }
+  }
+
+  /**
+   * 퀵 퀴즈 트리거 (STOMP)
+   */
+  function sendQuickQuiz() {
+    console.log("[sendQuickQuiz] 🚀 Function called");
+    console.log("[sendQuickQuiz] stompClient exists:", !!stompClient);
+    console.log(
+      "[sendQuickQuiz] stompClient.connected:",
+      stompClient?.connected,
+    );
+
+    if (stompClient && stompClient.connected) {
+      const destination = `/topic/quiz/${sessionId.value}/test`;
+      // Payload for AI quiz generation request
+      const payload = {
+        type: "QUICK_QUIZ",
+        sessionId: sessionId.value,
+        timestamp: Date.now(),
+        content: "REQUEST_QUIZ",
+      };
+
+      console.log("========================================");
+      console.log("[sendQuickQuiz] 📤 PUBLISHING MESSAGE");
+      console.log("[sendQuickQuiz] Destination:", destination);
+      console.log("[sendQuickQuiz] Payload:", JSON.stringify(payload, null, 2));
+      console.log("========================================");
+
+      try {
+        stompClient.publish({
+          destination: destination,
+          body: JSON.stringify(payload),
+        });
+        console.log("[sendQuickQuiz] ✅ Message published successfully");
+        console.log(
+          "[sendQuickQuiz] ⏳ Waiting for response on /topic/quiz/88/test or /topic/quiz/88...",
+        );
+      } catch (error) {
+        console.error("[sendQuickQuiz] ❌ Error publishing message:", error);
+      }
+    } else {
+      console.warn(
+        "[sendQuickQuiz] ⚠️ STOMP not connected - cannot send message",
       );
     }
   }
 
   // --- 퀴즈 전송 ---
   function sendQuizToStudents(quiz: any) {
-    if (stompClient) {
-      console.log("퀴즈 전송:", quiz);
-      stompClient.send(
-        `/app/quiz/session/${sessionId.value}/start`,
-        {},
-        JSON.stringify(quiz),
+    console.log("[sendQuizToStudents] 🚀 Function called");
+    console.log("[sendQuizToStudents] Quiz data:", quiz);
+
+    if (stompClient && stompClient.connected) {
+      const destination = `/app/quiz/send/${sessionId.value}`;
+
+      console.log("========================================");
+      console.log("[sendQuizToStudents] 📤 SENDING QUIZ TO STUDENTS");
+      console.log("[sendQuizToStudents] Destination:", destination);
+      console.log(
+        "[sendQuizToStudents] Payload:",
+        JSON.stringify(quiz, null, 2),
+      );
+      console.log("========================================");
+
+      try {
+        stompClient.publish({
+          destination: destination,
+          body: JSON.stringify(quiz),
+        });
+        console.log("[sendQuizToStudents] ✅ Quiz sent successfully!");
+        console.log(
+          "[sendQuizToStudents] Backend should broadcast to students at: /topic/surprise-quiz/${sessionId}",
+        );
+      } catch (error) {
+        console.error("[sendQuizToStudents] ❌ Error sending quiz:", error);
+      }
+    } else {
+      console.warn(
+        "[sendQuizToStudents] ⚠️ STOMP not connected - cannot send quiz",
       );
     }
   }
@@ -656,11 +869,10 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
 
         // ✅ 학생들에게 수업 시작 시간 브로드캐스트
         if (stompClient && sessionId.value) {
-          stompClient.send(
-            `/app/session/${sessionId.value}/start-time`,
-            {},
-            JSON.stringify({ startTime: res.data.startTime }),
-          );
+          stompClient.publish({
+            destination: `/app/session/${sessionId.value}/start-time`,
+            body: JSON.stringify({ startTime: res.data.startTime }),
+          });
         }
       } else {
         classStartTime.value = Date.now(); // Fallback
@@ -678,7 +890,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     if (voiceSocket.value) {
       voiceSocket.value.close();
     }
-    const wsUrl = "wss://i12a309.p.ssafy.io/fast-api/ws/audio";
+    const wsUrl = `wss://i14a309.p.ssafy.io/voice/${sessionId.value}`;
     voiceSocket.value = new WebSocket(wsUrl);
 
     voiceSocket.value.onopen = () => {
@@ -1088,7 +1300,6 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     isSessionStarted,
     isAnalysisStarted,
     startSession,
-    startAnalysis,
     stopClass,
     changeScreenShare,
     screenStream,
@@ -1101,6 +1312,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     chatList,
     qaList,
     quizData,
+    analysisData,
     sendChatMessage,
     sendQuizToStudents,
     getQuiz,
@@ -1110,5 +1322,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     toggleBreak,
     openSession,
     closeSession,
+    startAnalysis,
+    sendQuickQuiz,
   };
 });

@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, computed, nextTick, provide, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useTrainerLiveStore } from '@/stores/trainerlive';
+import { useTrainerSessionStore } from '@/stores/trainerSession';
 import { useUserStore } from '@/stores/user';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
@@ -9,6 +10,7 @@ import { Client } from '@stomp/stompjs';
 // 스토어
 const trainerLiveStore = useTrainerLiveStore();
 const userStore = useUserStore();
+const trainerSessionStore = useTrainerSessionStore();
 
 // [컴포넌트 임포트]
 import LiveHeader from '@/components/Live/Console/LiveHeader.vue';
@@ -53,8 +55,8 @@ interface Message {
 const chatList = computed(() => trainerLiveStore.chatList);
 const qaList = computed(() => trainerLiveStore.qaList);
 const quizData = computed(() => trainerLiveStore.quizData);
+const analysisData = computed(() => trainerLiveStore.analysisData);
 
-const analysisData = ref<any>(null); // ai 분석 데이터 (UI에서만 사용)
 const engagementHistory = ref<number[]>(new Array(120).fill(0)); // 몰입도 이력 (최대 120개)
 
 // // --- 통계 (Computed) ---
@@ -117,65 +119,36 @@ const warningCount = computed(() => trainerLiveStore.participants.filter(p => p.
 const absentCount = computed(() => trainerLiveStore.participants.filter(p => p.status === 'EMPTY').length);
 
 // --- AI 분석 결과만 구독 (채팅/퀴즈는 스토어에서 처리) ---
-let stompClient: Client | null = null;
-
-const connectAnalysisWebSocket = () => {
-  const sessionId = route.params.sessionId as string;
-  const socketUrl = import.meta.env.VITE_CHAT_SOCKET_URL;
-
-  stompClient = new Client({
-    webSocketFactory: () => new SockJS(socketUrl),
-    connectHeaders: {
-      Authorization: `Bearer ${localStorage.getItem('accessToken')}`
-    },
-    debug: () => { }, // 디버그 비활성화
-    onConnect: () => {
-      console.log('[TrainerLiveSessionView] AI Analysis Connected ✅');
-      // AI 분석결과만 구독 (UI 업데이트용)
-      stompClient?.subscribe(`/topic/analysis/${sessionId}`, (res) => {
-        console.log('[Trainer Analysis] Received:', res.body);
-        const data = JSON.parse(res.body);
-        analysisData.value = data;
-
-        // ✅ stateChangeList 처리: 학생 상태 변경 반영
-        if (data.stateChangeList && Array.isArray(data.stateChangeList)) {
-          data.stateChangeList.forEach((change: { memberId: number; newState: string }) => {
-            console.log(`[Status Change] memberId: ${change.memberId}, newState: ${change.newState}`);
-            trainerLiveStore.updateParticipantStatus(change.memberId, change.newState as "NORMAL" | "FEVER" | "EMPTY");
-          });
-        }
-      });
-    },
-    onStompError: (frame) => {
-      console.error('[TrainerLiveSessionView] Broker error:', frame.headers['message']);
-    },
-    onWebSocketClose: () => {
-      console.log('[TrainerLiveSessionView] AI Analysis Connection Closed ❌');
-    }
-  });
-
-  stompClient.activate();
-};
+// stompClient 제거됨 (Store에서 통합 관리)
 
 // --- 메시지 전송 래퍼 함수 (템플릿에서 사용) ---
 const sendChatMessage = (content: string, type: string, questionId?: number | string | null) => {
   trainerLiveStore.sendChatMessage(content, type, questionId);
 };
 
+// [Fix] 퀴즈 요청 시 courseId 자동 주입
+const handleGetQuiz = () => {
+  const courseId = trainerSessionStore.currentManagedSession?.courseId;
+  if (courseId) {
+    trainerLiveStore.getQuiz(String(courseId));
+  } else {
+    console.error('[handleGetQuiz] 세션 정보 또는 courseId가 없습니다.');
+  }
+};
+
 // --- 메시지 전송 함수는 스토어에서 제공 ---
 // provide로 하위 컴포넌트에 스토어 함수 전달
 provide('sendQuizToStudents', trainerLiveStore.sendQuizToStudents);
-provide('getQuiz', trainerLiveStore.getQuiz);
+// [Refactor] 퀵 퀴즈를 API 호출이 아닌 STOMP 트리거로 변경
+provide('getQuiz', trainerLiveStore.sendQuickQuiz);
 
 // --- 퀵 퀴즈 모달 관리 ---
+// --- 퀵 퀴즈 모달 관리 ---
 // quizData가 업데이트되면 모달 자동 열기
-watch(quizData, (newData) => {
-  console.log('[TrainerLiveSessionView] quizData watch 감지:', newData);
-  if (newData && Object.keys(newData).length > 0) {
-    console.log('[TrainerLiveSessionView] 퀵 퀴즈 모달 열기');
+watch(() => quizData.value, (newQuiz) => {
+  if (newQuiz) {
+    console.log("[TrainerLiveSession] 퀵 퀴즈 데이터 수신, 모달 열기:", newQuiz);
     isQuickQuizModalOpen.value = true;
-  } else {
-    console.log('[TrainerLiveSessionView] quizData가 비어있음');
   }
 });
 
@@ -192,21 +165,20 @@ const handleQuickQuizSend = (quiz: any) => {
 onMounted(async () => {
   const sessionId = route.params.sessionId as string;
   await trainerLiveStore.initJanus(sessionId);
-  trainerLiveStore.openSession(sessionId); // [New] 세션 시작 알림
-  connectAnalysisWebSocket();
+  trainerLiveStore.openSession(sessionId); // [New] 세션 시작 알림 (여기서 내부적으로 handleConnectWs 호출)
 });
 
 onUnmounted(() => {
   const sessionId = route.params.sessionId as string;
   trainerLiveStore.closeSession(sessionId); // [New] 세션 종료 알림
-  stompClient?.deactivate();
 });
 
 // --- 수업 종료 로직 ---
+// --- 수업 종료 로직 ---
 const handleEndSession = async () => {
-  trainerLiveStore.stopClass(); // 방송 중단
+  await trainerLiveStore.stopClass(); // 방송 중단 (API 호출 완료 대기)
   isEndModalOpen.value = false;
-  router.push('/dashboard');
+  window.close(); // 창 닫기
 };
 </script>
 
@@ -304,7 +276,7 @@ const handleEndSession = async () => {
     </Transition>
 
     <!-- 퀵 퀴즈 모달 -->
-    <QuickQuizModal :isOpen="isQuickQuizModalOpen" :quizData="quizData" @close="handleQuickQuizClose"
+    <QuickQuizModal :isOpen="isQuickQuizModalOpen" :quizData="quizData" @close="isQuickQuizModalOpen = false"
       @send-to-students="handleQuickQuizSend" />
   </div>
 </template>

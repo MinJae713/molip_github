@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>STOMP WebSocket Tester</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+      }
+      input,
+      textarea,
+      button {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+      }
+      button {
+        background: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      button:hover {
+        background: #45a049;
+      }
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      .disconnect {
+        background: #f44336;
+      }
+      .disconnect:hover {
+        background: #da190b;
+      }
+      .log {
+        background: #000;
+        color: #0f0;
+        padding: 15px;
+        border-radius: 5px;
+        max-height: 300px;
+        overflow-y: auto;
+        font-family: monospace;
+        font-size: 12px;
+        margin-top: 20px;
+      }
+      .status {
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+        font-weight: bold;
+      }
+      .connected {
+        background: #d4edda;
+        color: #155724;
+      }
+      .disconnected {
+        background: #f8d7da;
+        color: #721c24;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔌 STOMP WebSocket Tester</h1>
+
+      <div id="status" class="status disconnected">❌ Disconnected</div>
+
+      <h3>1. 연결 설정</h3>
+      <input
+        type="text"
+        id="socketUrl"
+        placeholder="Socket URL"
+        value="https://i12a309.p.ssafy.io/ws-stomp"
+      />
+      <input
+        type="text"
+        id="token"
+        placeholder="Access Token (Bearer)"
+        value=""
+      />
+      <button id="connectBtn" onclick="connect()">Connect</button>
+      <button
+        id="disconnectBtn"
+        onclick="disconnect()"
+        class="disconnect"
+        disabled
+      >
+        Disconnect
+      </button>
+
+      <h3>2. 구독 (Subscribe)</h3>
+      <input
+        type="text"
+        id="subscribeTopic"
+        placeholder="Topic to subscribe"
+        value="/topic/quiz/90/test"
+      />
+      <button id="subscribeBtn" onclick="subscribe()" disabled>
+        Subscribe
+      </button>
+
+      <h3>3. 메시지 발송 (Publish)</h3>
+      <input
+        type="text"
+        id="publishTopic"
+        placeholder="Destination"
+        value="/topic/quiz/90/test"
+      />
+      <textarea id="publishBody" placeholder="Message body (JSON)" rows="4">
+{"type":"QUICK_QUIZ","sessionId":"90","timestamp":1234567890,"content":"REQUEST_QUIZ"}</textarea
+      >
+      <button id="publishBtn" onclick="publish()" disabled>Send Message</button>
+
+      <h3>4. 로그</h3>
+      <div id="log" class="log"></div>
+      <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <script>
+      let stompClient = null;
+      let subscription = null;
+
+      function log(message, type = "info") {
+        const logDiv = document.getElementById("log");
+        const timestamp = new Date().toLocaleTimeString();
+        const color =
+          type === "error"
+            ? "#ff5555"
+            : type === "success"
+              ? "#55ff55"
+              : "#0f0";
+        logDiv.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+        logDiv.scrollTop = logDiv.scrollHeight;
+      }
+
+      function updateStatus(connected) {
+        const statusDiv = document.getElementById("status");
+        if (connected) {
+          statusDiv.className = "status connected";
+          statusDiv.textContent = "✅ Connected";
+        } else {
+          statusDiv.className = "status disconnected";
+          statusDiv.textContent = "❌ Disconnected";
+        }
+
+        document.getElementById("connectBtn").disabled = connected;
+        document.getElementById("disconnectBtn").disabled = !connected;
+        document.getElementById("subscribeBtn").disabled = !connected;
+        document.getElementById("publishBtn").disabled = !connected;
+      }
+
+      function connect() {
+        const socketUrl = document.getElementById("socketUrl").value;
+        const token = document.getElementById("token").value;
+
+        log("Connecting to: " + socketUrl);
+
+        stompClient = new StompJs.Client({
+          webSocketFactory: () => new SockJS(socketUrl),
+          connectHeaders: token
+            ? {
+                Authorization: `Bearer ${token}`,
+              }
+            : {},
+          debug: (str) => {
+            log(str, "info");
+          },
+          onConnect: () => {
+            log("✅ STOMP Connected!", "success");
+            updateStatus(true);
+          },
+          onStompError: (frame) => {
+            log("❌ Broker error: " + frame.headers["message"], "error");
+            log("Details: " + frame.body, "error");
+          },
+          onWebSocketClose: () => {
+            log("Connection closed", "error");
+            updateStatus(false);
+          },
+        });
+
+        stompClient.activate();
+      }
+
+      function disconnect() {
+        if (stompClient) {
+          stompClient.deactivate();
+          log("Disconnected", "info");
+          updateStatus(false);
+        }
+      }
+
+      function subscribe() {
+        const topic = document.getElementById("subscribeTopic").value;
+
+        if (subscription) {
+          subscription.unsubscribe();
+          log("Unsubscribed from previous topic");
+        }
+
+        subscription = stompClient.subscribe(topic, (message) => {
+          log(`📥 Message received on ${topic}:`, "success");
+          log("Body: " + message.body, "success");
+
+          try {
+            const parsed = JSON.parse(message.body);
+            log("Parsed: " + JSON.stringify(parsed, null, 2), "success");
+          } catch (e) {
+            log("Could not parse as JSON", "info");
+          }
+        });
+
+        log(`✅ Subscribed to: ${topic}`, "success");
+      }
+
+      function publish() {
+        const destination = document.getElementById("publishTopic").value;
+        const body = document.getElementById("publishBody").value;
+
+        try {
+          // Validate JSON
+          JSON.parse(body);
+
+          stompClient.publish({
+            destination: destination,
+            body: body,
+          });
+
+          log(`📤 Message sent to ${destination}`, "success");
+          log("Body: " + body, "info");
+        } catch (e) {
+          log("❌ Invalid JSON: " + e.message, "error");
+        }
+      }
+
+      function clearLog() {
+        document.getElementById("log").innerHTML = "";
+      }
+
+      // Initial log
+      log("STOMP WebSocket Tester Ready");
+      log("1. Enter Socket URL and Token (optional)");
+      log("2. Click Connect");
+      log("3. Subscribe to a topic");
+      log("4. Send messages and see responses");
+    </script>
+  </body>
+</html>
