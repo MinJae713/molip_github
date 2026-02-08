@@ -453,10 +453,25 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     // 3. 백엔드 API 호출 (분석 종료 -> 세션 종료 통보 -> Janus 방 삭제)
     try {
       // (1) 분석 종료 API
+      // ✅ 만약 쉬는 시간 중이라면 종료 처리하여 history에 추가
+      if (isOnBreak.value) {
+        toggleBreak();
+      }
+
+      const now = Date.now();
+      const serverNow = now - timeOffset.value; // 클라이언트 시간 -> 서버 시간 보정
+      const lastTimeline = classStartTime.value
+        ? Math.floor((serverNow - classStartTime.value) / 1000)
+        : 0;
+
       await videoApi.post(`/review/end/analysis/${sessionId.value}`, {
-        videoUrl: "asda", // 녹화 URL (실제 구현 시 업데이트 필요)
+        lastTimeline: lastTimeline,
+        pauseElementList: pauseHistory.value,
       });
-      console.log("[stopClass] (1) 분석 종료 API 성공");
+      console.log("[stopClass] (1) 분석 종료 API 성공", {
+        lastTimeline,
+        pauseCount: pauseHistory.value.length,
+      });
     } catch (e) {
       console.error("[stopClass] 분석 종료 API 오류", e);
     }
@@ -1272,20 +1287,22 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
   function toggleBreak() {
     if (!classStartTime.value) return; // 수업 시작 전이면 무시
 
+    const now = Date.now();
+    const serverNow = now - timeOffset.value; // 클라이언트 시간 -> 서버 시간 보정
+
     if (!isOnBreak.value) {
       // 쉬는 시간 시작
       isOnBreak.value = true;
-      currentPauseStart.value = Date.now();
+      currentPauseStart.value = serverNow; // 서버 기준 시간으로 저장
       console.log("⏸ Break Started at", currentPauseStart.value);
     } else {
       // 쉬는 시간 종료
       if (currentPauseStart.value) {
-        const now = Date.now();
-        // 타임라인 기준 초 단위 변환
+        // 타임라인 기준 초 단위 변환 (둘 다 서버 기준 시간이므로 classStartTime과 계산 가능)
         const startSeconds = Math.floor(
           (currentPauseStart.value - classStartTime.value) / 1000,
         );
-        const endSeconds = Math.ceil((now - classStartTime.value) / 1000);
+        const endSeconds = Math.ceil((serverNow - classStartTime.value) / 1000);
 
         pauseHistory.value.push({
           startTime: startSeconds > 0 ? startSeconds : 0,
