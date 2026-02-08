@@ -7,11 +7,13 @@ import com.edumax.molip.grpc.stt.STTServiceGrpc;
 import com.google.protobuf.ByteString;
 import io.grpc.stub.StreamObserver;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.BinaryMessage;
 import org.springframework.web.socket.CloseStatus;
@@ -25,6 +27,12 @@ public class VoiceForwardHandler extends BinaryWebSocketHandler {
   private final ApplicationEventPublisher eventPublisher;
   private final STTServiceGrpc.STTServiceStub sttServiceStub;
   private final Map<String, StreamObserver<STTRequest>> grpcStreamMap = new ConcurrentHashMap<>();
+
+  private final StringRedisTemplate redisTemplate;
+
+  // 상수는 static final로 관리하는 것이 메모리 효율상 좋습니다.
+  private static final String KEY_FORMAT = "quiz:stt:session-id:%d";
+  private static final Duration TTL = Duration.ofDays(1);
 
   // 연결할때 호출
   @Override
@@ -41,11 +49,16 @@ public class VoiceForwardHandler extends BinaryWebSocketHandler {
                 response.getTimeline(),
                 response.getText());
 
-            eventPublisher.publishEvent(
+            handleSttResult(
                 new SttSaveEvent(
-                    (String) session.getAttributes().get("roomId"),
-                    response.getText(),
+                    Long.parseLong((String) session.getAttributes().get("sessionId")),
+                    response.getText() == null ? "" : response.getText(),
                     response.getTimeline()));
+            //            eventPublisher.publishEvent(
+            //                new SttSaveEvent(
+            //                    (String) session.getAttributes().get("sessionId"),
+            //                    response.getText(),
+            //                    response.getTimeline()));
           }
 
           @Override
@@ -61,44 +74,60 @@ public class VoiceForwardHandler extends BinaryWebSocketHandler {
 
     // 비동기 gRPC 스트림 시작 및 맵에 보관
     StreamObserver<STTRequest> requestObserver = sttServiceStub.sendSTT(responseObserver);
-    grpcStreamMap.put((String) session.getAttributes().get("roomId"), requestObserver);
+    grpcStreamMap.put((String) session.getAttributes().get("sessionId"), requestObserver);
+  }
+
+  public void handleSttResult(SttSaveEvent event) {
+    String key = generateKey(event.sessionId());
+
+    String value = event.timeline() + "|" + event.text();
+    redisTemplate.opsForZSet().add(key, value, event.timeline());
+    redisTemplate.expire(key, TTL);
+  }
+
+  private String generateKey(Long sessionId) {
+    return String.format(KEY_FORMAT, sessionId);
   }
 
   // 데이터 수신시 호출
   @Override
   protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) {
-    StreamObserver<STTRequest> requestObserver =
-        grpcStreamMap.get((String) session.getAttributes().get("roomId"));
+    String sessionId = (String) session.getAttributes().get("sessionId");
+    StreamObserver<STTRequest> requestObserver = grpcStreamMap.get(sessionId);
+
+    if (requestObserver == null) {
+      log.error("gRPC stream not found for sessionId: {}", sessionId);
+      return;
+    }
+
     ByteBuffer buffer = message.getPayload();
 
-    if (buffer.remaining() >= 4) {
-      // 클라이언트가 보낸 첫 4바이트를 int(timeline)로 읽기
-      int timeline = buffer.getInt();
-
-      // 3. 나머지 바이트를 전부 음성 데이터로 읽기
-      byte[] voiceBytes = new byte[buffer.remaining()];
-      buffer.get(voiceBytes);
-
-      // 4. gRPC 메시지 생성
-      STTRequest request =
-          STTRequest.newBuilder()
-              .setSessionId((String) session.getAttributes().get("roomId"))
-              .setTimeline(timeline) // 클라이언트가 보낸 값 사용
-              .setAudioData(ByteString.copyFrom(voiceBytes))
-              .build();
-
-      // 5. gRPC 스트림으로 전송
-      requestObserver.onNext(request);
-    } else {
-      System.err.println("수신된 데이터가 너무 짧아 timeline를 추출할 수 없습니다.");
+    // 2. 최소 4바이트(int)는 있어야 timeline을 읽을 수 있음
+    if (buffer.remaining() < 4) {
+      log.error("Payload too short to contain timeline (min 4 bytes)");
+      return;
     }
+
+    int timeline = buffer.getInt();
+
+    byte[] voiceBytes = new byte[buffer.remaining()];
+    buffer.get(voiceBytes);
+
+    STTRequest request =
+        STTRequest.newBuilder()
+            .setSessionId(sessionId)
+            .setTimeline(timeline) // 클라이언트가 보낸 값 사용
+            .setAudioData(ByteString.copyFrom(voiceBytes))
+            .build();
+
+    requestObserver.onNext(request);
   }
 
   @Override
   public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
     // 3. 웹소켓 연결이 끊기면 gRPC onCompleted를 호출하여 스트림을 닫습니다.
     StreamObserver<STTRequest> requestObserver =
-        grpcStreamMap.remove((String) session.getAttributes().get("roomId"));
+        grpcStreamMap.remove((String) session.getAttributes().get("sessionId"));
     if (requestObserver != null) {
       requestObserver.onCompleted();
       System.out.println("웹소켓 종료로 인한 gRPC 연결 종료");

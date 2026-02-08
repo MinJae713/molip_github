@@ -1,5 +1,6 @@
 package com.edumax.molip.domain.quiz.entity;
 
+import com.edumax.molip.domain.quiz.dto.request.CreateExitQuizRequest;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -37,4 +38,11 @@ public class ExitQuizAnswer {
   @ManyToOne(optional = false)
   @JoinColumn(name = "exit_quiz_id")
   private ExitQuiz exitQuiz;
+
+  public static ExitQuizAnswer from(
+      CreateExitQuizRequest.CreateExitQuizAnswerRequest exitQuizAnswer, ExitQuiz exitQuiz) {
+    Integer number = exitQuizAnswer.getNumber();
+    String answer = exitQuizAnswer.getAnswer();
+    return ExitQuizAnswer.builder().number(number).answer(answer).exitQuiz(exitQuiz).build();
+  }
 }

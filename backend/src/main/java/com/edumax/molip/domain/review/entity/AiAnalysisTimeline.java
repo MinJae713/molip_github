@@ -29,11 +29,11 @@ public class AiAnalysisTimeline {
   @Column(name = "concentrate_value", nullable = false)
   private Integer concentrateValue;
 
-  @Column(name = "feeling_name", nullable = false, length = 31)
-  private String feelingName; // enum 인가?
+  @Column(name = "emotion_name", nullable = false, length = 31)
+  private String emotionName; // enum 인가?
 
-  @Column(name = "en_feeling_name", nullable = false, length = 31)
-  private String enFeelingName;
+  @Column(name = "emotion_value", nullable = false)
+  private Float emotionValue; // enum 인가?
 
   @Column(name = "fever_time", nullable = false)
   private Boolean feverTime;

@@ -3,6 +3,8 @@ package com.edumax.molip.domain.course.entity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "Certification")
@@ -32,5 +34,6 @@ public class Certification {
 
   @OneToOne
   @JoinColumn(name = "course_certificated_id", nullable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private CourseCertificated courseCertificated;
 }

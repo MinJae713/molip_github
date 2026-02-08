@@ -34,7 +34,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/member")
+@RequestMapping("/api/members")
 @RequiredArgsConstructor
 public class AuthController {
   private final AuthenticationManager authenticationManager;
@@ -60,7 +60,7 @@ public class AuthController {
     } catch (BadCredentialsException e) {
       // 이메일/비밀번호 불일치
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-          .body(new LoginResponse(null, "이메일 또는 비밀번호가 올바르지 않습니다.", null, null, null, null));
+          .body(new LoginResponse(null, "이메일 또는 비밀번호가 올바르지 않습니다.", null, null, null, null, null));
     } catch (AuthenticationException e) {
       // 그 외 Spring Security 인증 실패
       log.error("로그인 인증 오류", e);
@@ -99,7 +99,8 @@ public class AuthController {
             userDetails.getDisplayName(),
             userDetails.getMemberId(),
             userDetails.getUsername(),
-            userDetails.getProfileImageUrl());
+            userDetails.getProfileImageUrl(),
+            memberService.getMemberRole(userDetails.getMemberId()));
 
     return ResponseEntity.status(HttpStatus.OK).body(body);
   }
@@ -123,6 +124,34 @@ public class AuthController {
     res.addHeader(HttpHeaders.SET_COOKIE, deleteCookie.toString());
 
     return ResponseEntity.ok(Map.of("message", "로그아웃 되었습니다."));
+  }
+
+  @PostMapping("/register/admin")
+  public ResponseEntity<Map<String, String>> registerAdmin(@RequestBody RegisterRequest request) {
+    try {
+      Member member =
+          Member.builder()
+              .email(request.email)
+              .passwordHash(request.password)
+              .name(request.name)
+              .age(request.age)
+              .address(request.address)
+              .gender(Member.Gender.fromDescription(request.gender))
+              .role(Member.Role.ADMIN)
+              .authProvider(Member.AuthProvider.LOCAL)
+              .build();
+
+      System.out.println("member = " + member);
+      memberService.registerMember(member, Member.AuthProvider.LOCAL);
+      return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "회원가입이 완료되었습니다."));
+    } catch (DuplicateEmailException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+          .body(Map.of("message", "이미 존재하는 이메일입니다."));
+    } catch (RuntimeException e) {
+      log.error("회원가입 실패 : {}", e);
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+          .body(Map.of("message", "회원가입에 실패했습니다: " + e.getMessage()));
+    }
   }
 
   @PostMapping("/register")

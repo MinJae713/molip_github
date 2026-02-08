@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "Script")
+@Table(
+    name = "Script",
+    indexes = {@Index(name = "idx_session_timeline", columnList = "session_id, timeline DESC")})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,7 +20,7 @@ public class Script {
   private Long scriptId;
 
   @Column(nullable = false)
-  private Integer time;
+  private Integer timeline;
 
   @Column(nullable = false, length = 255)
   private String message;

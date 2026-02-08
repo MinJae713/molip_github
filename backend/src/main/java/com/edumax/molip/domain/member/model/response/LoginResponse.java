@@ -1,5 +1,6 @@
 package com.edumax.molip.domain.member.model.response;
 
+import com.edumax.molip.domain.member.entity.Member;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,4 +15,5 @@ public class LoginResponse {
   private Long memberId;
   private String email;
   private String profileImageUrl;
+  private Member.Role role;
 }

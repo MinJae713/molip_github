@@ -46,10 +46,14 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-redis</artifactId>
     </dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-kafka</artifactId>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.boot</groupId>-->
+<!--			<artifactId>spring-boot-starter-kafka</artifactId>-->
+<!--		</dependency>-->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-mongodb</artifactId>
+    </dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
@@ -83,10 +87,10 @@
       <groupId>io.grpc</groupId>
       <artifactId>grpc-stub</artifactId>
     </dependency>
-    <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-services</artifactId>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>io.grpc</groupId>-->
+<!--      <artifactId>grpc-services</artifactId>-->
+<!--    </dependency>-->
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -178,7 +182,23 @@
       <version>3.0.3</version>
       <scope>compile</scope>
     </dependency>
-	</dependencies>
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>2.17.0</version>
+    </dependency>
+  <!--  <dependency>
+    	<groupId>com.example</groupId>
+    	<artifactId>videoclassroom-backend</artifactId>
+    	<version>0.0.1-SNAPSHOT</version>
+	</dependency>-->
+    <!-- Source: https://mvnrepository.com/artifact/tools.jackson.datatype/jackson-datatype-jsr310 -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.14.0</version>
+    </dependency>
+  </dependencies>
 
 	<dependencyManagement>
 		<dependencies>

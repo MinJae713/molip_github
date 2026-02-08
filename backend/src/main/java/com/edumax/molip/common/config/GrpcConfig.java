@@ -1,6 +1,7 @@
 package com.edumax.molip.common.config;
 
-import com.edumax.molip.grpc.connection.ConnectionServiceGrpc;
+import com.edumax.molip.grpc.emotion.EmotionServiceGrpc;
+import com.edumax.molip.grpc.qna.QnaServiceGrpc;
 import com.edumax.molip.grpc.quiz.QuizServiceGrpc;
 import com.edumax.molip.grpc.stt.STTServiceGrpc;
 import org.springframework.context.annotation.Bean;
@@ -11,12 +12,6 @@ import org.springframework.grpc.client.GrpcChannelFactory;
 public class GrpcConfig {
 
   @Bean
-  public ConnectionServiceGrpc.ConnectionServiceBlockingStub connectionServiceStub(
-      GrpcChannelFactory channelFactory) {
-    return ConnectionServiceGrpc.newBlockingStub(channelFactory.createChannel("connection-client"));
-  }
-
-  @Bean
   public QuizServiceGrpc.QuizServiceBlockingStub quizServiceBlockingStub(
       GrpcChannelFactory channelFactory) {
     return QuizServiceGrpc.newBlockingStub(channelFactory.createChannel("quiz-service"));
@@ -25,5 +20,17 @@ public class GrpcConfig {
   @Bean
   public STTServiceGrpc.STTServiceStub sttServiceStub(GrpcChannelFactory channelFactory) {
     return STTServiceGrpc.newStub(channelFactory.createChannel("stt-service"));
+  }
+
+  @Bean
+  public EmotionServiceGrpc.EmotionServiceStub emotionServiceStub(
+      GrpcChannelFactory channelFactory) {
+    return EmotionServiceGrpc.newStub(channelFactory.createChannel("emotion-service"));
+  }
+
+  @Bean
+  public QnaServiceGrpc.QnaServiceBlockingStub qnaServiceBlockingStub(
+      GrpcChannelFactory channelFactory) {
+    return QnaServiceGrpc.newBlockingStub(channelFactory.createChannel("qna-service"));
   }
 }

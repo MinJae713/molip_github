@@ -7,7 +7,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
-@Table(name = "ReviewChattingMessage")
+@Table(name = "review_chatting_message")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -27,14 +27,16 @@ public class ReviewChattingMessage {
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @Column(name = "updated_at")
-  private LocalDateTime updatedAt;
-
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "room_id", nullable = false)
   private ReviewChattingRoom room;
 
-  @ManyToOne
-  @JoinColumn(name = "workspace_member_id")
-  private WorkspaceMember workspaceMember; // null이면 AI
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "workspace_member_id", nullable = true)
+  @Builder.Default
+  private WorkspaceMember workspaceMember = null;
+
+  @Column(name = "sender_id", nullable = true)
+  @Builder.Default
+  private Long senderId = null;
 }

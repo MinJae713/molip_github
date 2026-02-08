@@ -1,3 +1,18 @@
 package com.edumax.molip.domain.workspace.repository;
 
-public interface WorkspaceMemberRepository {}
+import com.edumax.molip.domain.member.entity.Member;
+import com.edumax.molip.domain.workspace.entity.Workspace;
+import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+@SuppressWarnings("PMD.MethodNamingConventions")
+public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember, Long> {
+  Optional<WorkspaceMember> findByMemberAndWorkspace(Member member, Workspace workspace);
+
+  List<WorkspaceMember> findByMember(Member member);
+
+  Optional<WorkspaceMember> findByMember_IdAndWorkspace_WorkspaceId(
+      Long memberId, Long workspaceId);
+}

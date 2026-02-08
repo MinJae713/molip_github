@@ -1,5 +1,7 @@
 package com.edumax.molip.domain.quiz.entity;
 
+import com.edumax.molip.domain.quiz.dto.request.CreateExitQuizRequest;
+import com.edumax.molip.domain.quiz.types.ExitQuizType;
 import com.edumax.molip.domain.session.entity.Session;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -61,11 +63,17 @@ public class ExitQuiz {
   @Builder.Default
   private List<ExitQuizResult> exitQuizResults = new ArrayList<>();
 
-  @Column(nullable = false, length = 50)
+  @Column(length = 50)
   private ExitQuizType type;
 
-  public enum ExitQuizType {
-    LOCAL,
-    AI_RECOMMEND
+  public static ExitQuiz from(CreateExitQuizRequest exitQuizRequest, Session session) {
+    String question = exitQuizRequest.getQuestion();
+    Integer answerNumber = exitQuizRequest.getAnswerNumber();
+    return ExitQuiz.builder()
+        .question(question)
+        .answerNumber(answerNumber)
+        .session(session)
+        .type(ExitQuizType.LOCAL)
+        .build();
   }
 }

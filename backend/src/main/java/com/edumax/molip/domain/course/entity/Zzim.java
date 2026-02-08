@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "Zzim")
@@ -26,9 +28,11 @@ public class Zzim {
 
   @ManyToOne
   @JoinColumn(name = "workspace_member_id", nullable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private WorkspaceMember workspaceMember;
 
   @ManyToOne
   @JoinColumn(name = "course_id", nullable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private Course course;
 }
