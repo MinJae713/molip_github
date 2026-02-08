@@ -6,8 +6,8 @@
                 <div class="text-center mb-10">
                     <div class="flex items-center justify-center gap-2 text-indigo-brand mb-4">
                         <span class="material-symbols-outlined text-4xl">school</span>
-                        <span class="text-2xl font-bold font-display tracking-tight text-slate-900">EduVerse <span
-                                class="text-indigo-brand font-light">Work</span></span>
+                        <span class="text-2xl font-bold font-display tracking-tight text-slate-900">Molip<span
+                                class="text-indigo-brand font-light">Space</span></span>
                     </div>
                     <h1 class="text-3xl font-bold text-slate-900 mb-3">로그인</h1>
                     <p class="text-slate-500">
