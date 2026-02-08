@@ -158,14 +158,14 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
   // --- 세션 생명주기 관리 ---
   async function openSession(id: string | number) {
     try {
-      console.log(`[Session] Opening session: ${id}`);
+      // console.log(`[Session] Opening session: ${id}`);
       sessionId.value = id; // ✅ sessionId 설정 (STOMP 구독에 필요)
 
       await videoApi.post(`/session/start/${id}`);
-      console.log("[Session] Session Start API Called");
+      // console.log("[Session] Session Start API Called");
 
       // ✅ STOMP 연결을 여기서 시작 (학생 입장 추적을 위해)
-      console.log("[Session] Connecting to STOMP for participant tracking...");
+      // console.log("[Session] Connecting to STOMP for participant tracking...");
       handleConnectWs();
     } catch (e) {
       console.error("[Session] Open Error", e);
@@ -174,9 +174,9 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
 
   async function closeSession(id: string | number) {
     try {
-      console.log(`[Session] Closing session: ${id}`);
+      // console.log(`[Session] Closing session: ${id}`);
       await videoApi.post(`/session/end/${id}`);
-      console.log("[Session] Session End API Called");
+      // console.log("[Session] Session End API Called");
     } catch (e) {
       console.error("[Session] Close Error", e);
     }
@@ -195,16 +195,16 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
           janusRoomId: res.data.janusRoomId,
           pin: res.data.pin,
         };
-        console.log("기존 방 정보 조회 성공:", roomInfo.value);
+        // console.log("기존 방 정보 조회 성공:", roomInfo.value);
       } catch (connectionError: any) {
         // 2. 방이 없으면 새로 생성
-        console.log("기존 방 없음, 새 방 생성 시도...");
+        // console.log("기존 방 없음, 새 방 생성 시도...");
         const createRes = await videoApi.post(`/session/${id}/start`);
         roomInfo.value = {
           janusRoomId: createRes.data.janusRoomId,
           pin: createRes.data.pin,
         };
-        console.log("새 방 생성 성공:", roomInfo.value);
+        // console.log("새 방 생성 성공:", roomInfo.value);
       }
     } catch (e) {
       console.error("방 정보 조회/생성 실패", e);
@@ -321,17 +321,17 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     } else if (event === "event") {
       // ✅ Janus 이벤트로 입장/퇴장 처리
       if (msg["publishers"]) {
-        console.log("[Janus Event] New publishers:", msg["publishers"]);
+        // console.log("[Janus Event] New publishers:", msg["publishers"]);
         handleIncomingStudents(msg["publishers"]);
       }
 
       // ✅ leaving/unpublished 이벤트 처리
       if (msg["leaving"] || msg["unpublished"]) {
         const feedId = msg["leaving"] || msg["unpublished"];
-        console.log(
-          "[Janus Event] Student leaving/unpublished feedId:",
-          feedId,
-        );
+        // console.log(
+        //   "[Janus Event] Student leaving/unpublished feedId:",
+        //   feedId,
+        // );
         if (feedId) {
           removeStudent(feedId);
         }
@@ -350,7 +350,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
   async function startSession(): Promise<void> {
     return new Promise(async (resolve, reject) => {
       try {
-        console.log("[startSession] 1. 화면 공유 스트림 요청 중...");
+        // console.log("[startSession] 1. 화면 공유 스트림 요청 중...");
         // 1. 화면 공유 스트림 획득
         const displayStream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
@@ -360,7 +360,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
         if (!videoTrack) {
           throw new Error("비디오 트랙을 찾을 수 없습니다");
         }
-        console.log("[startSession] 2. 화면 공유 스트림 획득 완료");
+        // console.log("[startSession] 2. 화면 공유 스트림 획득 완료");
 
         // 2. 마이크 스트림 획득 (강사 음성)
         const userMicStream = await navigator.mediaDevices.getUserMedia({
@@ -368,10 +368,10 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
         });
         const audioTrack = userMicStream.getAudioTracks()[0];
         micStream.value = userMicStream;
-        console.log(
-          "[startSession] 3. 마이크 스트림 획득 완료. micStream:",
-          !!micStream.value,
-        );
+        // console.log(
+        //   "[startSession] 3. 마이크 스트림 획득 완료. micStream:",
+        //   !!micStream.value,
+        // );
 
         // [Bugfix] 로컬 미리보기를 위해 screenStream 상태 즉시 업데이트
         screenStream.value = displayStream;
@@ -381,7 +381,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
           return;
         }
 
-        console.log("[startSession] 4. Janus createOffer 호출 중...");
+        // console.log("[startSession] 4. Janus createOffer 호출 중...");
         // 3. Janus에 미디어 송출
         roomHandle.value.createOffer({
           tracks: [
@@ -389,15 +389,15 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
             { type: "audio", capture: audioTrack, recv: false },
           ],
           success: async (jsep: JSEP) => {
-            console.log("[startSession] 5. Janus Offer 생성 성공");
+            // console.log("[startSession] 5. Janus Offer 생성 성공");
             const publish = { request: "configure", audio: true, video: true };
             roomHandle.value!.send({ message: publish, jsep });
 
             isSessionStarted.value = true;
-            console.log(
-              "[startSession] 6. 세션 시작 완료. isSessionStarted:",
-              isSessionStarted.value,
-            );
+            // console.log(
+            //   "[startSession] 6. 세션 시작 완료. isSessionStarted:",
+            //   isSessionStarted.value,
+            // );
             resolve(); // Promise 완료
           },
           error: (err: any) => {
@@ -420,8 +420,8 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
    * 5. 수업 종료
    */
   async function stopClass() {
-    console.log("[stopClass] 🛑 Function called");
-    console.log("[stopClass] sessionId:", sessionId.value);
+    // console.log("[stopClass] 🛑 Function called");
+    // console.log("[stopClass] sessionId:", sessionId.value);
 
     // 1. 학생들에게 종료 신호 전송 (STOMP - Fallback)
     if (stompClient && stompClient.connected) {
@@ -436,7 +436,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
           destination: destination,
           body: JSON.stringify(payload),
         });
-        console.log("[stopClass] 📤 STOMP Session end signal sent (Fallback)");
+        // console.log("[stopClass] 📤 STOMP Session end signal sent (Fallback)");
       } catch (error) {
         console.error("[stopClass] ❌ Error sending STOMP end signal:", error);
       }
@@ -468,10 +468,10 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
         lastTimeline: lastTimeline,
         pauseElementList: pauseHistory.value,
       });
-      console.log("[stopClass] (1) 분석 종료 API 성공", {
-        lastTimeline,
-        pauseCount: pauseHistory.value.length,
-      });
+      // console.log("[stopClass] (1) 분석 종료 API 성공", {
+      //   lastTimeline,
+      //   pauseCount: pauseHistory.value.length,
+      // });
     } catch (e) {
       console.error("[stopClass] 분석 종료 API 오류", e);
     }
@@ -479,7 +479,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     try {
       // (2) 실시간 세션 종료 통보 API (스프링 서버 서버 통보)
       await videoApi.post(`/session/end/${sessionId.value}`);
-      console.log("[stopClass] (2) 세션 종료 통보 API 성공");
+      // console.log("[stopClass] (2) 세션 종료 통보 API 성공");
     } catch (e) {
       console.error("[stopClass] 세션 종료 통보 API 오류", e);
     }
@@ -487,7 +487,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     try {
       // (3) Janus 방 삭제 API (학생들이 'destroyed' 이벤트를 받는 트리거)
       await videoApi.post(`/session/${sessionId.value}/stop`);
-      console.log("[stopClass] (3) Janus 방 삭제 API 성공");
+      // console.log("[stopClass] (3) Janus 방 삭제 API 성공");
     } catch (e) {
       console.error("[stopClass] Janus 방 삭제 API 오류", e);
     }
@@ -509,7 +509,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     // 7. STOMP 연결 종료
     if (stompClient) {
       stompClient.deactivate();
-      console.log("[stopClass] ✅ STOMP client deactivated");
+      // console.log("[stopClass] ✅ STOMP client deactivated");
     }
 
     // 8. 상태 초기화
@@ -547,7 +547,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
       if (videoSender) {
         // 3. 트랙 교체
         await videoSender.replaceTrack(newVideoTrack);
-        console.log("화면 공유 트랙 교체 성공");
+        // console.log("화면 공유 트랙 교체 성공");
 
         // 로컬 미리보기 업데이트
         screenStream.value = newStream;
@@ -568,7 +568,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
    */
   function handleConnectWs() {
     if (stompClient && stompClient.connected) {
-      console.log("[STOMP] 이미 연결되어 있습니다.");
+      // console.log("[STOMP] 이미 연결되어 있습니다.");
       return;
     }
 
@@ -585,7 +585,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
         // console.log(str); // 디버그 로그 필요 시 주석 해제
       },
       onConnect: () => {
-        console.log("[STOMP] Connected ✅");
+        // console.log("[STOMP] Connected ✅");
 
         // 1. 참가자 목록/입장 구독
         stompClient?.subscribe(
@@ -593,7 +593,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
           (res) => {
             try {
               const data = JSON.parse(res.body);
-              console.log("[Participants] Event:", data.type);
+              // console.log("[Participants] Event:", data.type);
 
               if (data.type === "JOIN") {
                 if (data.role === "STUDENT" && data.feedId) {
@@ -632,67 +632,67 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
         const userQueueTopic = `/user/queue/quiz/${sessionId.value}/test`;
 
         const handleQuizMessage = (res: any, topicName: string) => {
-          console.log("========================================");
-          console.log(`[Trainer] 📥 QUIZ MESSAGE RECEIVED!`);
-          console.log(`[Trainer] Topic: ${topicName}`);
-          console.log(`[Trainer] Raw body:`, res.body);
-          console.log("========================================");
+          // console.log("========================================");
+          // console.log(`[Trainer] 📥 QUIZ MESSAGE RECEIVED!`);
+          // console.log(`[Trainer] Topic: ${topicName}`);
+          // console.log(`[Trainer] Raw body:`, res.body);
+          // console.log("========================================");
 
           try {
             const data = JSON.parse(res.body);
             if (data) {
-              console.log(`[Trainer] ✅ Parsed quiz data successfully:`, data);
+              // console.log(`[Trainer] ✅ Parsed quiz data successfully:`, data);
               quizData.value = data;
-              console.log(`[Trainer] ✅ quizData.value updated!`);
+              // console.log(`[Trainer] ✅ quizData.value updated!`);
             } else {
-              console.warn(`[Trainer] ⚠️ Received empty data`);
+              // console.warn(`[Trainer] ⚠️ Received empty data`);
             }
           } catch (e) {
             console.error(`[Trainer] ❌ Quiz Parse Error (${topicName}):`, e);
           }
         };
 
-        console.log(`[STOMP] Starting quiz topic subscriptions...`);
+        // console.log(`[STOMP] Starting quiz topic subscriptions...`);
 
         const sub1 = stompClient?.subscribe(quizTopic1, (res) =>
           handleQuizMessage(res, "Requested Topic"),
         );
-        console.log(
-          `[STOMP] ✅ Subscribed to: ${quizTopic1}`,
-          sub1 ? "SUCCESS" : "FAILED",
-        );
+        // console.log(
+        //   `[STOMP] ✅ Subscribed to: ${quizTopic1}`,
+        //   sub1 ? "SUCCESS" : "FAILED",
+        // );
 
         const sub2 = stompClient?.subscribe(quizTopic2, (res) =>
           handleQuizMessage(res, "Legacy Topic"),
         );
-        console.log(
-          `[STOMP] ✅ Subscribed to: ${quizTopic2}`,
-          sub2 ? "SUCCESS" : "FAILED",
-        );
+        // console.log(
+        //   `[STOMP] ✅ Subscribed to: ${quizTopic2}`,
+        //   sub2 ? "SUCCESS" : "FAILED",
+        // );
 
         const sub3 = stompClient?.subscribe(quizTopic3, (res) =>
           handleQuizMessage(res, "Session Pattern Topic"),
         );
-        console.log(
-          `[STOMP] ✅ Subscribed to: ${quizTopic3}`,
-          sub3 ? "SUCCESS" : "FAILED",
-        );
+        // console.log(
+        //   `[STOMP] ✅ Subscribed to: ${quizTopic3}`,
+        //   sub3 ? "SUCCESS" : "FAILED",
+        // );
 
         const sub4 = stompClient?.subscribe(quizTopic4, (res) =>
           handleQuizMessage(res, "Session Legacy Topic"),
         );
-        console.log(
-          `[STOMP] ✅ Subscribed to: ${quizTopic4}`,
-          sub4 ? "SUCCESS" : "FAILED",
-        );
+        // console.log(
+        //   `[STOMP] ✅ Subscribed to: ${quizTopic4}`,
+        //   sub4 ? "SUCCESS" : "FAILED",
+        // );
 
         const sub5 = stompClient?.subscribe(userQueueTopic, (res) =>
           handleQuizMessage(res, "User Queue Topic"),
         );
-        console.log(
-          `[STOMP] ✅ Subscribed to: ${userQueueTopic}`,
-          sub5 ? "SUCCESS" : "FAILED",
-        );
+        // console.log(
+        //   `[STOMP] ✅ Subscribed to: ${userQueueTopic}`,
+        //   sub5 ? "SUCCESS" : "FAILED",
+        // );
 
         // 4. AI 분석 데이터 구독
         stompClient?.subscribe(`/topic/analysis/${sessionId.value}`, (res) => {
@@ -731,11 +731,11 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     type: string = "CHAT",
     questionId?: number | string | null,
   ) {
-    console.log("[sendChatMessage] Request received:", {
-      message,
-      type,
-      connected: stompClient?.connected,
-    });
+    // console.log("[sendChatMessage] Request received:", {
+    //   message,
+    //   type,
+    //   connected: stompClient?.connected,
+    // });
     if (stompClient && stompClient.connected && message.trim()) {
       const msg = {
         sessionId: sessionId.value,
@@ -746,15 +746,15 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
       };
 
       const destination = `/app/chat-room/${sessionId.value}`;
-      console.log("[sendChatMessage] Publishing to:", destination);
-      console.log("[sendChatMessage] Payload:", JSON.stringify(msg, null, 2));
+      // console.log("[sendChatMessage] Publishing to:", destination);
+      // console.log("[sendChatMessage] Payload:", JSON.stringify(msg, null, 2));
 
       stompClient.publish({
         destination: destination,
         body: JSON.stringify(msg),
       });
     } else {
-      console.warn("STOMP가 연결되지 않아 메시지를 보낼 수 없습니다.");
+      // console.warn("STOMP가 연결되지 않아 메시지를 보낼 수 없습니다.");
     }
   }
 
@@ -762,12 +762,12 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
    * 퀵 퀴즈 트리거 (STOMP)
    */
   function sendQuickQuiz() {
-    console.log("[sendQuickQuiz] 🚀 Function called");
-    console.log("[sendQuickQuiz] stompClient exists:", !!stompClient);
-    console.log(
-      "[sendQuickQuiz] stompClient.connected:",
-      stompClient?.connected,
-    );
+    // console.log("[sendQuickQuiz] 🚀 Function called");
+    // console.log("[sendQuickQuiz] stompClient exists:", !!stompClient);
+    // console.log(
+    //   "[sendQuickQuiz] stompClient.connected:",
+    //   stompClient?.connected,
+    // );
 
     if (stompClient && stompClient.connected) {
       const destination = `/app/quiz/${sessionId.value}/test`;
@@ -779,64 +779,64 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
         content: "REQUEST_QUIZ",
       };
 
-      console.log("========================================");
-      console.log("[sendQuickQuiz] 📤 PUBLISHING MESSAGE");
-      console.log("[sendQuickQuiz] Destination:", destination);
-      console.log("[sendQuickQuiz] Payload:", JSON.stringify(payload, null, 2));
-      console.log("========================================");
+      // console.log("========================================");
+      // console.log("[sendQuickQuiz] 📤 PUBLISHING MESSAGE");
+      // console.log("[sendQuickQuiz] Destination:", destination);
+      // console.log("[sendQuickQuiz] Payload:", JSON.stringify(payload, null, 2));
+      // console.log("========================================");
 
       try {
         stompClient.publish({
           destination: destination,
           body: JSON.stringify(payload),
         });
-        console.log("[sendQuickQuiz] ✅ Message published successfully");
-        console.log(
-          "[sendQuickQuiz] ⏳ Waiting for response on /topic/quiz/88/test or /topic/quiz/88...",
-        );
+        // console.log("[sendQuickQuiz] ✅ Message published successfully");
+        // console.log(
+        //   "[sendQuickQuiz] ⏳ Waiting for response on /topic/quiz/88/test or /topic/quiz/88...",
+        // );
       } catch (error) {
         console.error("[sendQuickQuiz] ❌ Error publishing message:", error);
       }
     } else {
-      console.warn(
-        "[sendQuickQuiz] ⚠️ STOMP not connected - cannot send message",
-      );
+      // console.warn(
+      //   "[sendQuickQuiz] ⚠️ STOMP not connected - cannot send message",
+      // );
     }
   }
 
   // --- 퀴즈 전송 ---
   function sendQuizToStudents(quiz: any) {
-    console.log("[sendQuizToStudents] 🚀 Function called");
-    console.log("[sendQuizToStudents] Quiz data:", quiz);
+    // console.log("[sendQuizToStudents] 🚀 Function called");
+    // console.log("[sendQuizToStudents] Quiz data:", quiz);
 
     if (stompClient && stompClient.connected) {
       const destination = `/app/quiz/send/${sessionId.value}`;
 
-      console.log("========================================");
-      console.log("[sendQuizToStudents] 📤 SENDING QUIZ TO STUDENTS");
-      console.log("[sendQuizToStudents] Destination:", destination);
-      console.log(
-        "[sendQuizToStudents] Payload:",
-        JSON.stringify(quiz, null, 2),
-      );
-      console.log("========================================");
+      // console.log("========================================");
+      // console.log("[sendQuizToStudents] 📤 SENDING QUIZ TO STUDENTS");
+      // console.log("[sendQuizToStudents] Destination:", destination);
+      // console.log(
+      //   "[sendQuizToStudents] Payload:",
+      //   JSON.stringify(quiz, null, 2),
+      // );
+      // console.log("========================================");
 
       try {
         stompClient.publish({
           destination: destination,
           body: JSON.stringify(quiz),
         });
-        console.log("[sendQuizToStudents] ✅ Quiz sent successfully!");
-        console.log(
-          "[sendQuizToStudents] Backend should broadcast to students at: /topic/surprise-quiz/${sessionId}",
-        );
+        // console.log("[sendQuizToStudents] ✅ Quiz sent successfully!");
+        // console.log(
+        //   "[sendQuizToStudents] Backend should broadcast to students at: /topic/surprise-quiz/${sessionId}",
+        // );
       } catch (error) {
         console.error("[sendQuizToStudents] ❌ Error sending quiz:", error);
       }
     } else {
-      console.warn(
-        "[sendQuizToStudents] ⚠️ STOMP not connected - cannot send quiz",
-      );
+      // console.warn(
+      //   "[sendQuizToStudents] ⚠️ STOMP not connected - cannot send quiz",
+      // );
     }
   }
 
@@ -855,25 +855,25 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
    * - 별도의 WebSocket (FastAPI) 연결하여 음성 데이터 전송
    */
   async function startAnalysis() {
-    console.log(
-      "[startAnalysis] 호출됨. sessionId:",
-      sessionId.value,
-      "micStream:",
-      !!micStream.value,
-    );
+    // console.log(
+    //   "[startAnalysis] 호출됨. sessionId:",
+    //   sessionId.value,
+    //   "micStream:",
+    //   !!micStream.value,
+    // );
 
     if (!sessionId.value || !micStream.value) {
-      console.warn("[startAnalysis] 조건 불충족으로 종료.");
+      // console.warn("[startAnalysis] 조건 불충족으로 종료.");
       return;
     }
 
     try {
-      console.log("[startAnalysis] 세션 분석 시작:", sessionId.value);
+      // console.log("[startAnalysis] 세션 분석 시작:", sessionId.value);
       // [Modified] 분석 시작 후 서버 시간을 받아와서 타임라인 기준으로 사용
       const res = await videoApi.post(
         `/review/start/analysis/${sessionId.value}`,
       );
-      console.log("[startAnalysis] 분석 시작됨. 서버 응답:", res.data);
+      // console.log("[startAnalysis] 분석 시작됨. 서버 응답:", res.data);
 
       isAnalysisStarted.value = true;
       if (res.data.startTime) {
@@ -894,7 +894,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
       }
 
       startVoiceAnalysis(micStream.value);
-      console.log("[startAnalysis] 음성 분석 시작 완료");
+      // console.log("[startAnalysis] 음성 분석 시작 완료");
     } catch (e) {
       console.error("[startAnalysis] 분석 시작 API 오류", e);
       alert("분석 시작에 실패했습니다.");
@@ -909,13 +909,13 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     voiceSocket.value = new WebSocket(wsUrl);
 
     voiceSocket.value.onopen = () => {
-      console.log("[Voice] WebSocket Connected");
+      // console.log("[Voice] WebSocket Connected");
       recordAndSend(stream);
     };
 
     voiceSocket.value.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log("[Voice] Analysis Result:", data);
+      // console.log("[Voice] Analysis Result:", data);
       // TODO: 분석 결과 처리 (필요시)
     };
 
@@ -933,10 +933,10 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
 
   // --- 오디오 녹음 및 전송 ---
   function recordAndSend(stream: MediaStream) {
-  if (!classStartTime.value) {
-    console.warn("수업 시작 시간이 설정되지 않았습니다. 녹음 대기 중...");
-    return;
-  }
+    if (!classStartTime.value) {
+      // console.warn("수업 시작 시간이 설정되지 않았습니다. 녹음 대기 중...");
+      return;
+    }
 
   const sendNextChunk = () => {
     // 1. 현재 시점의 timeline 계산
@@ -997,20 +997,20 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
    * - 각 학생에 대해 구독 시작
    */
   function handleIncomingStudents(publishers: Publisher[]) {
-    console.log(
-      "[handleIncomingStudents] Received publishers:",
-      publishers.length,
-    );
+    // console.log(
+    //   "[handleIncomingStudents] Received publishers:",
+    //   publishers.length,
+    // );
     publishers.forEach((p, i) => {
-      console.log(`[handleIncomingStudents] Publisher[${i}]:`, {
-        id: p.id,
-        display: p.display,
-        isTeacher: p.display?.includes("[선생]"),
-      });
+      // console.log(`[handleIncomingStudents] Publisher[${i}]:`, {
+      //   id: p.id,
+      //   display: p.display,
+      //   isTeacher: p.display?.includes("[선생]"),
+      // });
       if (p.display && !p.display.includes("[선생]")) {
-        console.log(
-          `[handleIncomingStudents] → Subscribing to student feedId: ${p.id}`,
-        );
+        // console.log(
+        //   `[handleIncomingStudents] → Subscribing to student feedId: ${p.id}`,
+        // );
         subscribeToStudent(p);
       }
     });
@@ -1025,22 +1025,22 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     // const display = publisher.display; // Not used directly logic, parsing below
 
     if (remoteFeeds.value.has(feedId)) {
-      console.warn("[subscribeToStudent] 이미 구독 중:", feedId);
+      // console.warn("[subscribeToStudent] 이미 구독 중:", feedId);
       return;
     }
-    console.log(
-      "[subscribeToStudent] feedId:",
-      feedId,
-      "publisher:",
-      publisher,
-    );
+    // console.log(
+    //   "[subscribeToStudent] feedId:",
+    //   feedId,
+    //   "publisher:",
+    //   publisher,
+    // );
 
     // Display 이름 파싱 (legacy logic preserved but not primary if STOMP works)
     // 형식: "memberId__[학생] 이름" or "memberId|[학생] 이름"
     let displayStr = publisher.display || `학생 ${feedId}`;
-    console.log(
-      `[subscribeToStudent] 🔍 Parsing display name for feed ${feedId}: "${displayStr}"`,
-    );
+    // console.log(
+    //   `[subscribeToStudent] 🔍 Parsing display name for feed ${feedId}: "${displayStr}"`,
+    // );
 
     let pMemberId = String(feedId); // Fallback
     let pName = displayStr;
@@ -1064,9 +1064,9 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
         pName = parts[1]!;
       }
     } else {
-      console.warn(
-        `[subscribeToStudent] ⚠️ Display name does not contain separator. Using feedId as memberId.`,
-      );
+      // console.warn(
+      //   `[subscribeToStudent] ⚠️ Display name does not contain separator. Using feedId as memberId.`,
+      // );
     }
 
     const pIdStr = String(feedId); // Feed ID를 문자열로 사용
@@ -1075,9 +1075,9 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     const existingParticipant = participants.value.find((p) => p.id === pIdStr);
 
     if (existingParticipant) {
-      console.log(
-        `[subscribeToStudent] ♻️ Participant already exists. Updating stream info...`,
-      );
+      // console.log(
+      //   `[subscribeToStudent] ♻️ Participant already exists. Updating stream info...`,
+      // );
       // 이미 존재하면 정보 업데이트 (혹시 display 파싱으로 더 정확한 정보가 있다면)
       if (
         pMemberId !== String(feedId) &&
@@ -1089,15 +1089,15 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
       // 스트림 연결 로직은 아래에서 계속 진행됨 (Janus attach)
     } else {
       // 존재하지 않으면 신규 추가 (Janus만으로 입장한 경우)
-      console.log(
-        "[subscribeToStudent] ✅ Adding NEW participant (Janus-only):",
-        {
-          feedId: pIdStr,
-          memberId: pMemberId,
-          name: pName,
-          originalDisplay: publisher.display,
-        },
-      );
+      // console.log(
+      //   "[subscribeToStudent] ✅ Adding NEW participant (Janus-only):",
+      //   {
+      //     feedId: pIdStr,
+      //     memberId: pMemberId,
+      //     name: pName,
+      //     originalDisplay: publisher.display,
+      //   },
+      // );
 
       // participants 목록에 추가
       participants.value.push({
@@ -1117,7 +1117,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
       plugin: "janus.plugin.videoroom",
       opaqueId: opaqueId.value,
       success: (handle: JanusHandle) => {
-        console.log("[subscribeToStudent] Handle attached for feedId:", feedId);
+        // console.log("[subscribeToStudent] Handle attached for feedId:", feedId);
         remoteFeeds.value.set(feedId, handle); // 핸들 저장
 
         // 구독 요청
@@ -1226,17 +1226,17 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     const existing = participants.value.find((p) => p.id === feedIdStr);
 
     if (existing) {
-      console.log(
-        `[STOMP] ♻️ Participant already exists: ${data.name} (memberId: ${existing.memberId} -> ${memberIdStr})`,
-      );
+      // console.log(
+      //   `[STOMP] ♻️ Participant already exists: ${data.name} (memberId: ${existing.memberId} -> ${memberIdStr})`,
+      // );
       existing.memberId = memberIdStr; // memberId 업데이트
       existing.name = data.name;
       return;
     }
 
-    console.log(
-      `[STOMP] ✅ Adding new participant: ${data.name} (memberId: ${memberIdStr}, feedId: ${feedIdStr})`,
-    );
+    // console.log(
+    //   `[STOMP] ✅ Adding new participant: ${data.name} (memberId: ${memberIdStr}, feedId: ${feedIdStr})`,
+    // );
 
     participants.value.push({
       id: feedIdStr, // Janus Feed ID (매칭 키)
@@ -1270,14 +1270,14 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
       (p) => p.memberId === memberIdStr,
     );
     if (participant) {
-      console.log(
-        `[Status] ✅ Updating ${participant.name}: ${participant.status} → ${newStatus}`,
-      );
+      // console.log(
+      //   `[Status] ✅ Updating ${participant.name}: ${participant.status} → ${newStatus}`,
+      // );
       participant.status = newStatus;
     } else {
-      console.warn(
-        `[Status] ❌ Participant not found for memberId: ${memberIdStr}`,
-      );
+      // console.warn(
+      //   `[Status] ❌ Participant not found for memberId: ${memberIdStr}`,
+      // );
     }
   }
 
@@ -1294,7 +1294,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
       // 쉬는 시간 시작
       isOnBreak.value = true;
       currentPauseStart.value = serverNow; // 서버 기준 시간으로 저장
-      console.log("⏸ Break Started at", currentPauseStart.value);
+      // console.log("⏸ Break Started at", currentPauseStart.value);
     } else {
       // 쉬는 시간 종료
       if (currentPauseStart.value) {
@@ -1308,7 +1308,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
           startTime: startSeconds > 0 ? startSeconds : 0,
           endTime: endSeconds > startSeconds ? endSeconds : startSeconds + 1,
         });
-        console.log("▶ Break Ended. History:", pauseHistory.value);
+        // console.log("▶ Break Ended. History:", pauseHistory.value);
       }
       isOnBreak.value = false;
       currentPauseStart.value = null;

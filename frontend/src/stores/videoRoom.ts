@@ -236,7 +236,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
    */
   async function fetchRoomInfo(sessionId: string | number) {
     if (!userRole.value) {
-      console.warn("User userRole is not defined. Workspace join required.");
+      // console.warn("User userRole is not defined. Workspace join required.");
     }
     connStatus.value = "방 정보 확인 중...";
     try {
@@ -248,7 +248,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
           pin: res.data.pin,
           roomAlive: true,
         };
-        console.log("[VideoRoom] 방 정보 획득:", roomInfo.value);
+        // console.log("[VideoRoom] 방 정보 획득:", roomInfo.value);
         return true;
       }
       return false;
@@ -276,7 +276,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
         pin: res.data.pin,
         roomAlive: true,
       };
-      console.log("방 생성 성공!");
+      // console.log("방 생성 성공!");
       return true;
     } catch (err: any) {
       console.error("방 생성 실패", err);
@@ -319,7 +319,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
             iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
             success: async () => {
               connStatus.value = "Connected";
-              console.log(`[Janus] 서버 연결 성공: ${finalServer}`);
+              // console.log(`[Janus] 서버 연결 성공: ${finalServer}`);
 
               try {
                 // Camera 플러그인 부착 및 자동 입장
@@ -337,7 +337,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
               reject(err);
             },
             destroyed: () => {
-              console.log("[Janus] 세션 파괴됨");
+              // console.log("[Janus] 세션 파괴됨");
               // window.location.reload(); 파. 괴. 한. 다.
             },
           });
@@ -358,7 +358,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
         opaqueId: opaqueId.value,
         success: (handle: JanusHandle) => {
           camHandle.value = handle;
-          console.log(`[Camera] 플러그인 부착 성공`);
+          // console.log(`[Camera] 플러그인 부착 성공`);
           resolve(handle);
         },
         error: (err: any) => console.error(`[Camera] 부착 오류`, err),
@@ -370,7 +370,9 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
         onlocaltrack: (track: MediaStreamTrack, on: boolean) => {
           handleLocalTrack(track, on);
         },
-        oncleanup: () => console.log(`[Camera] Cleanup`),
+        oncleanup: () => {
+          // console.log(`[Camera] Cleanup`)
+        },
       });
     });
   }
@@ -394,7 +396,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
       display: displayName, // ✅ "memberId|[학생] 이름" 형식
       pin: roomInfo.value.pin,
     };
-    console.log("[Janus] 방 입장 요청:", register);
+    // console.log("[Janus] 방 입장 요청:", register);
     handle.send({ message: register });
   }
 
@@ -402,10 +404,10 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
    * 퍼블리셔 목록 처리 (필터링 및 구독)
    */
   function handleIncomingPublishers(publishers: Publisher[]) {
-    console.log(
-      `[Janus] 퍼블리셔 목록 수신 (${publishers.length}명):`,
-      publishers,
-    );
+    // console.log(
+    //   `[Janus] 퍼블리셔 목록 수신 (${publishers.length}명):`,
+    //   publishers,
+    // );
     // 학생 필터: [선생] 포함된 퍼블리셔만 구독
     if (
       userRole.value === "student" ||
@@ -416,11 +418,11 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
       publishers = publishers.filter(
         (p) => p.display && p.display.includes("[선생]"),
       );
-      console.log(
-        `[Janus/Filter] 학생 필터 적용 (${originalCount} -> ${publishers.length}명, '[선생]' 기준)`,
-      );
+      // console.log(
+      //   `[Janus/Filter] 학생 필터 적용 (${originalCount} -> ${publishers.length}명, '[선생]' 기준)`,
+      // );
     } else {
-      console.log(`[Janus/Filter] 필터 미적용 (Role: ${userRole.value})`);
+      // console.log(`[Janus/Filter] 필터 미적용 (Role: ${userRole.value})`);
     }
     publishers.forEach((p) => processPublisher(p));
   }
@@ -430,16 +432,16 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
    */
   function handleMessage(handle: JanusHandle, msg: JanusMessage, jsep: JSEP) {
     const event = msg["videoroom"];
-    console.log(`[Janus] handleMessage event: ${event}`, msg); // ✅ 모든 이벤트 로그 출력
+    // console.log(`[Janus] handleMessage event: ${event}`, msg); // ✅ 모든 이벤트 로그 출력
 
     if (event === "destroyed") {
-      console.log("[Janus] Room Destroyed Event - Session Ended");
+      // console.log("[Janus] Room Destroyed Event - Session Ended");
       isLiveEnded.value = true; // 세션 종료 상태 업데이트 (컴포넌트에서 watch하여 처리)
     }
     if (event === "joined") {
       myId.value = msg["id"] || null;
       myPrivateId.value = msg["private_id"] || null;
-      console.log(`[Janus] 방 입장 성공. ID: ${myId.value}`);
+      // console.log(`[Janus] 방 입장 성공. ID: ${myId.value}`);
 
       publishCamera();
 
@@ -450,19 +452,19 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
     } else if (event === "event") {
       // ✅ Publish 성공 확인 (configure 요청 응답)
       if (msg["configured"] === "ok") {
-        console.log(
-          "[Janus] Publish Configured (Camera Published successfully)",
-        );
+        // console.log(
+        //   "[Janus] Publish Configured (Camera Published successfully)",
+        // );
         isPublished.value = true;
       }
 
       // 새로운 퍼블리셔 입장 처리
       if (msg["publishers"]) {
-        console.log("[Janus] 새로운 퍼블리셔 등장 이벤트");
+        // console.log("[Janus] 새로운 퍼블리셔 등장 이벤트");
         handleIncomingPublishers(msg["publishers"]);
       } else if (msg["leaving"] || msg["unpublished"]) {
         const id = msg["leaving"] || msg["unpublished"];
-        console.log(`[Janus] 퍼블리셔 떠남/Unpublished: ${id}`);
+        // console.log(`[Janus] 퍼블리셔 떠남/Unpublished: ${id}`);
         if (id && feeds.value[id]) {
           feeds.value[id].detach();
           delete feeds.value[id];
@@ -471,7 +473,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
     }
 
     if (jsep) {
-      console.log("[Janus] Handling Remote JSEP (Answer/Offer):", jsep);
+      // console.log("[Janus] Handling Remote JSEP (Answer/Offer):", jsep);
       handle.handleRemoteJsep({ jsep }); // janus.js가 이거 받으면 WEBRTC로 자누스와 연결함
     }
   }
@@ -482,7 +484,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
   async function publishCamera() {
     if (!camHandle.value || publishingCam.value) return;
 
-    console.log("[publishCamera] 호출됨. localStream:", !!localStream.value);
+    // console.log("[publishCamera] 호출됨. localStream:", !!localStream.value);
 
     // localStream이 없으면 에러
     if (!localStream.value) {
@@ -495,12 +497,12 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
     const audioTrack = localStream.value.getAudioTracks()[0];
     const videoTrack = localStream.value.getVideoTracks()[0];
 
-    console.log(
-      "[publishCamera] audioTrack:",
-      !!audioTrack,
-      "videoTrack:",
-      !!videoTrack,
-    );
+    // console.log(
+    //   "[publishCamera] audioTrack:",
+    //   !!audioTrack,
+    //   "videoTrack:",
+    //   !!videoTrack,
+    // );
 
     // 최소 하나의 트랙이 있어야 함
     if (!audioTrack && !videoTrack) {
@@ -524,14 +526,14 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
         },
       ],
       success: (jsep: JSEP) => {
-        console.log("[Camera] Generated Publisher JSEP (Offer):", jsep);
+        // console.log("[Camera] Generated Publisher JSEP (Offer):", jsep);
         const publish = {
           request: "publish",
           record: false,
         };
         // Check if camHandle still exists before sending
         if (camHandle.value) {
-          console.log("[Camera] Sending publish request with JSEP");
+          // console.log("[Camera] Sending publish request with JSEP");
           camHandle.value.send({ message: publish, jsep });
         }
       },
@@ -554,20 +556,20 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
    * 퍼블리셔 구독 처리
    */
   function processPublisher(publisher: Publisher) {
-    console.log(
-      `[Janus] Processing Publisher: ${publisher.id} (${publisher.display})`,
-    );
+    // console.log(
+    //   `[Janus] Processing Publisher: ${publisher.id} (${publisher.display})`,
+    // );
     if (feeds.value[publisher.id]) {
-      console.log(`[Janus] 이미 구독 중인 피드입니다: ${publisher.id}`);
+      // console.log(`[Janus] 이미 구독 중인 피드입니다: ${publisher.id}`);
       return;
     }
     // display prop check
     if (publisher.display) {
       subscribeTo(publisher.id, publisher.display);
     } else {
-      console.warn(
-        `[Janus] Publisher ${publisher.id} has no display name. Skipping subscription.`,
-      );
+      // console.warn(
+      //   `[Janus] Publisher ${publisher.id} has no display name. Skipping subscription.`,
+      // );
     }
   }
 
@@ -576,7 +578,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
    */
   function selectStudent(studentId: string) {
     selectedStudentId.value = studentId;
-    console.log(`[VideoRoom] 학생 선택됨: ${studentId}`);
+    // console.log(`[VideoRoom] 학생 선택됨: ${studentId}`);
     // TODO: Update PIP stream to show selected student's camera
   }
 
@@ -627,7 +629,7 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
           streams: [{ feed: feedId }],
           pin: roomInfo.value?.pin,
         };
-        console.log(`[Subscriber] 구독 요청 전송 (Feed: ${feedId})`, body);
+        // console.log(`[Subscriber] 구독 요청 전송 (Feed: ${feedId})`, body);
         handle.send({ message: body });
       },
       onmessage: (msg: JanusMessage, jsep: JSEP) => {
@@ -654,9 +656,9 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
         }
       },
       onremotetrack: (track: MediaStreamTrack, mid: string, on: boolean) => {
-        console.log(
-          `[Subscriber] Remote Track Event - Feed: ${feedId}, MID: ${mid}, Type: ${track.kind}, On: ${on}`,
-        );
+        // console.log(
+        //   `[Subscriber] Remote Track Event - Feed: ${feedId}, MID: ${mid}, Type: ${track.kind}, On: ${on}`,
+        // );
         if (!on) return;
 
         if (!remoteStream) {
@@ -666,16 +668,16 @@ export const useVideoRoomStore = defineStore("videoRoom", () => {
 
         // [선생] 태그 포함시 메인 화면 할당
         if (display && display.includes("[선생]")) {
-          console.log(
-            `[Subscriber] 선생 화면 업데이트 (Feed: ${feedId}, Display: ${display}, Tracks: ${remoteStream.getTracks().length})`,
-          );
+          // console.log(
+          //   `[Subscriber] 선생 화면 업데이트 (Feed: ${feedId}, Display: ${display}, Tracks: ${remoteStream.getTracks().length})`,
+          // );
           // Vue 반응성 트리거를 위해 새 참조 할당 or 기존 참조 유지
           // 여기서는 stream 객체 자체가 변경되었으므로, ref에 다시 할당하여 트리거 시도
           mainStream.value = remoteStream;
         } else {
-          console.log(
-            `[Subscriber] 일반(혹은 다른) 화면 수신 (Feed: ${feedId}, Display: ${display}) - 메인화면 할당 안함`,
-          );
+          // console.log(
+          //   `[Subscriber] 일반(혹은 다른) 화면 수신 (Feed: ${feedId}, Display: ${display}) - 메인화면 할당 안함`,
+          // );
         }
       },
     });

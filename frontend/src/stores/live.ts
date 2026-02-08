@@ -77,15 +77,15 @@ export const useLiveStore = defineStore("live", () => {
 
       // 1. 백엔드 세션 시작 API 호출 (사전 제공된 정보가 없을 경우에만)
       if (providedJanusRoomId && providedPin) {
-        console.log("💡 [DEBUG] 제공된 Janus 정보 사용:", {
-          providedJanusRoomId,
-          providedPin,
-        });
+        // console.log("💡 [DEBUG] 제공된 Janus 정보 사용:", {
+        //   providedJanusRoomId,
+        //   providedPin,
+        // });
         janusRoomId.value = Number(providedJanusRoomId);
         pin.value = Number(providedPin);
         sessionId.value = Number(sId);
       } else {
-        console.log("💡 [DEBUG] 백엔드 API 호출하여 Janus 정보 획득");
+        // console.log("💡 [DEBUG] 백엔드 API 호출하여 Janus 정보 획득");
         const sessionResponse = await api.post(`/session/${sId}/start`);
         janusRoomId.value = sessionResponse.data.janusRoomId;
         pin.value = sessionResponse.data.pin;
