@@ -2,41 +2,44 @@
     <!-- [NEW] Full Screen Calibration Overlay -->
     <div v-if="isCalibrationMode" class="fixed inset-0 z-[60] bg-black flex flex-col items-center justify-center">
         <!-- Center Target (Blue) - Fixed at screen center -->
-        <div class="absolute top-1/2 left-1/2 w-8 h-8 bg-blue-500 rounded-full -translate-x-1/2 -translate-y-1/2 shadow-[0_0_30px_rgba(59,130,246,1)] border-4 border-white z-20">
-             <div class="absolute top-full mt-4 left-1/2 -translate-x-1/2 text-blue-300 font-bold text-lg whitespace-nowrap animate-pulse">
+        <div
+            class="absolute top-1/2 left-1/2 w-8 h-8 bg-blue-500 rounded-full -translate-x-1/2 -translate-y-1/2 shadow-[0_0_30px_rgba(59,130,246,1)] border-4 border-white z-20">
+            <div
+                class="absolute top-full mt-4 left-1/2 -translate-x-1/2 text-blue-300 font-bold text-lg whitespace-nowrap animate-pulse">
                 이 곳을 응시하세요
             </div>
         </div>
 
         <!-- Current Gaze (Red) - Visual Feedback -->
         <div class="absolute w-6 h-6 bg-red-500 rounded-full shadow-[0_0_20px_rgba(239,68,68,1)] transition-all duration-75 ease-out -translate-x-1/2 -translate-y-1/2 z-30 opacity-80"
-                :style="{ 
-                    left: `${currentGaze.x * 100}%`, 
-                    top: `${currentGaze.y * 100}%` 
-                }">
+            :style="{
+                left: `${currentGaze.x * 100}%`,
+                top: `${currentGaze.y * 100}%`
+            }">
         </div>
 
         <!-- Instructions & Controls -->
-        <div class="absolute bottom-20 flex flex-col items-center gap-6 z-40 bg-gray-900/80 p-8 rounded-2xl backdrop-blur-md border border-gray-700 transition-all duration-300">
+        <div
+            class="absolute bottom-20 flex flex-col items-center gap-6 z-40 bg-gray-900/80 p-8 rounded-2xl backdrop-blur-md border border-gray-700 transition-all duration-300">
             <div class="text-white text-center space-y-2">
                 <h3 class="text-2xl font-bold">
                     {{ isCalibrating ? '화면 중앙을 응시하세요' : '시선 중앙 보정' }}
                 </h3>
                 <p class="text-gray-300">
-                    {{ isCalibrating 
-                        ? '3초간 파란 점을 계속 바라봐주세요.' 
-                        : '화면 중앙의 파란 점을 응시할 준비가 되면 시작 버튼을 누르세요.' 
+                    {{ isCalibrating
+                        ? '3초간 파란 점을 계속 바라봐주세요.'
+                        : '화면 중앙의 파란 점을 응시할 준비가 되면 시작 버튼을 누르세요.'
                     }}
                 </p>
             </div>
 
             <!-- Action Area -->
             <div v-if="!isCalibrating" class="flex gap-4">
-                <button @click="startCalibration" 
+                <button @click="startCalibration"
                     class="px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg rounded-xl shadow-lg transition-transform active:scale-95 flex items-center gap-2">
                     <span>▶ 시작 (Start)</span>
                 </button>
-                <button @click="isCalibrationMode = false" 
+                <button @click="isCalibrationMode = false"
                     class="px-8 py-4 bg-gray-700 hover:bg-gray-600 text-white font-bold text-lg rounded-xl shadow-lg transition-colors">
                     취소 (Cancel)
                 </button>
@@ -45,7 +48,7 @@
             <!-- Progress Bar -->
             <div v-else class="w-64 h-4 bg-gray-700 rounded-full overflow-hidden relative">
                 <div class="absolute top-0 left-0 h-full bg-blue-500 transition-all duration-100 ease-linear"
-                     :style="{ width: `${calibrationProgress}%` }">
+                    :style="{ width: `${calibrationProgress}%` }">
                 </div>
             </div>
         </div>
@@ -127,7 +130,7 @@
                     </div>
 
                     <!-- [NEW] Calibration Button triggers Full Screen Mode -->
-                     <button @click="isCalibrationMode = true" 
+                    <button @click="isCalibrationMode = true"
                         class="w-full py-3 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-xl shadow-md transition-colors flex items-center justify-center gap-2">
                         <span>📏 전체 화면으로 보정하기</span>
                     </button>
@@ -157,12 +160,12 @@ const videoStore = useVideoRoomStore();
 const videoRef = ref<HTMLVideoElement | null>(null);
 const isVideoLoading = ref(true);
 const errorMessage = ref("");
-const isCalibrationMode = ref(false); 
+const isCalibrationMode = ref(false);
 
 // Calibration State
 const isCalibrating = ref(false);
 const calibrationProgress = ref(0);
-const rawGazeBuffer = ref<{x: number, y: number}[]>([]);
+const rawGazeBuffer = ref<{ x: number, y: number }[]>([]);
 
 const selectedVideo = ref('');
 const selectedAudio = ref('');
@@ -178,14 +181,14 @@ watch(() => props.rawGaze, (newVal) => {
 
 const startCalibration = () => {
     if (isCalibrating.value) return;
-    
+
     isCalibrating.value = true;
     calibrationProgress.value = 0;
     rawGazeBuffer.value = [];
-    
+
     // 3 seconds timer
-    const duration = 3000;
-    const interval = 50; // update progress every 50ms
+    const duration = 10000;
+    const interval = 50;
     const steps = duration / interval;
     let currentStep = 0;
 
@@ -202,7 +205,7 @@ const startCalibration = () => {
 
 const finishCalibration = () => {
     isCalibrating.value = false;
-    
+
     if (rawGazeBuffer.value.length === 0) {
         alert("데이터가 수집되지 않았습니다. 다시 시도해주세요.");
         return;
@@ -219,7 +222,7 @@ const finishCalibration = () => {
 
     // Emit average
     emit('calibrate', { x: avgX, y: avgY });
-    
+
     // Close overlay
     isCalibrationMode.value = false;
 };
