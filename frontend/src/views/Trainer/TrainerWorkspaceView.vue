@@ -156,7 +156,10 @@ const initDashboard = async () => {
     if (workspaceId) {
         const id = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
         if (!id) return;
-        await trainerCourseStore.fetchWorkspaceAllCourses(id);
+        await Promise.all([
+            trainerCourseStore.fetchWorkspaceAllCourses(id),
+            workspaceStore.fetchWorkspaceStats(id)
+        ]);
     }
 };
 onMounted(() => {

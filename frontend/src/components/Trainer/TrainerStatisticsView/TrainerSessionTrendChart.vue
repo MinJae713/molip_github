@@ -62,7 +62,8 @@
             <!-- X축 라벨 (Flex로 균등 분배) -->
             <div
                 class="absolute bottom-4 w-full flex text-[10px] text-slate-400 font-medium px-1 left-0 pl-8 box-border justify-between">
-                <span v-for="session in stats" :key="session.sessionId">Session {{ session.sessionId }}</span>
+                <span v-for="session in stats" :key="session.sessionId">{{ session.sessionName || session.title || `Session
+                    ${session.sessionId}` }}</span>
             </div>
         </div>
         <!-- 데이터 로딩 중이거나 없을 때 -->
@@ -77,6 +78,8 @@ import { computed, ref } from 'vue';
 
 interface SessionAnalysis {
     sessionId: number;
+    sessionName?: string;
+    title?: string;
     avgAttandance: number;
     avgConcentrate: number;
     avgQuizCorrect: number;

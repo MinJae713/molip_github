@@ -129,7 +129,7 @@ const router = createRouter({
     {
       path: "/workspace/:id/admin",
       component: MainLayout,
-      meta: { requiresAuth: true, requiresRole: "ADMIN" },
+      meta: { requiresAuth: true },
       children: [
         {
           path: "",

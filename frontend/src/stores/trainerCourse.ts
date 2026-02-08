@@ -23,6 +23,8 @@ interface CourseStatistics {
   }[];
   sessionAnalysis: {
     sessionId: number;
+    sessionName?: string;
+    title?: string;
     avgAttandance: number;
     avgConcentrate: number;
     avgQuizCorrect: number;

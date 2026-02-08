@@ -755,7 +755,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     );
 
     if (stompClient && stompClient.connected) {
-      const destination = `/topic/quiz/${sessionId.value}/test`;
+      const destination = `/app/quiz/${sessionId.value}/test`;
       // Payload for AI quiz generation request
       const payload = {
         type: "QUICK_QUIZ",
@@ -918,51 +918,59 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
 
   // --- 오디오 녹음 및 전송 ---
   function recordAndSend(stream: MediaStream) {
-    if (!classStartTime.value) {
-      console.warn("수업 시작 시간이 설정되지 않았습니다. 녹음 대기 중...");
-      return;
-    }
+  if (!classStartTime.value) {
+    console.warn("수업 시작 시간이 설정되지 않았습니다. 녹음 대기 중...");
+    return;
+  }
 
-    // ✅ 녹음 시작 시점의 timeline 계산 (서버 시간 기준, 학생과 동일한 방식)
+  const sendNextChunk = () => {
+    // 1. 현재 시점의 timeline 계산
     const now = Date.now();
-    const serverNow = now - timeOffset.value; // 클라이언트 시간 → 서버 시간
-    const recordingStartTime = Math.floor(
-      (serverNow - classStartTime.value) / 1000,
-    );
+    const serverNow = now - timeOffset.value;
+    const currentTimeline = Math.floor((serverNow - classStartTime.value) / 1000);
 
-    // MediaRecorder 생성
+    // 2. 새로운 MediaRecorder 생성 (매번 새로운 헤더를 생성하기 위함)
     const recorder = new MediaRecorder(stream, {
       mimeType: "audio/webm",
     });
-    mediaRecorder.value = recorder;
+    
+    let chunkSent = false;
 
     recorder.ondataavailable = async (e) => {
-      if (e.data.size > 0 && voiceSocket.value?.readyState === WebSocket.OPEN) {
-        // Blob → ArrayBuffer 변환
+      if (e.data.size > 0 && voiceSocket.value?.readyState === WebSocket.OPEN && !chunkSent) {
+        chunkSent = true; // 중복 전송 방지
         const blob = e.data;
-        if (blob.size > 0) {
-          // ✅ 녹음 시작 시점의 timeline 사용
-          const timeline = Math.max(0, recordingStartTime);
+        const timeline = Math.max(0, currentTimeline);
 
-          // 바이너리 데이터 구성 (4바이트 헤더 + 오디오 데이터)
-          const audioBuffer = await blob.arrayBuffer();
-          const payload = new Uint8Array(4 + audioBuffer.byteLength);
-          const view = new DataView(payload.buffer);
+        // 바이너리 구성 (4바이트 타임라인 + 순수 WebM 데이터)
+        const audioBuffer = await blob.arrayBuffer();
+        const payload = new Uint8Array(4 + audioBuffer.byteLength);
+        const view = new DataView(payload.buffer);
 
-          // 첫 4바이트: 타임라인 (Int32, Big Endian)
-          view.setInt32(0, timeline, false);
-          // 나머지: 오디오 데이터
-          payload.set(new Uint8Array(audioBuffer), 4);
+        view.setInt32(0, timeline, false);
+        payload.set(new Uint8Array(audioBuffer), 4);
 
-          // 전송
-          voiceSocket.value.send(payload);
-        }
+        voiceSocket.value.send(payload);
+        console.log(`[Voice] Chunk sent. Timeline: ${timeline}, Size: ${payload.byteLength}`);
       }
     };
 
-    // 3초마다 데이터 전송
-    recorder.start(3000);
-  }
+    // 3. 녹음 시작 및 3초 후 종료
+    recorder.start();
+    
+    setTimeout(() => {
+      if (recorder.state === "recording") {
+        recorder.stop(); // stop() 호출 시 ondataavailable이 발생함
+      }
+      // 분석이 계속 중이라면 다음 청크 준비
+      if (isAnalysisStarted.value && voiceSocket.value?.readyState === WebSocket.OPEN) {
+        sendNextChunk();
+      }
+    }, 3000); // 3초 단위 조절 가능
+  };
+
+  sendNextChunk();
+}
 
   // ========================================
   // 내부 Helper Functions

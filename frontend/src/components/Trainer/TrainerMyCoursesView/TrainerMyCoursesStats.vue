@@ -64,6 +64,9 @@ interface Props {
     ongoingDesc?: string;
     completedDesc?: string;
     attendanceDesc?: string;
+    ongoingLabel?: string;
+    completedLabel?: string;
+    attendanceLabel?: string;
 }
 
 withDefaults(defineProps<Props>(), {
