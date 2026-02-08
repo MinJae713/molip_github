@@ -129,7 +129,7 @@ const router = createRouter({
     {
       path: "/workspace/:id/admin",
       component: MainLayout,
-      meta: { requiresAuth: true, requiresRole: "ADMIN" },
+      meta: { requiresAuth: true },
       children: [
         {
           path: "",
@@ -241,7 +241,8 @@ router.beforeEach(async (to, from, next) => {
   // 3. 워크스페이스 권한 및 역할 체크 (Workspace & RBAC Guard)
   // URL에 workspaceId가 포함된 경우 ( /workspace/:id/... )
   const workspaceId = to.params.id as string;
-  if (workspaceId) {
+  // 관리자 페이지는 요청에 따라 모든 가드 해제 (인증 제외)
+  if (workspaceId && !to.path.includes("/admin")) {
     const workspaceStore = useWorkspaceStore();
 
     // 3-1. 워크스페이스 목록 로드 (로드되지 않았을 경우)
