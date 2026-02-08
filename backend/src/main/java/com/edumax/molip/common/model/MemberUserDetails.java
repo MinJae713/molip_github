@@ -11,7 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 @NoArgsConstructor
 @ToString
 public class MemberUserDetails implements UserDetails {
-  private String username;
+  private String username; // email
   private String password;
   private Set<SimpleGrantedAuthority> authorities;
   // extra fields
@@ -26,5 +26,13 @@ public class MemberUserDetails implements UserDetails {
     this.memberId = member.getId();
     this.authorities = Set.of(new SimpleGrantedAuthority(member.getRole().toString()));
     this.profileImageUrl = member.getProfileImageUrl();
+  }
+
+  public MemberUserDetails(String email, String name, Long memberId, String profileImageUrl) {
+    this.username = email;
+    this.displayName = name;
+    this.memberId = memberId;
+    this.authorities = Set.of(new SimpleGrantedAuthority("ROLE_USER"));
+    this.profileImageUrl = profileImageUrl;
   }
 }

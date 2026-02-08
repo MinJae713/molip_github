@@ -1,10 +1,13 @@
 package com.edumax.molip.domain.course.entity;
 
+import com.edumax.molip.domain.course.types.CourseCategory;
+import com.edumax.molip.domain.course.types.CourseStatus;
 import com.edumax.molip.domain.session.entity.CourseLearner;
 import com.edumax.molip.domain.session.entity.Session;
 import com.edumax.molip.domain.workspace.entity.Workspace;
 import com.edumax.molip.domain.workspace.entity.WorkspaceMember;
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +35,7 @@ public class Course {
   @Column(nullable = false, length = 255)
   private String description;
 
-  @Column(name = "sub_category", nullable = false, length = 20)
+  @Column(name = "sub_category", length = 20)
   private String subCategory;
 
   @Column(name = "max_learner", nullable = false)
@@ -55,13 +58,6 @@ public class Course {
   @Column(nullable = false, length = 20)
   private CourseStatus status;
 
-  public enum CourseStatus {
-    PREPARING,
-    INVITE,
-    PROCEED,
-    FINISH
-  }
-
   @Column(nullable = false)
   private Integer period; // 삭제될 수도 있음
 
@@ -81,41 +77,123 @@ public class Course {
   @Column(nullable = false, length = 50)
   private CourseCategory category;
 
-  public enum CourseCategory {
-    MARKETING // 보이는 것이 일단 하나라 이거만 넣었습니다..!
-  }
-
   /** 수강 신청 */
-  @OneToMany(mappedBy = "course")
+  @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<CourseApply> courseApplies = new ArrayList<>();
 
   /** 강의 찜 */
-  @OneToMany(mappedBy = "course")
+  @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<Zzim> zzims = new ArrayList<>();
 
   /** 강의 수강생 */
-  @OneToMany(mappedBy = "course")
+  @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<CourseLearner> courseLearners = new ArrayList<>();
 
   /** 강의 수료 */
-  @OneToMany(mappedBy = "course")
+  @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<CourseCertificated> courseCertificateds = new ArrayList<>();
 
   /** 강의 세션 */
-  @OneToMany(mappedBy = "course")
+  @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<Session> sessions = new ArrayList<>();
 
   /** 공통 첨부 파일 */
-  @OneToMany(mappedBy = "course")
+  @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<CommonAttachment> commonAttachments = new ArrayList<>();
 
   @ManyToOne
   @JoinColumn(name = "workspace_id", nullable = false)
   private Workspace workspace;
+
+  @OneToMany(
+      mappedBy = "course",
+      fetch = FetchType.LAZY,
+      cascade = CascadeType.ALL,
+      orphanRemoval = true)
+  private List<CourseLearnerAnalysis> learnerAnalysis = new ArrayList<>();
+
+  @Column(name = "avg_attendance")
+  private Float avgAttendance; // NULL 허용
+
+  @Column(name = "avg_concentrate")
+  private Float avgConcentrate; // NULL 허용
+
+  @Column(name = "avg_quiz_correct")
+  private Float avgQuizCorrect; // NULL 허용
+
+  @Builder.Default
+  @Column(name = "end_session_count", nullable = false)
+  private Integer endSessionCount = 0; // DEFAULT 0
+
+  @Builder.Default
+  @Column(name = "score_top3", nullable = false, length = 127)
+  private String scoreTop3 = "{}"; // JSON 데이터
+
+  public Integer getSessionCount() {
+    // 세션 총 개수
+    return sessions.size();
+  }
+
+  public Integer getCourseLearnerCount() {
+    // 수강생 총 수
+    return courseLearners.size();
+  }
+
+  public Double getCourseLearnerAttandanceRate() {
+    // 수강생 평균 참석률
+    return courseLearners.stream()
+        .mapToDouble(CourseLearner::getSessionAttandanceRate)
+        .average()
+        .orElse(-9999);
+  }
+
+  public LocalDate getSessionStartDate() {
+    LocalDate startDate = LocalDate.of(9999, 12, 31);
+    for (Session session : sessions) {
+      LocalDate date = session.getDate();
+      if (startDate.isAfter(date)) {
+        startDate = date;
+      }
+    }
+    return startDate;
+  }
+
+  public LocalDate getSessionEndDate() {
+    LocalDate startDate = LocalDate.of(0, 1, 1);
+    for (Session session : sessions) {
+      LocalDate date = session.getDate();
+      if (startDate.isBefore(date)) {
+        startDate = date;
+      }
+    }
+    return startDate;
+  }
+
+  public Double getInviteRate() {
+    // 모집율
+    double divided = (double) courseLearners.size() / maxLearner;
+    return (double) Math.round(divided * 100) / 100;
+  }
+
+  public Double getProceedRate(long finishedSessionCount) {
+    // 진도율
+    double divided = (double) finishedSessionCount / (double) getSessionCount();
+    return (double) Math.round(divided * 100) / 100;
+  }
+
+  public Double getCertificatedRate() {
+    // 수료율
+    double divided = (double) courseCertificateds.size() / (double) courseLearners.size();
+    return (double) Math.round(divided * 100) / 100;
+  }
+
+  public boolean isFinished() {
+    return endSessionCount == sessions.size();
+  }
 }

@@ -16,7 +16,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -28,6 +27,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
@@ -50,9 +51,6 @@ public class Session {
   @Column(length = 255)
   private String description;
 
-  @Column(nullable = false)
-  private Integer number;
-
   @Column(name = "start_at", nullable = false)
   private LocalTime startAt;
 
@@ -62,8 +60,17 @@ public class Session {
   @Column(name = "end_at", nullable = false)
   private LocalTime endAt;
 
-  @Column(name = "attendance_excused", nullable = false, precision = 8, scale = 2)
-  private BigDecimal attendanceExcused;
+  @Column(name = "use_focus", nullable = false)
+  private Boolean useFocus = false;
+
+  @Column(name = "use_emotion", nullable = false)
+  private Boolean useEmotion = false;
+
+  @Column(name = "use_quiz", nullable = false)
+  private Boolean useQuiz = false;
+
+  @Column(name = "quiz_count", nullable = false)
+  private Integer quizCount = 0;
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
@@ -79,9 +86,15 @@ public class Session {
   @Column(length = 255)
   private String pin;
 
+  @Column(name = "recording_id", length = 40)
+  private String recordingId;
+
   @ManyToOne
   @JoinColumn(name = "course_id", nullable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private Course course;
+
+  @Column private Long trainerId;
 
   /* =======================
    * 1 : N
@@ -116,4 +129,47 @@ public class Session {
   /** 세션 분석 결과 */
   @OneToOne(mappedBy = "session")
   private LearnerAnalysis learnerAnalysis;
+
+  public void update(
+      String title,
+      String description,
+      LocalDate date,
+      LocalTime startAt,
+      LocalTime endAt,
+      Boolean useFocus,
+      Boolean useEmotion,
+      Boolean useQuiz,
+      Integer quizCount) {
+    if (title != null) {
+      this.title = title;
+    }
+    if (description != null) {
+      this.description = description;
+    }
+    if (date != null) {
+      this.date = date;
+    }
+    if (startAt != null) {
+      this.startAt = startAt;
+    }
+    if (endAt != null) {
+      this.endAt = endAt;
+    }
+    if (useFocus != null) {
+      this.useFocus = useFocus;
+    }
+    if (useEmotion != null) {
+      this.useEmotion = useEmotion;
+    }
+    if (useQuiz != null) {
+      this.useQuiz = useQuiz;
+    }
+    if (quizCount != null) {
+      this.quizCount = quizCount;
+    }
+  }
+
+  public boolean isTodaySession() { // 오늘 진행되는 세션인지 여부
+    return date.isEqual(LocalDate.now());
+  }
 }

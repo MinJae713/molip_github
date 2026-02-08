@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package qna;
+
+option java_multiple_files = true;
+option java_package = "com.edumax.molip.grpc.qna";
+
+service QnaService {
+  rpc createQna (QnaRequest) returns (QnaResponse);
+}
+
+message QnaRequest {
+  string session_id = 1;
+  string member_id = 2;
+  string question = 3;
+}
+
+message QnaResponse {
+  string session_id = 1;
+  string member_id = 2;
+  string question = 3;
+  string answer = 4;
+}

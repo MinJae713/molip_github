@@ -9,11 +9,16 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface ScriptRepository extends JpaRepository<Script, Long> {
   @Query(
-      "SELECT s.message FROM Script s WHERE s.learnerAnalysis.sessionId = :sessionId AND time < :time ORDER BY s.time DESC")
+      "SELECT s.message FROM Script s WHERE s.learnerAnalysis.sessionId = :sessionId AND timeline < :timeline ORDER BY s.timeline DESC")
   List<String> findMessageBySessionIdWithTime(
-      @Param("sessionId") Long sessionId, @Param("time") Integer time, Pageable pageable);
+      @Param("sessionId") Long sessionId, @Param("timeline") Integer timeline, Pageable pageable);
 
   @Query(
-      "SELECT count(s) FROM Script s WHERE s.learnerAnalysis.sessionId = :sessionId AND time < :time")
-  Long countBySessionIdWithTime(@Param("sessionId") Long sessionId, @Param("time") Integer time);
+      "SELECT count(s) FROM Script s WHERE s.learnerAnalysis.sessionId = :sessionId AND timeline < :timeline")
+  Long countBySessionIdWithTime(
+      @Param("sessionId") Long sessionId, @Param("timeline") Integer timeline);
+
+  @Query(
+      "SELECT s FROM Script s WHERE s.learnerAnalysis.sessionId = :sessionId ORDER BY s.timeline ASC")
+  List<Script> findAllBySessionId(@Param("sessionId") Long sessionId);
 }

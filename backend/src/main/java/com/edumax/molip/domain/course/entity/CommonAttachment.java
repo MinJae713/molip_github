@@ -10,6 +10,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "CommonAttachment")
@@ -23,5 +25,6 @@ public class CommonAttachment extends Attachment {
 
   @ManyToOne
   @JoinColumn(name = "course_id", nullable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private Course course;
 }

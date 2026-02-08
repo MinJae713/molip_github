@@ -9,5 +9,3 @@ public class MolipApplication {
     SpringApplication.run(MolipApplication.class, args);
   }
 }
-
-// test commit

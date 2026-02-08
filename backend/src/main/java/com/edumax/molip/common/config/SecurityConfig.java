@@ -34,12 +34,7 @@ public class SecurityConfig {
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
 
-    config.setAllowedOrigins(
-        List.of(
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            "http://localhost:5500",
-            "http://127.0.0.1:5500"));
+    config.setAllowedOriginPatterns(List.of("*"));
     config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     config.setAllowedHeaders(
         List.of("Authorization", "Content-Type", "X-Requested-With", "Accept"));
@@ -78,17 +73,19 @@ public class SecurityConfig {
                         "/error")
                     .permitAll()
                     .requestMatchers(
-                        "/api/member/refresh",
-                        "/api/member/login",
-                        "/api/member/register",
-                        "/api/member/logout")
+                        "/api/members/refresh",
+                        "/api/members/login",
+                        "/api/members/register",
+                        "/api/members/register/admin",
+                        "/api/members/logout")
                     .permitAll()
-                    .requestMatchers("/uploads/**", "/ws/**")
+                    .requestMatchers(
+                        "/uploads/**", "/message/**", "/emotion/**", "/voice/**", "/ws/janus/**")
                     .permitAll()
                     .requestMatchers("/api/admin/**")
                     .hasRole("ADMIN")
                     .anyRequest()
-                    .permitAll())
+                    .authenticated())
         .addFilterAt(
             new JwtAuthenticationFilter(jwtTokenProvider),
             UsernamePasswordAuthenticationFilter.class) // 교체

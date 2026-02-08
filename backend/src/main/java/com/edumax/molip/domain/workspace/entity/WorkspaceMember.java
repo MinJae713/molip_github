@@ -4,21 +4,30 @@ import com.edumax.molip.domain.chatting.entity.QnAMessage;
 import com.edumax.molip.domain.chatting.entity.ReviewChattingMessage;
 import com.edumax.molip.domain.chatting.entity.ReviewChattingRoom;
 import com.edumax.molip.domain.chatting.entity.SessionChattingMessage;
-import com.edumax.molip.domain.course.entity.*;
+import com.edumax.molip.domain.course.entity.Course;
+import com.edumax.molip.domain.course.entity.CourseApply;
+import com.edumax.molip.domain.course.entity.CourseCertificated;
+import com.edumax.molip.domain.course.entity.Zzim;
 import com.edumax.molip.domain.member.entity.Member;
 import com.edumax.molip.domain.quiz.entity.ExitQuizResult;
-import com.edumax.molip.domain.review.entity.*;
+import com.edumax.molip.domain.review.entity.AiAnalysisTimeline;
+import com.edumax.molip.domain.review.entity.EmotionGraph;
 import com.edumax.molip.domain.session.entity.CourseLearner;
+import com.edumax.molip.domain.workspace.types.WorkspaceMemberRole;
+import com.edumax.molip.domain.workspace.types.WorkspaceMemberStatus;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
-@Table(name = "WorkspaceMember")
+@Table(name = "workspace_member")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -38,19 +47,9 @@ public class WorkspaceMember {
   @Column(nullable = false, length = 20)
   private WorkspaceMemberStatus status;
 
-  public enum WorkspaceMemberStatus {
-    ACTIVE,
-    INACTIVE
-  }
-
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
   private WorkspaceMemberRole role;
-
-  public enum WorkspaceMemberRole {
-    LEARNER,
-    TRAINER
-  }
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
@@ -66,10 +65,12 @@ public class WorkspaceMember {
 
   @ManyToOne
   @JoinColumn(name = "member_id", nullable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private Member member;
 
   @ManyToOne
   @JoinColumn(name = "workspace_id", nullable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private Workspace workspace;
 
   /* =======================
@@ -82,7 +83,7 @@ public class WorkspaceMember {
 
   @OneToMany(mappedBy = "leaner")
   @Builder.Default
-  private List<Course> courses = new ArrayList<>();
+  private List<Course> courses = new ArrayList<>(); // 강사인 경우만 지정됨 - 본인의 강의들
 
   @OneToMany(mappedBy = "workspaceMember")
   @Builder.Default
@@ -106,7 +107,7 @@ public class WorkspaceMember {
 
   @OneToMany(mappedBy = "workspaceMember")
   @Builder.Default
-  private List<FeelingGraph> feelingGraphs = new ArrayList<>();
+  private List<EmotionGraph> emotionGraph = new ArrayList<>();
 
   @OneToMany(mappedBy = "workspaceMember")
   @Builder.Default
@@ -119,4 +120,23 @@ public class WorkspaceMember {
   @OneToMany(mappedBy = "workspaceMember")
   @Builder.Default
   private List<ReviewChattingMessage> reviewChattingMessages = new ArrayList<>();
+
+  @OneToMany(mappedBy = "workspaceMember")
+  @Builder.Default
+  private List<CourseCertificated> courseCertificateds = new ArrayList<>();
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof WorkspaceMember
+        && Objects.equals(workspaceMemberId, ((WorkspaceMember) o).workspaceMemberId);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(workspaceMemberId);
+  }
+
+  public Integer getCertificatedCount() {
+    return courseCertificateds.size();
+  }
 }

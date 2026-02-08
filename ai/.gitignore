@@ -1,0 +1,128 @@
+# =================================================================
+# 1. OS & IDE (Windows, macOS, VS Code, IntelliJ, Eclipse)
+# =================================================================
+# Windows
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/
+
+# IntelliJ / PyCharm (Jira Plugin 관련 포함)
+.idea/
+atlassian-ide-plugin.xml
+.idea/**/tasks.xml
+.idea/**/workspace.xml
+*.iws
+*.iml
+*.ipr
+out/
+
+# Eclipse (Jira Plugin 관련 포함)
+.metadata/
+.settings/
+.project
+.classpath
+.factorypath
+bin/
+
+# =================================================================
+# 2. DevOps & Collaboration (GitLab, Jira)
+# =================================================================
+# GitLab
+# CI/CD 설정 파일(.gitlab-ci.yml)은 제외하지 않으나, 로컬 러너나 아티팩트는 제외
+.gitlab-runner/
+artifacts/
+capybara-*.html
+coverage/
+screenshots/
+
+# Jira & Atlassian Tools
+# IDE용 Jira 커넥터 및 로컬 이슈 캐시
+.jira-url
+atlassian-ide-plugin.xml
+.idea/sonarlint/
+
+# =================================================================
+# 3. Programming Languages & Frameworks
+# =================================================================
+# Python (FastAPI)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+.venv/
+pip-log.txt
+*.egg-info/
+.pytest_cache/
+
+# Java (Spring Boot)
+*.class
+*.log
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+target/
+.gradle/
+build/
+
+# Vue.js (Node.js)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+
+# =================================================================
+# 4. AI & gRPC Specific
+# =================================================================
+# gRPC Generated Files (환경별 재생성 권장)
+*_pb2.py
+*_pb2_grpc.py
+*_pb2.pyi
+
+# AI Models & Weights (Whisper, MediaPipe)
+# 큰 용량의 파일은 git lfs를 쓰거나 별도 서버에서 다운로드
+*.pt
+*.pth
+*.onnx
+# models/
+whisper_cache/
+
+# Vector DB (Chroma DB 로컬 저장소)
+chroma_db/
+# db/
+*.sqlite3
+
+# =================================================================
+# 5. Security & Sensitive Data
+# =================================================================
+.env
+.env.local
+.env.*.local
+*.env
+
+# =================================================================
+# 6. etc
+# =================================================================
+=*
+/tests
