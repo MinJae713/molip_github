@@ -138,13 +138,11 @@
             </li>
           </ul>
         </div>
-        <div class="flex-1 relative w-full h-96 bg-slate-800 rounded-3xl border border-slate-700 overflow-hidden shadow-2xl scroll-reveal delay-200">
-          <div class="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center group">
-              <!-- Placeholder for Dashboard UI -->
-              <div class="text-center">
-                  <span class="material-symbols-outlined text-8xl text-indigo-500/30 group-hover:text-indigo-500/50 transition-all duration-500">bar_chart</span>
-                  <p class="mt-4 text-slate-500 font-mono text-sm">Real-time Analytics Dashboard</p>
-              </div>
+        <div class="flex-1 flex justify-center items-center">
+          <div class="relative h-96 w-fit bg-slate-800 rounded-3xl border border-slate-700 overflow-hidden shadow-2xl scroll-reveal delay-200">
+            <div class="h-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center group">
+                <img :src="trainerLiveImg" alt="Real-time Analytics Dashboard" class="h-full w-auto object-contain group-hover:scale-105 transition-transform duration-500" />
+            </div>
           </div>
         </div>
       </div>
@@ -175,13 +173,12 @@
             </li>
           </ul>
         </div>
-        <div class="flex-1 relative w-full h-96 bg-slate-800 rounded-3xl border border-slate-700 overflow-hidden shadow-2xl scroll-reveal delay-200">
-             <div class="absolute inset-0 bg-gradient-to-bl from-slate-800 to-slate-900 flex items-center justify-center group">
-                <div class="text-center">
-                    <span class="material-symbols-outlined text-8xl text-purple-500/30 group-hover:text-purple-500/50 transition-all duration-500">history_edu</span>
-                    <p class="mt-4 text-slate-500 font-mono text-sm">Smart Review Timeline</p>
-                </div>
-            </div>
+        <div class="flex-1 flex justify-center items-center">
+          <div class="relative h-96 w-fit bg-slate-800 rounded-3xl border border-slate-700 overflow-hidden shadow-2xl scroll-reveal delay-200">
+               <div class="h-full bg-gradient-to-bl from-slate-800 to-slate-900 flex items-center justify-center group">
+                  <img :src="studentReviewImg" alt="Smart Review Timeline" class="h-full w-auto object-contain group-hover:scale-105 transition-transform duration-500" />
+              </div>
+          </div>
         </div>
       </div>
     </section>
@@ -213,13 +210,12 @@
             </li>
           </ul>
         </div>
-        <div class="flex-1 relative w-full h-96 bg-slate-800 rounded-3xl border border-slate-700 overflow-hidden shadow-2xl scroll-reveal delay-200">
-            <div class="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center group">
-                <div class="text-center">
-                    <span class="material-symbols-outlined text-8xl text-emerald-500/30 group-hover:text-emerald-500/50 transition-all duration-500">admin_panel_settings</span>
-                    <p class="mt-4 text-slate-500 font-mono text-sm">Admin Workspace & Report</p>
-                </div>
-            </div>
+        <div class="flex-1 flex justify-center items-center">
+          <div class="relative h-96 w-fit bg-slate-800 rounded-3xl border border-slate-700 overflow-hidden shadow-2xl scroll-reveal delay-200">
+              <div class="h-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center group">
+                  <img :src="studentAnalysisImg" alt="Admin Workspace & Report" class="h-full w-auto object-contain group-hover:scale-105 transition-transform duration-500" />
+              </div>
+          </div>
         </div>
       </div>
     </section>
@@ -259,6 +255,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+
+import trainerLiveImg from '@/assets/trainer_live.png';
+import studentReviewImg from '@/assets/student_review.png';
+import studentAnalysisImg from '@/assets/student_analysis.png';
 
 const isScrolled = ref(false);
 

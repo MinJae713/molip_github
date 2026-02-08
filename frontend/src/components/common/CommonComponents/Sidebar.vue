@@ -9,7 +9,7 @@
             1).toUpperCase() : 'W' }}</span>
         </div>
         <div class="min-w-0">
-          <div class="text-xs font-bold text-indigo-800 mb-0.5">Current Workspace</div>
+          <div class="text-xs font-bold text-indigo-800 mb-0.5">Workspace</div>
           <div class="text-sm font-bold text-slate-900 truncate">{{ displayName }}</div>
         </div>
       </div>

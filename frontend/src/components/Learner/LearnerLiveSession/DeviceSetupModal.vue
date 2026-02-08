@@ -184,7 +184,7 @@ const startCalibration = () => {
     rawGazeBuffer.value = [];
     
     // 3 seconds timer
-    const duration = 3000;
+    const duration = 10000;
     const interval = 50; // update progress every 50ms
     const steps = duration / interval;
     let currentStep = 0;
