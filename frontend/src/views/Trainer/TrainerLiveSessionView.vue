@@ -183,7 +183,7 @@ const handleEndSession = async () => {
 </script>
 
 <template>
-  <div class="h-screen bg-slate-50 flex flex-col overflow-hidden font-sans text-slate-900">
+  <div class="h-screen bg-slate-50 flex flex-col overflow-hidden text-slate-900">
     <LiveHeader @end-class="isEndModalOpen = true" />
     <div class="flex-1 flex overflow-hidden">
       <!-- 메인 강의 영역 (전체 너비 사용) -->

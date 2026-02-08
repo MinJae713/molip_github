@@ -1,5 +1,5 @@
 <template>
-    <div class="fixed inset-0 z-50 bg-white flex flex-col font-sans">
+    <div class="fixed inset-0 z-50 bg-white flex flex-col">
         <ReviewHeader :title="sessionStore.currentSessionInfo?.title" session-number="01" @close="handleClose" />
         <main class="flex-1 bg-white min-h-0 relative z-0">
             <div class="h-full flex flex-col lg:flex-row">
