@@ -13,7 +13,7 @@
                 </div>
                 <div class="flex items-end gap-3 mt-4">
                     <span class="text-4xl font-bold text-slate-900">{{ (courseStatistics?.avgAttandance || 0).toFixed(1)
-                        }}%</span>
+                    }}%</span>
                 </div>
             </div>
 
@@ -64,7 +64,7 @@
             <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="font-bold text-slate-900 text-lg">참여 우수 수강생</h3>
-                    <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-xs font-bold rounded">Top 3</span>
+                    <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-xs font-bold rounded">Top 5</span>
                 </div>
 
                 <div class="flex-1 overflow-y-auto pr-1 custom-scrollbar">

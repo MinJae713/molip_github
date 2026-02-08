@@ -70,7 +70,8 @@
                         class="mt-4 ml-12 p-3 bg-red-50 rounded-lg border border-red-100 text-xs text-red-600 flex items-start gap-2">
                         <span class="material-symbols-outlined text-sm mt-0.5">info</span>
                         <div>
-                            <span class="font-bold">정답:</span> {{ quiz.options?.[quiz.correctAnswer?.[0] || 0] }}
+                            <span class="font-bold">정답:</span> {{ quiz.options?.[Number(quiz.correctAnswer?.[0] ?? 0)]
+                            }}
                         </div>
                     </div>
                 </div>

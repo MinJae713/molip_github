@@ -102,10 +102,12 @@
                                             class="bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
                                             <span class="material-symbols-outlined text-[16px]">play_arrow</span>
                                         </button>
-                                        <button
-                                            class="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-md transition-colors"
-                                            title="관리">
-                                            <span class="material-symbols-outlined text-[20px]">more_vert</span>
+
+                                        <!-- 삭제 버튼 추가 -->
+                                        <button @click="handleDeleteSession(session)"
+                                            class="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-md transition-colors"
+                                            title="세션 삭제">
+                                            <span class="material-symbols-outlined text-[20px]">delete</span>
                                         </button>
                                     </div>
                                 </td>
@@ -137,13 +139,27 @@
 import { ref } from 'vue';
 import type { Session } from '@/types';
 import TrainerSessionCreateModal from './TrainerSessionCreateModal.vue';
+import { useTrainerCourseStore } from '@/stores/trainerCourse';
 
-const emit = defineEmits(['start-live', 'created']);
+const emit = defineEmits(['start-live', 'created', 'deleted']);
 const props = defineProps<{
     sessions: Session[];
 }>();
 
+const trainerCourseStore = useTrainerCourseStore();
 const isCreateModalOpen = ref(false);
+
+const handleDeleteSession = async (session: Session) => {
+    if (!confirm(`'${session.title}' 세션을 정말 삭제하시겠습니까?`)) return;
+
+    const success = await trainerCourseStore.deleteSession(session.sessionId);
+    if (success) {
+        alert('세션이 삭제되었습니다.');
+        emit('deleted'); // 부모에게 목록 갱신 요청
+    } else {
+        alert('세션 삭제에 실패했습니다.');
+    }
+};
 
 const getSessionStatus = (session: Session) => {
     // 1. janusRoomId가 있으면 '진행중' (우선순위 최상)

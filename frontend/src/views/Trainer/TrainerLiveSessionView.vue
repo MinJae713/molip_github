@@ -54,7 +54,7 @@ const chatList = computed(() => trainerLiveStore.chatList);
 const qaList = computed(() => trainerLiveStore.qaList);
 const quizData = computed(() => trainerLiveStore.quizData);
 
-const analysisData = ref<any>(null); // ai 분석 데이터 (UI에서만 사용)
+// const analysisData = ref<any>(null); // Removed: Use computed from store above
 const engagementHistory = ref<number[]>(new Array(120).fill(0)); // 몰입도 이력 (최대 120개)
 
 // // --- 통계 (Computed) ---
@@ -117,45 +117,9 @@ const warningCount = computed(() => trainerLiveStore.participants.filter(p => p.
 const absentCount = computed(() => trainerLiveStore.participants.filter(p => p.status === 'EMPTY').length);
 
 // --- AI 분석 결과만 구독 (채팅/퀴즈는 스토어에서 처리) ---
-let stompClient: Client | null = null;
+// stompClient 제거됨 (Store에서 통합 관리)
 
-const connectAnalysisWebSocket = () => {
-  const sessionId = route.params.sessionId as string;
-  const socketUrl = import.meta.env.VITE_CHAT_SOCKET_URL;
-
-  stompClient = new Client({
-    webSocketFactory: () => new SockJS(socketUrl),
-    connectHeaders: {
-      Authorization: `Bearer ${localStorage.getItem('accessToken')}`
-    },
-    debug: () => { }, // 디버그 비활성화
-    onConnect: () => {
-      console.log('[TrainerLiveSessionView] AI Analysis Connected ✅');
-      // AI 분석결과만 구독 (UI 업데이트용)
-      stompClient?.subscribe(`/topic/analysis/${sessionId}`, (res) => {
-        console.log('[Trainer Analysis] Received:', res.body);
-        const data = JSON.parse(res.body);
-        analysisData.value = data;
-
-        // ✅ stateChangeList 처리: 학생 상태 변경 반영
-        if (data.stateChangeList && Array.isArray(data.stateChangeList)) {
-          data.stateChangeList.forEach((change: { memberId: number; newState: string }) => {
-            console.log(`[Status Change] memberId: ${change.memberId}, newState: ${change.newState}`);
-            trainerLiveStore.updateParticipantStatus(change.memberId, change.newState as "NORMAL" | "FEVER" | "EMPTY");
-          });
-        }
-      });
-    },
-    onStompError: (frame) => {
-      console.error('[TrainerLiveSessionView] Broker error:', frame.headers['message']);
-    },
-    onWebSocketClose: () => {
-      console.log('[TrainerLiveSessionView] AI Analysis Connection Closed ❌');
-    }
-  });
-
-  stompClient.activate();
-};
+const analysisData = computed(() => trainerLiveStore.analysisData);
 
 // --- 메시지 전송 래퍼 함수 (템플릿에서 사용) ---
 const sendChatMessage = (content: string, type: string, questionId?: number | string | null) => {
@@ -192,14 +156,12 @@ const handleQuickQuizSend = (quiz: any) => {
 onMounted(async () => {
   const sessionId = route.params.sessionId as string;
   await trainerLiveStore.initJanus(sessionId);
-  trainerLiveStore.openSession(sessionId); // [New] 세션 시작 알림
-  connectAnalysisWebSocket();
+  trainerLiveStore.openSession(sessionId); // [New] 세션 시작 알림 (여기서 내부적으로 handleConnectWs 호출)
 });
 
 onUnmounted(() => {
   const sessionId = route.params.sessionId as string;
   trainerLiveStore.closeSession(sessionId); // [New] 세션 종료 알림
-  stompClient?.deactivate();
 });
 
 // --- 수업 종료 로직 ---

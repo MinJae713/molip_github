@@ -10,10 +10,11 @@ import type {
   CourseStatsResponse,
 } from "@/types";
 
-
 export const useStatsStore = defineStore("stats", () => {
   // 수강생 상단 통계 박스 호출 api
-  const learnerWorkspaceTopCardStats = ref<LearnerWorkspaceTopCardStats | null>(null);
+  const learnerWorkspaceTopCardStats = ref<LearnerWorkspaceTopCardStats | null>(
+    null,
+  );
 
   // 전체 통계 데이터 (API 원본)
   const courseStats = ref<CourseStatsResponse | null>(null);
@@ -23,11 +24,12 @@ export const useStatsStore = defineStore("stats", () => {
   const learnerSessionStats = ref<SessionConcentrationStats | null>(null);
   const learnerSessionReports = ref<LearnerSessionReport | null>(null);
 
-
   // 선택된 코스 ID (전역 상태로 관리 for LearnerStatisticsView)
   const selectedCourseId = ref<string | number>("all");
   // Data Adapters
-  const mapTopCardStats = (data: CourseStatsResponse): LearnerWorkspaceTopCardStats => {
+  const mapTopCardStats = (
+    data: CourseStatsResponse,
+  ): LearnerWorkspaceTopCardStats => {
     // Format Learning Time (Minutes -> X시간 Y분)
     const totalMinutes = data.totalLearningTime;
     const hours = Math.floor(totalMinutes / 60);
@@ -38,76 +40,82 @@ export const useStatsStore = defineStore("stats", () => {
       id: data.courseId,
       userId: 0,
       workspaceId: 0,
-      role: 'LEARNER',
+      role: "LEARNER",
       values: [
         {
-          icon: 'timer', // Changed to timer
-          title: '총 학습 시간', // Matches wireframe text "이번 주 학습 시간" (though it's course total really)
-          unit: '', // Unit included in value
+          icon: "timer", // Changed to timer
+          title: "총 학습 시간", // Matches wireframe text "이번 주 학습 시간" (though it's course total really)
+          unit: "", // Unit included in value
           value: formattedTime,
-          iconBgClass: 'bg-indigo-50',
-          iconColorClass: 'text-indigo-600'
+          iconBgClass: "bg-indigo-50",
+          iconColorClass: "text-indigo-600",
         },
         {
-          icon: 'assignment_turned_in', // Checkboard icon
-          title: '퇴실 퀴즈 평균',
-          unit: '점',
+          icon: "assignment_turned_in", // Checkboard icon
+          title: "퇴실 퀴즈 평균",
+          unit: "점",
           value: data.exitQuizAverage,
-          iconBgClass: 'bg-emerald-50',
-          iconColorClass: 'text-emerald-600'
+          iconBgClass: "bg-emerald-50",
+          iconColorClass: "text-emerald-600",
         },
         {
-          icon: 'psychology', // Head icon
-          title: '평균 집중도',
-          unit: '%',
+          icon: "psychology", // Head icon
+          title: "평균 집중도",
+          unit: "%",
           value: data.concentrateMyAverage,
-          iconBgClass: 'bg-purple-50', // Lighter purple for background
-          iconColorClass: 'text-purple-600'
-        }
-      ]
+          iconBgClass: "bg-purple-50", // Lighter purple for background
+          iconColorClass: "text-purple-600",
+        },
+      ],
     };
   };
 
-  const mapSessionStats = (data: CourseStatsResponse): SessionConcentrationStats => ({
+  const mapSessionStats = (
+    data: CourseStatsResponse,
+  ): SessionConcentrationStats => ({
     id: data.courseId,
     userId: 0,
     courseId: data.courseId,
     workspaceId: 0,
-    labels: data.sessionRecords.map(s => s.title), // or s.title
-    myScores: data.sessionRecords.map(s => s.concentrate),
-    avgScores: data.sessionRecords.map(s => s.concentrateTotalAverage),
-    currentFocus: 0 // Not used in chart directly
+    labels: data.sessionRecords.map((s) => s.title), // or s.title
+    myScores: data.sessionRecords.map((s) => s.concentrate),
+    avgScores: data.sessionRecords.map((s) => s.concentrateTotalAverage),
+    currentFocus: 0, // Not used in chart directly
   });
 
-  const mapSessionReport = (data: CourseStatsResponse): LearnerSessionReport => ({
+  const mapSessionReport = (
+    data: CourseStatsResponse,
+  ): LearnerSessionReport => ({
     id: data.courseId,
     userId: 0,
     workspaceId: 0,
     courseId: String(data.courseId),
-    sessions: data.sessionRecords.map(s => ({
-      id: s.sessionId,
-      name: s.title,
-      date: s.date,
-      duration: `${s.learningTime}분`,
-      focus: s.concentrate,
-      participation: s.isAttendance ? '출석' : '결석',
-      activityScore: s.exitQuiz, // using exitQuiz as activity score/quiz score
-      isProceed: s.isProceed
-    } as any)) // casting to any to allow new fields if type isn't fully updated yet, or we update LearnerSessionReport type
+    sessions: data.sessionRecords.map(
+      (s) =>
+        ({
+          id: s.sessionId,
+          name: s.title,
+          date: s.date,
+          duration: `${s.learningTime}분`,
+          focus: s.concentrate,
+          participation: s.isAttendance ? "출석" : "결석",
+          activityScore: s.exitQuiz, // using exitQuiz as activity score/quiz score
+          isProceed: s.isProceed,
+        }) as any,
+    ), // casting to any to allow new fields if type isn't fully updated yet, or we update LearnerSessionReport type
   });
 
   // WeeklyStat is now SessionLearningTimeStat
   const mapWeeklyStats = (data: CourseStatsResponse): WeeklyStat[] => {
     // Map session records to bar chart data
     // label: session title, time: learningTime
-    return data.sessionRecords.map(s => ({
+    return data.sessionRecords.map((s) => ({
       label: s.title,
       time: s.learningTime,
       percentage: 0, // Calculated in component or here? Component handles opacity based on max.
-      isHighlight: false
+      isHighlight: false,
     }));
   };
-
 
   // ==========================================
   // [MOCK DATA] 개발 확인용 목업 데이터 - 나중에 삭제하거나 false로 변경
@@ -129,7 +137,7 @@ export const useStatsStore = defineStore("stats", () => {
         date: "2025-02-01",
         isAttendance: true,
         exitQuiz: 85,
-        isProceed: true
+        isProceed: true,
       },
       {
         sessionId: 7,
@@ -140,7 +148,7 @@ export const useStatsStore = defineStore("stats", () => {
         date: "2025-02-07",
         isAttendance: true,
         exitQuiz: 90,
-        isProceed: true
+        isProceed: true,
       },
       {
         sessionId: 8,
@@ -151,7 +159,7 @@ export const useStatsStore = defineStore("stats", () => {
         date: "2025-02-14",
         isAttendance: true,
         exitQuiz: 80,
-        isProceed: true
+        isProceed: true,
       },
       {
         sessionId: 9,
@@ -162,7 +170,7 @@ export const useStatsStore = defineStore("stats", () => {
         date: "2025-02-21",
         isAttendance: false,
         exitQuiz: 0,
-        isProceed: false
+        isProceed: false,
       },
       {
         sessionId: 10,
@@ -173,13 +181,13 @@ export const useStatsStore = defineStore("stats", () => {
         date: "2025-02-28",
         isAttendance: false,
         exitQuiz: 0,
-        isProceed: false
-      }
-    ]
+        isProceed: false,
+      },
+    ],
   };
 
   async function fetchCourseStats(courseId: string | number) {
-    if (!courseId || courseId === 'all') {
+    if (!courseId || courseId === "all") {
       // Clear data or handle 'all' case if backend supports it
       learnerWorkspaceTopCardStats.value = null;
       learnerWeeklyStats.value = [];
@@ -200,18 +208,19 @@ export const useStatsStore = defineStore("stats", () => {
       }, 500); // 로딩 느낌을 위한 딜레이
       return;
     }
-
+    // 진짜 데이터
     try {
+      console.log("Fetching course stats for courseId:", courseId);
       const response = await api.get(`/courses/${courseId}/stats`);
       const data = response.data as CourseStatsResponse;
       courseStats.value = data;
+      console.log("Course Stats:", data);
 
       // Update all derived states
       learnerWorkspaceTopCardStats.value = mapTopCardStats(data);
       learnerWeeklyStats.value = mapWeeklyStats(data);
       learnerSessionStats.value = mapSessionStats(data);
       learnerSessionReports.value = mapSessionReport(data);
-
     } catch (error) {
       console.error("Failed to fetch course stats:", error);
       // Reset on error
@@ -223,11 +232,10 @@ export const useStatsStore = defineStore("stats", () => {
   }
 
   // Deprecated/Unused individual fetchers can be removed or kept as stubs if used elsewhere
-  async function fetchLearnerWorkspaceTopCardStats() { }
-  async function fetchLearnerWeeklyStats() { }
-  async function fetchLearnerSessionStats() { }
-  async function fetchLearnerSessionReports() { }
-
+  async function fetchLearnerWorkspaceTopCardStats() {}
+  async function fetchLearnerWeeklyStats() {}
+  async function fetchLearnerSessionStats() {}
+  async function fetchLearnerSessionReports() {}
 
   return {
     learnerWorkspaceTopCardStats,
@@ -240,6 +248,5 @@ export const useStatsStore = defineStore("stats", () => {
     // fetchLearnerWeeklyStats,
     // fetchLearnerSessionStats,
     // fetchLearnerSessionReports,
-
   };
 });

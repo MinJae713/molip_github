@@ -6,7 +6,7 @@ import JanusPkg from "janus-gateway";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { useUserStore } from "@/stores/user";
 import type { Participant } from "@/types/live";
-import Stomp from "stompjs";
+import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 
 // ========================================
@@ -143,11 +143,13 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
   const studentStreams = ref<Map<string, MediaStream>>(new Map()); // 학생별 비디오 스트림 (participantId -> Stream)
   const selectedStudentId = ref<string | null>(null); // PIP(Picture-in-Picture)에 표시할 학생 ID
 
-  // --- 채팅/질문/퀴즈 관리 ---
-  const chatList = ref<any[]>([]); // 채팅 메시지 목록
-  const qaList = ref<any[]>([]); // 질문/답변 메시지 목록
-  const quizData = ref<any>(null); // 퀴즈 데이터
-  let stompClient: any = null; // STOMP 클라이언트
+  // --- 채팅/질문/퀴즈/분석 관리 ---
+  const chatList = ref<any[]>([]);
+  const qaList = ref<any[]>([]);
+  const quizData = ref<any>(null);
+  const analysisData = ref<any>(null); // AI 분석 데이터
+
+  let stompClient: Client | null = null; // STOMP 클라이언트 (New)
 
   // ========================================
   // Actions: 메서드
@@ -502,45 +504,43 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
   /**
    * 7. STOMP 연결 및 구독 (채팅, 질문, 참가자, 퀴즈)
    */
+  /**
+   * 7. STOMP 연결 및 구독 (채팅, 질문, 참가자, 퀴즈, AI 분석)
+   */
   function handleConnectWs() {
-    const socket = new SockJS("https://i12a309.p.ssafy.io/ws-stomp");
-    stompClient = Stomp.over(socket);
-    stompClient.debug = () => {}; // 로그 끄기
+    if (stompClient && stompClient.connected) {
+      console.log("[STOMP] 이미 연결되어 있습니다.");
+      return;
+    }
 
-    stompClient.connect(
-      {},
-      () => {
-        console.log("[STOMP] Connected");
+    const socketUrl =
+      import.meta.env.VITE_CHAT_SOCKET_URL ||
+      "https://i12a309.p.ssafy.io/ws-stomp";
+
+    stompClient = new Client({
+      webSocketFactory: () => new SockJS(socketUrl),
+      connectHeaders: {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      },
+      debug: (str) => {
+        // console.log(str); // 디버그 로그 필요 시 주석 해제
+      },
+      onConnect: () => {
+        console.log("[STOMP] Connected ✅");
 
         // 1. 참가자 목록/입장 구독
-        stompClient.subscribe(
+        stompClient?.subscribe(
           `/topic/session/${sessionId.value}/participants`,
-          (res: any) => {
+          (res) => {
             try {
               const data = JSON.parse(res.body);
-              console.log("[Participants] Parsed data:", data);
+              console.log("[Participants] Event:", data.type);
 
               if (data.type === "JOIN") {
-                // ✅ STOMP JOIN 이벤트로 Participant를 미리 생성 (정확한 memberId 확보)
-                console.log(
-                  "👉 Student JOIN (STOMP):",
-                  data.name,
-                  "memberId:",
-                  data.memberId,
-                  "feedId:",
-                  data.feedId,
-                );
-
                 if (data.role === "STUDENT" && data.feedId) {
                   addParticipantFromStomp(data);
                 }
               } else if (data.type === "LEAVE") {
-                console.log(
-                  "👈 Student LEAVE:",
-                  data.name,
-                  "feedId:",
-                  data.feedId,
-                );
                 if (data.feedId) {
                   removeStudent(data.feedId);
                 }
@@ -552,30 +552,56 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
         );
 
         // 2. 채팅/질문 구독
-        stompClient.subscribe(
-          `/topic/chat-room/${sessionId.value}`,
-          (res: any) => {
+        stompClient?.subscribe(`/topic/chat-room/${sessionId.value}`, (res) => {
+          try {
             const msg = JSON.parse(res.body);
             if (!msg.questionId) {
               chatList.value.push(msg);
             } else {
               qaList.value.push(msg);
             }
-          },
-        );
+          } catch (e) {
+            console.error("Chat Parse Error", e);
+          }
+        });
 
         // 3. 퀴즈 구독 (학생의 답변 수신용 - 강사는 주로 보냄)
-        stompClient.subscribe(
+        stompClient?.subscribe(
           `/topic/quiz/session/${sessionId.value}`,
-          (res: any) => {
+          (res) => {
             // 강사가 퀴즈를 보냈을 때의 처리 (필요시)
           },
         );
+
+        // 4. AI 분석 데이터 구독
+        stompClient?.subscribe(`/topic/analysis/${sessionId.value}`, (res) => {
+          try {
+            const data = JSON.parse(res.body);
+            analysisData.value = data;
+
+            // 학생 상태 변경 반영
+            if (data.stateChangeList && Array.isArray(data.stateChangeList)) {
+              data.stateChangeList.forEach(
+                (change: { memberId: number; newState: string }) => {
+                  // console.log(`[Status Change] memberId: ${change.memberId}, newState: ${change.newState}`);
+                  updateParticipantStatus(
+                    change.memberId,
+                    change.newState as "NORMAL" | "FEVER" | "EMPTY",
+                  );
+                },
+              );
+            }
+          } catch (e) {
+            console.error("Analysis Parse Error", e);
+          }
+        });
       },
-      (error: any) => {
-        console.error("STOMP Connection Error:", error);
+      onStompError: (frame) => {
+        console.error("[STOMP] Broker error:", frame.headers["message"]);
       },
-    );
+    });
+
+    stompClient.activate();
   }
 
   // --- 채팅 전송 ---
@@ -584,7 +610,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     type: string = "CHAT",
     questionId?: number | string | null,
   ) {
-    if (stompClient && message.trim()) {
+    if (stompClient && stompClient.connected && message.trim()) {
       const msg = {
         sessionId: sessionId.value,
         content: message,
@@ -592,23 +618,26 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
         type: type,
         questionId: questionId || null,
       };
-      stompClient.send(
-        `/app/chat/session/${sessionId.value}`,
-        {},
-        JSON.stringify(msg),
-      );
+
+      stompClient.publish({
+        destination: `/app/chat/session/${sessionId.value}`,
+        body: JSON.stringify(msg),
+      });
+    } else {
+      console.warn("STOMP가 연결되지 않아 메시지를 보낼 수 없습니다.");
     }
   }
 
   // --- 퀴즈 전송 ---
   function sendQuizToStudents(quiz: any) {
-    if (stompClient) {
+    if (stompClient && stompClient.connected) {
       console.log("퀴즈 전송:", quiz);
-      stompClient.send(
-        `/app/quiz/session/${sessionId.value}/start`,
-        {},
-        JSON.stringify(quiz),
-      );
+      stompClient.publish({
+        destination: `/app/quiz/session/${sessionId.value}/start`,
+        body: JSON.stringify(quiz),
+      });
+    } else {
+      console.warn("STOMP가 연결되지 않아 퀴즈를 보낼 수 없습니다.");
     }
   }
 
@@ -656,11 +685,10 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
 
         // ✅ 학생들에게 수업 시작 시간 브로드캐스트
         if (stompClient && sessionId.value) {
-          stompClient.send(
-            `/app/session/${sessionId.value}/start-time`,
-            {},
-            JSON.stringify({ startTime: res.data.startTime }),
-          );
+          stompClient.publish({
+            destination: `/app/session/${sessionId.value}/start-time`,
+            body: JSON.stringify({ startTime: res.data.startTime }),
+          });
         }
       } else {
         classStartTime.value = Date.now(); // Fallback
@@ -1088,7 +1116,6 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     isSessionStarted,
     isAnalysisStarted,
     startSession,
-    startAnalysis,
     stopClass,
     changeScreenShare,
     screenStream,
@@ -1101,6 +1128,7 @@ export const useTrainerLiveStore = defineStore("trainerLive", () => {
     chatList,
     qaList,
     quizData,
+    analysisData,
     sendChatMessage,
     sendQuizToStudents,
     getQuiz,

@@ -17,7 +17,8 @@
         <div>
             <!-- 세션 일정 관리 -->
             <div v-if="activeTab === 'session'">
-                <TrainerSessionList :sessions="sessionList" @start-live="handleStartLive" />
+                <TrainerSessionList :sessions="sessionList" @start-live="handleStartLive" @created="loadSessions"
+                    @deleted="loadSessions" />
             </div>
             <!-- 수강생 관리 -->
             <div v-else-if="activeTab === 'student'" class="space-y-6">
@@ -75,11 +76,17 @@ const handleTabChange = async (tabId: string) => {
         ]);
     }
 };
-onMounted(async () => {
+const loadSessions = async () => {
     const courseId = route.params.courseId;
-    const workspaceId = route.params.id;
     if (courseId) {
         sessionList.value = await trainerCourseStore.fetchCourseSessions(Number(courseId));
+    }
+};
+
+onMounted(async () => {
+    const courseId = route.params.courseId;
+    if (courseId) {
+        await loadSessions();
         trainerCourseStore.fetchCourseInfo(courseId as string);
         // 초기 로드 시 탭에 따라 데이터 로드
         if (activeTab.value === 'student') {
@@ -87,9 +94,6 @@ onMounted(async () => {
                 trainerCourseStore.fetchStudentRequests(courseId as string),
                 trainerCourseStore.fetchStudents(courseId as string)
             ]);
-        } else if (activeTab.value === 'student') {
-            await trainerCourseStore.fetchApplyStudents(courseId as string);
-            await trainerCourseStore.fetchStudents(courseId as string);
         }
     }
 });

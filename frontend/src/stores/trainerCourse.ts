@@ -252,6 +252,17 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
     }
   };
 
+  // 세션 삭제
+  const deleteSession = async (sessionId: string | number) => {
+    try {
+      await api.delete(`/session/${sessionId}`);
+      return true;
+    } catch (error) {
+      console.error("세션 삭제 실패:", error);
+      return false;
+    }
+  };
+
   return {
     workspaceAllCourses,
     managedCourses,
@@ -272,5 +283,6 @@ export const useTrainerCourseStore = defineStore("trainerCourse", () => {
     fetchCourseStats,
     courseStatistics,
     fetchApplyStudents,
+    deleteSession,
   };
 });

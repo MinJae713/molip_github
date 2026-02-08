@@ -11,80 +11,8 @@
         <h1 class="text-2xl font-bold text-slate-900">비즈니스 AI 윤리 가이드: 최종 결과 리포트</h1>
       </div>
       <div class="flex items-center gap-3">
-        <button class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors">
-          <span class="material-symbols-outlined text-[20px]">download</span>
-          PDF 다운로드
-        </button>
-        <button class="flex items-center gap-2 px-4 py-2 bg-indigo-600 rounded-lg text-white font-bold text-sm hover:bg-indigo-700 transition-colors">
-          <span class="material-symbols-outlined text-[20px]">share</span>
-          공유하기
-        </button>
       </div>
     </header>
-
-    <!-- AI Feedback Summary -->
-    <section>
-      <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4">
-        <span class="material-symbols-outlined text-indigo-500">auto_awesome</span>
-        AI 강의 피드백 요약
-      </h2>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Success Factors -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
-          <div class="absolute top-0 right-0 p-4 opacity-5">
-            <span class="material-symbols-outlined text-9xl text-emerald-500">thumb_up</span>
-          </div>
-          <div class="flex items-center gap-3 mb-4">
-            <div class="size-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
-              <span class="material-symbols-outlined text-lg">check_circle</span>
-            </div>
-            <h3 class="text-base font-bold text-slate-900">이번 강의 성공 요인</h3>
-          </div>
-          <ul class="space-y-3">
-            <li class="flex items-start gap-3">
-              <span class="material-symbols-outlined text-emerald-500 mt-0.5 text-lg">arrow_forward</span>
-              <p class="text-sm text-slate-600">
-                <span class="font-bold text-slate-900">높은 실습 참여도:</span> Session 03의 실습 세션에서 학습자들의 코드 제출률이 평균 대비 15% 높게 나타났습니다.
-              </p>
-            </li>
-            <li class="flex items-start gap-3">
-              <span class="material-symbols-outlined text-emerald-500 mt-0.5 text-lg">arrow_forward</span>
-              <p class="text-sm text-slate-600">
-                <span class="font-bold text-slate-900">활발한 Q&A:</span> '윤리적 딜레마' 토론 세션(Session 04)에서 질문 빈도가 급증하여 학습 열의가 확인되었습니다.
-              </p>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Suggestions -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
-          <div class="absolute top-0 right-0 p-4 opacity-5">
-            <span class="material-symbols-outlined text-9xl text-amber-500">lightbulb</span>
-          </div>
-          <div class="flex items-center gap-3 mb-4">
-            <div class="size-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
-              <span class="material-symbols-outlined text-lg">lightbulb</span>
-            </div>
-            <h3 class="text-base font-bold text-slate-900">개선 제안</h3>
-          </div>
-          <ul class="space-y-3">
-            <li class="flex items-start gap-3">
-              <span class="material-symbols-outlined text-amber-500 mt-0.5 text-lg">priority_high</span>
-              <p class="text-sm text-slate-600">
-                <span class="font-bold text-slate-900">집중도 관리 필요:</span> 이론 중심인 Session 02 중반부(40분 경과 시점)에 집중도가 다소 하락했습니다. 휴식 시간 조정이 권장됩니다.
-              </p>
-            </li>
-            <li class="flex items-start gap-3">
-              <span class="material-symbols-outlined text-amber-500 mt-0.5 text-lg">priority_high</span>
-              <p class="text-sm text-slate-600">
-                <span class="font-bold text-slate-900">퀴즈 난이도 조절:</span> 최종 퀴즈 3번 문항의 오답률이 60%로 높습니다. 개념에 대한 보충 설명이나 난이도 재조정이 필요합니다.
-              </p>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
     <!-- Chart Section -->
     <section class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
       <div class="flex items-center justify-between mb-6">
@@ -93,8 +21,8 @@
           실시간 강의 집중도 분석
         </h2>
         <div class="flex items-center gap-2">
-            <span class="size-2 rounded-full bg-indigo-500"></span>
-            <span class="text-xs text-slate-500 font-bold">평균 집중도 (%)</span>
+          <span class="size-2 rounded-full bg-indigo-500"></span>
+          <span class="text-xs text-slate-500 font-bold">평균 집중도 (%)</span>
         </div>
       </div>
       <div class="h-64 w-full">
@@ -110,63 +38,65 @@
           수강생별 상세 성과
         </h2>
         <div class="flex gap-2">
-             <div class="relative">
-                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span class="material-symbols-outlined text-slate-400 text-sm">search</span>
-                </span>
-                <input type="text" placeholder="이름 검색..." class="pl-9 pr-4 py-1.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 w-48 transition-colors">
-            </div>
-            <button class="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-500">
-                <span class="material-symbols-outlined text-lg">filter_list</span>
-            </button>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span class="material-symbols-outlined text-slate-400 text-sm">search</span>
+            </span>
+            <input type="text" placeholder="이름 검색..."
+              class="pl-9 pr-4 py-1.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 w-48 transition-colors">
+          </div>
+          <button class="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-500">
+            <span class="material-symbols-outlined text-lg">filter_list</span>
+          </button>
         </div>
       </div>
 
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <table class="w-full text-left border-collapse">
-            <thead class="bg-slate-50 border-b border-slate-200">
-                <tr>
-                    <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">이름</th>
-                    <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">부서</th>
-                    <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">진도율 (%)</th>
-                    <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-center">평균 집중도</th>
-                    <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-center">종료 퀴즈 평균</th>
-                    <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-center">수료 여부</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                <tr v-for="student in studentData" :key="student.id" class="hover:bg-slate-50 transition-colors">
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
-                             <div class="size-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">
-                                {{ student.name.slice(0, 2) }}
-                            </div>
-                            <div>
-                                <div class="font-bold text-slate-900 text-sm">{{ student.name }}</div>
-                                <div class="text-xs text-slate-500">{{ student.email }}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 text-sm text-slate-600">{{ student.department }}</td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm font-bold text-slate-900 w-8">{{ student.progress }}%</span>
-                            <div class="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                <div class="h-full bg-emerald-500" :style="{ width: student.progress + '%' }"></div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <span :class="['inline-block px-2 py-0.5 rounded text-xs font-bold', getFocusClass(student.focus)]">
-                            {{ student.focus }}%
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-center text-sm font-bold text-slate-900">{{ student.quizScore }}점</td>
-                    <td class="px-6 py-4 text-center">
-                        <span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold">Completed</span>
-                    </td>
-                </tr>
-            </tbody>
+          <thead class="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">이름</th>
+              <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">부서</th>
+              <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">진도율 (%)</th>
+              <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-center">평균 집중도</th>
+              <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-center">종료 퀴즈 평균</th>
+              <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-center">수료 여부</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr v-for="student in studentData" :key="student.id" class="hover:bg-slate-50 transition-colors">
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                  <div
+                    class="size-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">
+                    {{ student.name.slice(0, 2) }}
+                  </div>
+                  <div>
+                    <div class="font-bold text-slate-900 text-sm">{{ student.name }}</div>
+                    <div class="text-xs text-slate-500">{{ student.email }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 text-sm text-slate-600">{{ student.department }}</td>
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-bold text-slate-900 w-8">{{ student.progress }}%</span>
+                  <div class="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-emerald-500" :style="{ width: student.progress + '%' }"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 text-center">
+                <span :class="['inline-block px-2 py-0.5 rounded text-xs font-bold', getFocusClass(student.focus)]">
+                  {{ student.focus }}%
+                </span>
+              </td>
+              <td class="px-6 py-4 text-center text-sm font-bold text-slate-900">{{ student.quizScore }}점</td>
+              <td class="px-6 py-4 text-center">
+                <span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold">Completed</span>
+              </td>
+            </tr>
+          </tbody>
         </table>
       </div>
     </section>
@@ -263,16 +193,16 @@ const chartOptions = {
 
 // --- Table Data (Mock) ---
 const studentData = ref([
-    { id: 1, name: '김민지', email: 'minji.kim@techcorp.com', department: '마케팅팀', progress: 100, focus: 88, quizScore: 92 },
-    { id: 2, name: '이준호', email: 'junho.lee@techcorp.com', department: '개발팀', progress: 95, focus: 92, quizScore: 88 },
-    { id: 3, name: '박성훈', email: 'vark.sh@techcorp.com', department: '인사팀', progress: 80, focus: 65, quizScore: 74 },
-    { id: 4, name: '최수진', email: 'sujin.choi@techcorp.com', department: '영업팀', progress: 100, focus: 78, quizScore: 85 },
-    { id: 5, name: '정우성', email: 'ws.jung@techcorp.com', department: '디자인팀', progress: 100, focus: 95, quizScore: 98 },
+  { id: 1, name: '김민지', email: 'minji.kim@techcorp.com', department: '마케팅팀', progress: 100, focus: 88, quizScore: 92 },
+  { id: 2, name: '이준호', email: 'junho.lee@techcorp.com', department: '개발팀', progress: 95, focus: 92, quizScore: 88 },
+  { id: 3, name: '박성훈', email: 'vark.sh@techcorp.com', department: '인사팀', progress: 80, focus: 65, quizScore: 74 },
+  { id: 4, name: '최수진', email: 'sujin.choi@techcorp.com', department: '영업팀', progress: 100, focus: 78, quizScore: 85 },
+  { id: 5, name: '정우성', email: 'ws.jung@techcorp.com', department: '디자인팀', progress: 100, focus: 95, quizScore: 98 },
 ]);
 
 const getFocusClass = (score: number) => {
-    if (score >= 80) return 'bg-emerald-100 text-emerald-700';
-    if (score >= 60) return 'bg-amber-100 text-amber-700';
-    return 'bg-red-100 text-red-700';
+  if (score >= 80) return 'bg-emerald-100 text-emerald-700';
+  if (score >= 60) return 'bg-amber-100 text-amber-700';
+  return 'bg-red-100 text-red-700';
 };
 </script>

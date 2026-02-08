@@ -45,7 +45,8 @@
         <template v-if="isLoading">
             <!-- 통계 카드 스켈레톤 (3열) -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div v-for="n in 3" :key="n" class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm animate-pulse">
+                <div v-for="n in 3" :key="n"
+                    class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm animate-pulse">
                     <div class="flex items-start justify-between">
                         <div class="space-y-3 flex-1">
                             <div class="h-4 bg-slate-100 rounded w-1/3"></div>
@@ -62,7 +63,8 @@
                 <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm animate-pulse h-80">
                     <div class="h-6 bg-slate-100 rounded w-1/4 mb-6"></div>
                     <div class="flex items-end justify-between h-48 gap-2">
-                        <div v-for="n in 7" :key="n" class="w-full bg-slate-100 rounded-t" :style="{ height: `${Math.random() * 80 + 20}%` }"></div>
+                        <div v-for="n in 7" :key="n" class="w-full bg-slate-100 rounded-t"
+                            :style="{ height: `${Math.random() * 80 + 20}%` }"></div>
                     </div>
                 </div>
                 <!-- 세션별 집중도 트렌드 스켈레톤 -->
@@ -105,12 +107,14 @@
         </template>
 
         <!-- 데이터가 없는 경우 (Empty State) -->
-        <div v-else class="flex flex-col items-center justify-center py-32 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center">
+        <div v-else
+            class="flex flex-col items-center justify-center py-32 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center">
             <div class="bg-white p-4 rounded-full shadow-sm mb-4">
                 <span class="material-symbols-outlined text-4xl text-slate-300">bar_chart</span>
             </div>
             <h3 class="text-lg font-bold text-slate-900 mb-1">표시할 학습 통계가 없습니다</h3>
-            <p class="text-slate-500 text-sm max-w-md">아직 학습 데이터가 집계되지 않았거나, 수강 중인 강의가 없습니다.<br>세션에 참여하여 나만의 학습 리포트를 만들어보세요!</p>
+            <p class="text-slate-500 text-sm max-w-md">아직 학습 데이터가 집계되지 않았거나, 수강 중인 강의가 없습니다.<br>세션에 참여하여 나만의 학습 리포트를
+                만들어보세요!</p>
         </div>
     </div>
 </template>
@@ -172,6 +176,7 @@ const loadStatistics = async (courseId: string | number) => {
 onMounted(async () => {
     isLoading.value = true;
     try {
+        await userStore.fetchUserInfo();
         const workspaceId = route.params.id as string;
         const userId = userStore.user?.memberId;
 
@@ -179,40 +184,41 @@ onMounted(async () => {
         if (workspaceStore.myWorkspaces.length === 0) {
             await workspaceStore.fetchMyWorkspaces();
         }
-        
+
         // 2. 코스 목록 로드
         if (workspaceId) {
             await courseStore.fetchMyEnrolledCourses(workspaceId);
         }
-        
+
         // 3. 초기 코스 선택 (목록이 있으면 첫 번째 코스 선택)
         if (courseStore.myEnrolledCourses.length > 0) {
-             // 이미 선택된 값이 유효한 코스인지 확인
+            // 이미 선택된 값이 유효한 코스인지 확인
             const isValid = courseStore.myEnrolledCourses.some(c => c.courseId == selectedCourseId.value);
-            
+
             const firstCourse = courseStore.myEnrolledCourses[0];
             if ((!isValid || selectedCourseId.value === 'all') && firstCourse) {
-                 selectedCourseId.value = firstCourse.courseId;
+                selectedCourseId.value = firstCourse.courseId;
             }
         }
 
         // 4. 통계 로드
         if (userId && selectedCourseId.value !== 'all') {
             await loadStatistics(selectedCourseId.value);
+            console.log("통계 로드 성공!");
         } else {
-             isLoading.value = false; // 데이터 로드할 필요가 없는 경우 로딩 종료
+            isLoading.value = false; // 데이터 로드할 필요가 없는 경우 로딩 종료
         }
     } catch (e) {
         isLoading.value = false;
+        console.error("Failed to load learner statistics:", e);
     }
-
+    // The watch effect should be set up regardless of initial load success/failure
     // 코스 선택 변경 감지 및 데이터 리로드
     watch(selectedCourseId, async (newId) => {
         if (newId && newId !== 'all') {
             await loadStatistics(newId);
         }
     });
-
 });
 
 
