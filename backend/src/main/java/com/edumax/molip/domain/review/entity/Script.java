@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "Script")
+@Table(
+    name = "Script",
+    indexes = {@Index(name = "idx_session_timeline", columnList = "session_id, timeline DESC")})
 @Getter
 @Setter
 @NoArgsConstructor

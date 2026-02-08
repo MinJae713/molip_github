@@ -16,11 +16,9 @@ import com.edumax.molip.domain.session.dto.response.SessionDetailResponse;
 import com.edumax.molip.domain.session.entity.CourseLearnerSession;
 import com.edumax.molip.domain.session.handler.AnalysisManager;
 import com.edumax.molip.domain.session.service.SessionService;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -44,47 +42,7 @@ public class ReviewController {
   private final StorageService storageService;
   private final SessionService sessionService;
 
-  private float deadzoneScale = 0.75f;
-
-  public static List<TimelineElement> generateData(int count) {
-    List<TimelineElement> list = new ArrayList<>();
-    Random random = new Random();
-
-    float currentVal = 30.0f; // 시작값
-    float[] steps = {-0.25f, -0.125f, 0.0f, 0.125f, 0.25f};
-
-    for (int i = 0; i < count; i++) {
-      // 1. concentrateValue 계산
-      // 랜덤하게 증감 단위를 선택하고 0~100 범위를 유지함
-      float step = steps[random.nextInt(steps.length)];
-      currentVal = Math.max(0, Math.min(100, currentVal + step));
-
-      // 2. empty 여부 (예: 5% 확률로 데이터가 비어있음)
-      boolean isEmpty = random.nextFloat() < 0.05;
-
-      // 3. 요구사항: empty가 true일 때는 concentrateValue가 없어야 함 (0.0f로 설정)
-      float finalVal = 0.0f;
-
-      if (i > 0) {
-        finalVal = isEmpty ? list.get(i - 1).getConcentrateValue() : currentVal;
-      } else {
-        finalVal = isEmpty ? 0.0f : currentVal;
-      }
-
-      // 4. fever 여부 (랜덤)
-      boolean isFever = false;
-      if (!isEmpty) {
-        isFever = random.nextBoolean();
-      }
-
-      // 5. 감정 인덱스 및 이름 매칭
-      int emotionIndex = random.nextInt(7);
-      String emotionName = toEmotion(emotionIndex);
-
-      list.add(new TimelineElement(i, isEmpty, finalVal, isFever, emotionIndex, emotionName));
-    }
-    return list;
-  }
+  private float deadzoneScale = 0.5f;
 
   public static String toEmotion(int index) {
     return switch (index) {
@@ -97,30 +55,6 @@ public class ReviewController {
       case 6 -> "neutral";
       default -> "unknown";
     };
-  }
-
-  @PostMapping("/test/{sessionId}/{memberId}")
-  public ResponseEntity<LearnerTimelineResponse> testEndpoint(
-      @PathVariable Long sessionId,
-      @PathVariable Long memberId,
-      @AuthenticationPrincipal MemberUserDetails userDetails) {
-    //    List<TimelineElement> testMergedList = generateData(3600);
-    //
-    //    storageService.saveTimelineAnalysis(10002L, 10002L, testMergedList);
-    //
-    //    testMergedList = generateData(3600);
-    //
-    //    storageService.saveTimelineAnalysis(10001L, 10001L, testMergedList);
-    List<TimelineElement> learnerTimelineData =
-        storageService.getTimelineAnalysis(sessionId, memberId);
-    List<TimelineElement> trainerTimelineData = storageService.getTimelineAnalysis(10001L, 10001L);
-    return ResponseEntity.status(HttpStatus.OK)
-        .body(
-            new LearnerTimelineResponse(
-                30f,
-                List.of(new PauseElement(1000, 1100), new PauseElement(2000, 2100)),
-                learnerTimelineData,
-                trainerTimelineData));
   }
 
   @PostMapping("/start/analysis/{sessionId}")
@@ -162,7 +96,10 @@ public class ReviewController {
       return ResponseEntity.status(HttpStatus.OK)
           .body(
               new LearnerTimelineResponse(
-                  30f * deadzoneScale, pauseElementList, learnerTimelineData, trainerTimelineData));
+                  learnerAnalysis.getAvgConcentrate() * deadzoneScale,
+                  pauseElementList,
+                  learnerTimelineData,
+                  trainerTimelineData));
     }
 
     return ResponseEntity.status(HttpStatus.OK)
