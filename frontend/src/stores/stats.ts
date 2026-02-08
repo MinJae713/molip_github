@@ -30,11 +30,41 @@ export const useStatsStore = defineStore("stats", () => {
   const mapTopCardStats = (
     data: CourseStatsResponse,
   ): LearnerWorkspaceTopCardStats => {
-    // Format Learning Time (Minutes -> X시간 Y분)
-    const totalMinutes = data.totalLearningTime;
+    // 1. 학습 시간 합산 (분 단위)
+    const totalMinutes = data.sessionRecords.reduce(
+      (acc, s) => acc + (s.learningTime || 0),
+      0,
+    );
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     const formattedTime = `${hours}시간 ${minutes}분`;
+
+    // 2. 퇴실 퀴즈 평균 계산 (진행된 세션 중 퀴즈 점수가 있는 것만)
+    const sessionsWithQuiz = data.sessionRecords.filter(
+      (s) => s.isProceed && s.exitQuiz !== null && s.exitQuiz !== undefined,
+    );
+    const quizAverage =
+      sessionsWithQuiz.length > 0
+        ? Math.round(
+            sessionsWithQuiz.reduce((acc, s) => acc + (s.exitQuiz || 0), 0) /
+              sessionsWithQuiz.length,
+          )
+        : 0;
+
+    // 3. 평균 집중도 계산 (진행된 세션 중 집중도 데이터가 있는 것만)
+    const sessionsWithFocus = data.sessionRecords.filter(
+      (s) =>
+        s.isProceed && s.concentrate !== null && s.concentrate !== undefined,
+    );
+    const focusAverage =
+      sessionsWithFocus.length > 0
+        ? Math.round(
+            sessionsWithFocus.reduce(
+              (acc, s) => acc + (s.concentrate || 0),
+              0,
+            ) / sessionsWithFocus.length,
+          )
+        : 0;
 
     return {
       id: data.courseId,
@@ -43,27 +73,27 @@ export const useStatsStore = defineStore("stats", () => {
       role: "LEARNER",
       values: [
         {
-          icon: "timer", // Changed to timer
-          title: "총 학습 시간", // Matches wireframe text "이번 주 학습 시간" (though it's course total really)
-          unit: "", // Unit included in value
+          icon: "timer",
+          title: "총 학습 시간",
+          unit: "",
           value: formattedTime,
           iconBgClass: "bg-indigo-50",
           iconColorClass: "text-indigo-600",
         },
         {
-          icon: "assignment_turned_in", // Checkboard icon
+          icon: "assignment_turned_in",
           title: "퇴실 퀴즈 평균",
           unit: "점",
-          value: data.exitQuizAverage,
+          value: quizAverage,
           iconBgClass: "bg-emerald-50",
           iconColorClass: "text-emerald-600",
         },
         {
-          icon: "psychology", // Head icon
+          icon: "psychology",
           title: "평균 집중도",
           unit: "%",
-          value: data.concentrateMyAverage,
-          iconBgClass: "bg-purple-50", // Lighter purple for background
+          value: focusAverage,
+          iconBgClass: "bg-purple-50",
           iconColorClass: "text-purple-600",
         },
       ],
