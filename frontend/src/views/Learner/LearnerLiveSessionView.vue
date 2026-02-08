@@ -81,8 +81,6 @@
 
             <!-- 사이드바 -->
             <LiveSidebar>
-                <!-- 라이브 퀴즈 관련 -->
-                <LiveQuizCard title="LIVE QUIZ 진행중" subtitle="인공지능 윤리 가이드라인 핵심..." timeRemaining="00:15" />
                 <!-- 참여도 -->
                 <EngagementStats :engagementScore="engagementScore" :currentEmotion="processedEmotions"
                     :focusStatus="focusStatus" />
@@ -140,6 +138,22 @@ const showWarning = ref(true);
 const engagementScore = ref(35);
 const focusStatus = ref('집중도 낮음 (Warning)');
 const activeTab = ref<'chat' | 'qa'>('qa');
+
+// --- Janus 방 파괴 기반 수업 종료 감지 ---
+watch(() => videoStore.isLiveEnded, (ended) => {
+    if (ended) {
+        console.log('[Learner Live] 🛑 Janus Room Destroyed detected - Ending session');
+
+        isAnalysisActive.value = false; // 분석 중지
+        stopMediaPipe(); // 미디어파이프 중지
+
+        // 소켓 및 Janus 연결 해제
+        disconnectAll();
+
+        alert("강의가 종료되었습니다. 퇴실 퀴즈를 풀어주세요!");
+        isExitQuizOpen.value = true;
+    }
+});
 const newMessage = ref('');
 
 // Time Sync (서버 시간 동기화)
@@ -264,12 +278,31 @@ const connectWebSocket = () => {
                 }
             });
 
-            // 3. 서프라이즈 퀴즈 구독
-            stompClient.value?.subscribe(`/topic/surprise-quiz/${sessionId}`, (res) => {
-                console.log('[Learner Live] Surprise Quiz:', res.body);
-                surpriseQuizData.value = JSON.parse(res.body);
-                isQuizModalOpen.value = true;
+            // 3. 서프라이즈 퀴즈 구독 (Quick Quiz)
+            const quizTopic = `/topic/surprise-quiz/${sessionId}`;
+            console.log(`[Learner] 📝 Subscribing to quiz topic: ${quizTopic}`);
+
+            const quizSub = stompClient.value?.subscribe(quizTopic, (res) => {
+                console.log("========================================");
+                console.log('[Learner] 📥 QUIZ MESSAGE RECEIVED!');
+                console.log('[Learner] Raw body:', res.body);
+                console.log("========================================");
+
+                try {
+                    const data = JSON.parse(res.body);
+                    if (data) {
+                        console.log('[Learner] ✅ Quiz data parsed:', data);
+                        surpriseQuizData.value = data;
+                        isQuizModalOpen.value = true;
+                        console.log('[Learner] ✅ Quiz modal opened!');
+                    } else {
+                        console.warn('[Learner] ⚠️ Empty quiz data');
+                    }
+                } catch (e) {
+                    console.error("[Learner] ❌ Quiz payload parse error:", e);
+                }
             });
+            console.log(`[Learner] ✅ Subscribed to ${quizTopic}:`, quizSub ? 'SUCCESS' : 'FAILED');
 
             // 4. 수업 시작 시간 구독 (강사가 브로드캐스트)
             stompClient.value?.subscribe(`/topic/session/${sessionId}/start-time`, (res) => {
@@ -280,21 +313,14 @@ const connectWebSocket = () => {
                 }
             });
 
-            // 5. 수업 종료 신호 구독 [NEW]
+            // 5. 수업 종료 신호 구독 (Fallback - Janus destroyed 이벤트가 안 올 경우를 대비)
             stompClient.value?.subscribe(`/topic/session/${sessionId}/end`, (res) => {
-                console.log('[Learner Live] 강의 종료 신호 수신');
-                isAnalysisActive.value = false; // 분석 중지
-                stopMediaPipe(); // 미디어파이프 중지
-
-                // 기존 연결 해제 (단, 퀴즈 전송 등 필요한 소켓 연결은 유지해야 할 수도 있음. 
-                // 하지만 요구사항이 "분석이고 뭐고 다 끊어라" 이므로 disconnectAll 호출)
-                // disconnectAll(); <-- 이걸 부르면 STOMP도 끊겨서 퀴즈 제출이 안될 수 있음.
-                // 퀴즈 제출은 axios(videoApi)를 쓰므로 STOMP 끊어도 상관없음.
-                disconnectAll();
-
-                alert("강의가 종료되었습니다. 퇴실 퀴즈를 풀어주세요!");
-                isExitQuizOpen.value = true;
+                console.log('[Learner Live] 📥 STOMP 강의 종료 신호 수신 (Fallback)');
+                if (!videoStore.isLiveEnded) {
+                    videoStore.isLiveEnded = true; // watcher가 나머지를 처리하도록 시동만 걸어줌
+                }
             });
+
 
             // Binary Socket 연결 트리거
             connectBinarySocket();

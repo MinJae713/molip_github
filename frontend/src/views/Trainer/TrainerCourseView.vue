@@ -60,7 +60,6 @@ const activeTab = ref('session');
 const tabs = [
     { id: 'session', label: '세션 일정 관리' },
     { id: 'student', label: '수강생 관리' },
-    { id: 'material', label: '자료실' },
     { id: 'stats', label: '교육통계' }
 ];
 

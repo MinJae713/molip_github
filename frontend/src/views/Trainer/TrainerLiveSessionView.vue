@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, computed, nextTick, provide, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useTrainerLiveStore } from '@/stores/trainerlive';
+import { useTrainerSessionStore } from '@/stores/trainerSession';
 import { useUserStore } from '@/stores/user';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
@@ -9,6 +10,7 @@ import { Client } from '@stomp/stompjs';
 // 스토어
 const trainerLiveStore = useTrainerLiveStore();
 const userStore = useUserStore();
+const trainerSessionStore = useTrainerSessionStore();
 
 // [컴포넌트 임포트]
 import LiveHeader from '@/components/Live/Console/LiveHeader.vue';
@@ -53,8 +55,8 @@ interface Message {
 const chatList = computed(() => trainerLiveStore.chatList);
 const qaList = computed(() => trainerLiveStore.qaList);
 const quizData = computed(() => trainerLiveStore.quizData);
+const analysisData = computed(() => trainerLiveStore.analysisData);
 
-// const analysisData = ref<any>(null); // Removed: Use computed from store above
 const engagementHistory = ref<number[]>(new Array(120).fill(0)); // 몰입도 이력 (최대 120개)
 
 // // --- 통계 (Computed) ---
@@ -119,27 +121,34 @@ const absentCount = computed(() => trainerLiveStore.participants.filter(p => p.s
 // --- AI 분석 결과만 구독 (채팅/퀴즈는 스토어에서 처리) ---
 // stompClient 제거됨 (Store에서 통합 관리)
 
-const analysisData = computed(() => trainerLiveStore.analysisData);
-
 // --- 메시지 전송 래퍼 함수 (템플릿에서 사용) ---
 const sendChatMessage = (content: string, type: string, questionId?: number | string | null) => {
   trainerLiveStore.sendChatMessage(content, type, questionId);
 };
 
+// [Fix] 퀴즈 요청 시 courseId 자동 주입
+const handleGetQuiz = () => {
+  const courseId = trainerSessionStore.currentManagedSession?.courseId;
+  if (courseId) {
+    trainerLiveStore.getQuiz(String(courseId));
+  } else {
+    console.error('[handleGetQuiz] 세션 정보 또는 courseId가 없습니다.');
+  }
+};
+
 // --- 메시지 전송 함수는 스토어에서 제공 ---
 // provide로 하위 컴포넌트에 스토어 함수 전달
 provide('sendQuizToStudents', trainerLiveStore.sendQuizToStudents);
-provide('getQuiz', trainerLiveStore.getQuiz);
+// [Refactor] 퀵 퀴즈를 API 호출이 아닌 STOMP 트리거로 변경
+provide('getQuiz', trainerLiveStore.sendQuickQuiz);
 
 // --- 퀵 퀴즈 모달 관리 ---
+// --- 퀵 퀴즈 모달 관리 ---
 // quizData가 업데이트되면 모달 자동 열기
-watch(quizData, (newData) => {
-  console.log('[TrainerLiveSessionView] quizData watch 감지:', newData);
-  if (newData && Object.keys(newData).length > 0) {
-    console.log('[TrainerLiveSessionView] 퀵 퀴즈 모달 열기');
+watch(() => quizData.value, (newQuiz) => {
+  if (newQuiz) {
+    console.log("[TrainerLiveSession] 퀵 퀴즈 데이터 수신, 모달 열기:", newQuiz);
     isQuickQuizModalOpen.value = true;
-  } else {
-    console.log('[TrainerLiveSessionView] quizData가 비어있음');
   }
 });
 
@@ -165,10 +174,11 @@ onUnmounted(() => {
 });
 
 // --- 수업 종료 로직 ---
+// --- 수업 종료 로직 ---
 const handleEndSession = async () => {
-  trainerLiveStore.stopClass(); // 방송 중단
+  await trainerLiveStore.stopClass(); // 방송 중단 (API 호출 완료 대기)
   isEndModalOpen.value = false;
-  router.push('/dashboard');
+  window.close(); // 창 닫기
 };
 </script>
 
@@ -266,7 +276,7 @@ const handleEndSession = async () => {
     </Transition>
 
     <!-- 퀵 퀴즈 모달 -->
-    <QuickQuizModal :isOpen="isQuickQuizModalOpen" :quizData="quizData" @close="handleQuickQuizClose"
+    <QuickQuizModal :isOpen="isQuickQuizModalOpen" :quizData="quizData" @close="isQuickQuizModalOpen = false"
       @send-to-students="handleQuickQuizSend" />
   </div>
 </template>

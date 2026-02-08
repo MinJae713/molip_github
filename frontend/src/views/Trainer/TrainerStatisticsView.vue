@@ -1,208 +1,149 @@
 <template>
-  <div class="space-y-8">
-    <!-- Header -->
-    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+  <div class="max-w-7xl mx-auto space-y-8">
+    <!-- 상단 breadcrumb -->
+    <nav aria-label="Breadcrumb" class="flex text-sm text-slate-500">
+      <ol class="flex items-center space-x-2">
+        <li class="flex items-center">
+          <router-link :to="{ name: 'workspaceTrainer', params: { id: workspaceId } }"
+            class="hover:text-indigo-600">홈</router-link>
+        </li>
+        <li class="flex items-center">
+          <span class="material-symbols-outlined !text-[1rem] leading-none text-slate-400">chevron_right</span>
+        </li>
+        <li class="font-medium text-slate-800 flex items-center">강의 통계</li>
+      </ol>
+    </nav>
+
+    <!-- 제목 + 코스 선택 영역 -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <nav class="flex items-center text-sm text-slate-500 mb-1">
-          <span>교육과정</span>
-          <span class="material-symbols-outlined text-sm mx-1">chevron_right</span>
-          <span>종료된 과정</span>
-        </nav>
-        <h1 class="text-2xl font-bold text-slate-900">비즈니스 AI 윤리 가이드: 최종 결과 리포트</h1>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">강의 성과 리포트</h1>
+        <p class="text-slate-500 text-sm mt-1">강의별 학습 성취도와 참여 현황을 분석합니다.</p>
       </div>
-      <div class="flex items-center gap-3">
+      <!-- 코스 선택기 -->
+      <div class="flex items-center gap-3 bg-white p-1 pr-2 rounded-lg border border-slate-200 shadow-sm">
+        <div class="pl-3 text-xs font-bold text-slate-400 uppercase tracking-wide">Course</div>
+        <select v-model="selectedCourseId"
+          class="text-sm font-bold text-slate-700 bg-transparent border-none focus:ring-0 cursor-pointer py-1 pr-8">
+          <option value="" disabled>강의 선택</option>
+          <option v-for="course in trainerCourseStore.managedCourses" :key="course.courseId" :value="course.courseId">
+            {{ course.title }}
+          </option>
+        </select>
       </div>
-    </header>
-    <!-- Chart Section -->
-    <section class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-          <span class="material-symbols-outlined text-indigo-500">monitoring</span>
-          실시간 강의 집중도 분석
-        </h2>
-        <div class="flex items-center gap-2">
-          <span class="size-2 rounded-full bg-indigo-500"></span>
-          <span class="text-xs text-slate-500 font-bold">평균 집중도 (%)</span>
-        </div>
-      </div>
-      <div class="h-64 w-full">
-        <Line :data="chartData" :options="chartOptions" />
-      </div>
-    </section>
+    </div>
 
-    <!-- Student Details Table -->
-    <section>
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-          <span class="material-symbols-outlined text-indigo-500">groups</span>
-          수강생별 상세 성과
-        </h2>
-        <div class="flex gap-2">
-          <div class="relative">
-            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <span class="material-symbols-outlined text-slate-400 text-sm">search</span>
-            </span>
-            <input type="text" placeholder="이름 검색..."
-              class="pl-9 pr-4 py-1.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 w-48 transition-colors">
-          </div>
-          <button class="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-500">
-            <span class="material-symbols-outlined text-lg">filter_list</span>
-          </button>
-        </div>
+    <!-- 로딩 중일 때 (Skeleton UI) -->
+    <template v-if="isLoading">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div v-for="n in 3" :key="n"
+          class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm animate-pulse h-32"></div>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm animate-pulse h-80"></div>
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm animate-pulse mt-6 h-64"></div>
+    </template>
+
+    <!-- 통계 데이터가 있는 경우 -->
+    <template v-else-if="stats">
+      <!-- 통계 카드 그리드 (3열) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <TrainerStatCard :data="cardAvgAttendance" />
+        <TrainerStatCard :data="cardAvgConcentrate" />
+        <TrainerStatCard :data="cardAvgQuiz" />
       </div>
 
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <table class="w-full text-left border-collapse">
-          <thead class="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">이름</th>
-              <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">부서</th>
-              <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">진도율 (%)</th>
-              <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-center">평균 집중도</th>
-              <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-center">종료 퀴즈 평균</th>
-              <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-center">수료 여부</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr v-for="student in studentData" :key="student.id" class="hover:bg-slate-50 transition-colors">
-              <td class="px-6 py-4">
-                <div class="flex items-center gap-3">
-                  <div
-                    class="size-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">
-                    {{ student.name.slice(0, 2) }}
-                  </div>
-                  <div>
-                    <div class="font-bold text-slate-900 text-sm">{{ student.name }}</div>
-                    <div class="text-xs text-slate-500">{{ student.email }}</div>
-                  </div>
-                </div>
-              </td>
-              <td class="px-6 py-4 text-sm text-slate-600">{{ student.department }}</td>
-              <td class="px-6 py-4">
-                <div class="flex items-center gap-2">
-                  <span class="text-sm font-bold text-slate-900 w-8">{{ student.progress }}%</span>
-                  <div class="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-emerald-500" :style="{ width: student.progress + '%' }"></div>
-                  </div>
-                </div>
-              </td>
-              <td class="px-6 py-4 text-center">
-                <span :class="['inline-block px-2 py-0.5 rounded text-xs font-bold', getFocusClass(student.focus)]">
-                  {{ student.focus }}%
-                </span>
-              </td>
-              <td class="px-6 py-4 text-center text-sm font-bold text-slate-900">{{ student.quizScore }}점</td>
-              <td class="px-6 py-4 text-center">
-                <span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold">Completed</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- 차트 영역 (1열 - 집중도 트렌드만 남김) -->
+      <div class="grid grid-cols-1 gap-6">
+        <!-- 세션별 집중도 트렌드 -->
+        <TrainerSessionTrendChart :stats="stats.sessionAnalysis" title="강의 평균 집중도 변화"
+          description="전체 수강생의 세션별 평균 집중도 추이" />
       </div>
-    </section>
+
+      <!-- 상세 리포트 테이블 영역 -->
+      <div class="mt-6">
+        <TrainerStudentReportTable :students="stats.courseLearnerAnalysis" />
+      </div>
+    </template>
+
+    <!-- 데이터가 없는 경우 (Empty State) -->
+    <div v-else
+      class="flex flex-col items-center justify-center py-32 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center">
+      <div class="bg-white p-4 rounded-full shadow-sm mb-4">
+        <span class="material-symbols-outlined text-4xl text-slate-300">bar_chart</span>
+      </div>
+      <h3 class="text-lg font-bold text-slate-900 mb-1">표시할 통계가 없습니다</h3>
+      <p class="text-slate-500 text-sm max-w-md">강의를 선택하거나, 아직 데이터가 집계되지 않았습니다.</p>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-} from 'chart.js';
-import { Line } from 'vue-chartjs';
+import { ref, onMounted, computed, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { useTrainerCourseStore } from '@/stores/trainerCourse';
+import { storeToRefs } from 'pinia';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
+// Components
+import TrainerStatCard from '@/components/Trainer/TrainerStatisticsView/TrainerStatCard.vue';
+import TrainerSessionTrendChart from '@/components/Trainer/TrainerStatisticsView/TrainerSessionTrendChart.vue';
+import TrainerStudentReportTable from '@/components/Trainer/TrainerStatisticsView/TrainerStudentReportTable.vue';
 
-// --- Chart Data (Mock) ---
-const chartData = {
-  labels: ['Session 01', 'Session 02', 'Session 03', 'Session 04'],
-  datasets: [
-    {
-      label: '평균 집중도',
-      backgroundColor: (ctx: any) => {
-        const canvas = ctx.chart.ctx;
-        const gradient = canvas.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, 'rgba(79, 70, 229, 0.2)');
-        gradient.addColorStop(1, 'rgba(79, 70, 229, 0)');
-        return gradient;
-      },
-      borderColor: '#4F46E5',
-      pointBackgroundColor: '#ffffff',
-      pointBorderColor: '#4F46E5',
-      pointBorderWidth: 2,
-      pointRadius: 6,
-      data: [82, 75, 92, 88],
-      fill: true,
-      tension: 0.4
+const route = useRoute();
+const trainerCourseStore = useTrainerCourseStore();
+const { courseStatistics: stats, isLoading } = storeToRefs(trainerCourseStore);
+
+const workspaceId = computed(() => route.params.id);
+const selectedCourseId = ref<string | number>('');
+
+// 카드 데이터 매핑 (Computed)
+const cardAvgAttendance = computed(() => ({
+  icon: 'groups',
+  title: '평균 출석률',
+  unit: '%',
+  value: stats.value?.avgAttandance ?? 0,
+  iconBgClass: 'bg-emerald-50',
+  iconColorClass: 'text-emerald-600'
+}));
+
+const cardAvgConcentrate = computed(() => ({
+  icon: 'psychology',
+  title: '평균 집중도',
+  unit: '%',
+  value: stats.value?.avgConcentrate ?? 0,
+  iconBgClass: 'bg-purple-50',
+  iconColorClass: 'text-purple-600'
+}));
+
+const cardAvgQuiz = computed(() => ({
+  icon: 'assignment_turned_in',
+  title: '평균 퀴즈 점수',
+  unit: '점',
+  value: stats.value?.avgQuizCorrect ?? 0,
+  iconBgClass: 'bg-indigo-50',
+  iconColorClass: 'text-indigo-600'
+}));
+
+// 초기 로딩 및 데이터 페칭
+onMounted(async () => {
+  if (workspaceId.value) {
+    // 1. 내가 관리하는 코스 목록 로드
+    if (trainerCourseStore.managedCourses.length === 0) {
+      await trainerCourseStore.fetchMyCourses(workspaceId.value as string);
     }
-  ]
-};
 
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      backgroundColor: 'rgba(15, 23, 42, 0.9)',
-      padding: 12,
-      cornerRadius: 8,
-      callbacks: {
-        label: (context: any) => `집중도: ${context.parsed.y}%`
-      }
-    }
-  },
-  scales: {
-    y: {
-      min: 0,
-      max: 100,
-      grid: {
-        color: '#f1f5f9',
-        borderDash: [5, 5]
-      },
-      ticks: {
-        font: { size: 11 },
-        color: '#64748b'
-      }
-    },
-    x: {
-      grid: { display: false },
-      ticks: {
-        font: { size: 12, weight: 'bold' },
-        color: '#64748b'
-      }
+    // 2. 초기 코스 선택 (첫 번째 코스)
+    if (trainerCourseStore.managedCourses.length > 0) {
+      selectedCourseId.value = trainerCourseStore.managedCourses[0].courseId;
     }
   }
-};
+});
 
-// --- Table Data (Mock) ---
-const studentData = ref([
-  { id: 1, name: '김민지', email: 'minji.kim@techcorp.com', department: '마케팅팀', progress: 100, focus: 88, quizScore: 92 },
-  { id: 2, name: '이준호', email: 'junho.lee@techcorp.com', department: '개발팀', progress: 95, focus: 92, quizScore: 88 },
-  { id: 3, name: '박성훈', email: 'vark.sh@techcorp.com', department: '인사팀', progress: 80, focus: 65, quizScore: 74 },
-  { id: 4, name: '최수진', email: 'sujin.choi@techcorp.com', department: '영업팀', progress: 100, focus: 78, quizScore: 85 },
-  { id: 5, name: '정우성', email: 'ws.jung@techcorp.com', department: '디자인팀', progress: 100, focus: 95, quizScore: 98 },
-]);
-
-const getFocusClass = (score: number) => {
-  if (score >= 80) return 'bg-emerald-100 text-emerald-700';
-  if (score >= 60) return 'bg-amber-100 text-amber-700';
-  return 'bg-red-100 text-red-700';
-};
+// 코스 선택 변경 시 통계 데이터 로드
+watch(selectedCourseId, async (newId) => {
+  if (newId) {
+    await trainerCourseStore.fetchCourseStats(newId);
+  } else {
+    trainerCourseStore.courseStatistics = null;
+  }
+});
 </script>

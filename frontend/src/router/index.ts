@@ -102,12 +102,12 @@ const router = createRouter({
     {
       path: "/workspace/:id/learner",
       component: MainLayout,
+      meta: { requiresAuth: true, requiresRole: "LEARNER" },
       children: [
         {
           path: "",
           name: "workspaceLearner",
           component: LearnerWorkspace,
-          meta: { requiresAuth: true },
         },
         {
           path: "courses",
@@ -129,7 +129,7 @@ const router = createRouter({
     {
       path: "/workspace/:id/admin",
       component: MainLayout,
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, requiresRole: "ADMIN" },
       children: [
         {
           path: "",
@@ -161,12 +161,12 @@ const router = createRouter({
     {
       path: "/workspace/:id/trainer",
       component: MainLayout,
+      meta: { requiresAuth: true, requiresRole: "TRAINER" },
       children: [
         {
           path: "",
           name: "workspaceTrainer",
           component: TrainerWorkspaceView,
-          meta: { requiresAuth: true },
         },
         {
           path: "courses",
@@ -189,7 +189,7 @@ const router = createRouter({
     {
       path: "/workspaceDetail/:id",
       redirect: (to) => {
-        // 기본적으로 learner로 리다이렉트
+        // 기본적으로 learner로 리다이렉트 (권한 가드가 이후에 처리)
         return { name: "workspaceLearner", params: { id: to.params.id } };
       },
     },
@@ -209,6 +209,7 @@ const router = createRouter({
       path: "/trainer/live/:courseId/:sessionId",
       name: "trainerLiveSession",
       component: TrainerLiveSessionView,
+      meta: { requiresAuth: true }, // 강사 라이브도 인증 필요
     },
     {
       path: "/review/:sessionId",
@@ -221,50 +222,70 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem("accessToken");
+  const isAuthenticated = !!token;
 
-  // 1. 비로그인 접근 제어 (requiresAuth)
-  // meta.requiresAuth가 true이거나, 명시되지 않은 페이지도 기본적으로 보호하고 싶다면 조건 수정
+  // 1. 인증 체크 (Auth Guard)
   if (to.matched.some((record) => record.meta.requiresAuth)) {
-    if (!token) {
-      // alert("로그인이 필요합니다."); // UX 선택사항
+    if (!isAuthenticated) {
       return next({ name: "loginPage" });
     }
   }
 
-  // 2. 로그인된 사용자 접근 제어 (guestOnly)
+  // 2. 로그인된 상태에서 로그인/회원가입 페이지 접근 차단 (Guest Guard)
   if (to.matched.some((record) => record.meta.guestOnly)) {
-    if (token) {
+    if (isAuthenticated) {
       return next({ name: "workspaces" });
     }
   }
 
-  // 3. 기존 워크스페이스 권한 체크 로직
-  const isWorkspaceRoute =
-    to.name === "workspaceLearner" ||
-    to.name === "workspaceTrainer" ||
-    to.name === "workspaceLearnerCourses" ||
-    to.name === "workspaceTrainerCourses";
-
-  if (isWorkspaceRoute) {
+  // 3. 워크스페이스 권한 및 역할 체크 (Workspace & RBAC Guard)
+  // URL에 workspaceId가 포함된 경우 ( /workspace/:id/... )
+  const workspaceId = to.params.id as string;
+  if (workspaceId) {
     const workspaceStore = useWorkspaceStore();
-    const targetId = to.params.id as string;
 
-    // 목록이 비어있다면(새로고침 등) 먼저 데이터를 불러옴
-    if (workspaceStore.myWorkspaces.length === 0) {
-      await workspaceStore.fetchMyWorkspaces();
+    // 3-1. 워크스페이스 목록 로드 (로드되지 않았을 경우)
+    if (!workspaceStore.isLoaded) {
+      await workspaceStore.fetchMyWorkspaces(true);
     }
 
-    // 권한 체크 (스토어에 만든 isAccessible 또는 find 로직 활용)
-    const hasAccess = workspaceStore.isAccessible(targetId);
+    // 3-2. 해당 워크스페이스 가입 여부 확인 (활동 중인 상태인지)
+    const hasAccess = workspaceStore.isAccessible(workspaceId);
     if (!hasAccess) {
-      alert("해당 워크스페이스에 대한 접근 권한이 없습니다.");
-      return next({ name: "mypage" }); // 권한 없으면 마이페이지로 리다이렉트
+      alert(
+        "해당 워크스페이스에 대한 접근 권한이 없거나 가입 승인 대기 중입니다.",
+      );
+      return next({ name: "workspaces" });
     }
-    // 권한이 있다면 현재 워크스페이스 정보 동기화 후 진입
-    await workspaceStore.setCurrentWorkspaceById(targetId);
+
+    // 3-3. 현재 워크스페이스 정보 동기화 (역할 정보 갱신을 위해)
+    await workspaceStore.setCurrentWorkspaceById(workspaceId);
+
+    // 3-4. 역할(Role) 일치 여부 확인
+    const requiredRole = to.matched.find((r) => r.meta.requiresRole)?.meta
+      .requiresRole as string;
+    if (requiredRole) {
+      const currentRole = workspaceStore.currentRole; // 'LEARNER', 'TRAINER', 'ADMIN' (DB 대문자 기준)
+
+      if (currentRole !== requiredRole) {
+        // 역할이 다르면 본인 역할에 맞는 메인 페이지로 리다이렉트
+        alert(
+          `접근 권한이 없습니다. (요청: ${requiredRole}, 현재: ${currentRole})`,
+        );
+
+        const roleFallback: Record<string, string> = {
+          LEARNER: "workspaceLearner",
+          TRAINER: "workspaceTrainer",
+          ADMIN: "workspaceAdmin",
+        };
+
+        const targetName = roleFallback[currentRole || ""] || "workspaces";
+        return next({ name: targetName, params: { id: workspaceId } });
+      }
+    }
   }
 
-  next(); // 그 외의 페이지는 정상 진입
+  next(); // 모든 검증 통과 시 진입
 });
 
 export default router;
