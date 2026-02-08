@@ -15,7 +15,8 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @SuperBuilder
 public class GetMyCourseStatsResponseLearner extends GetMyCourseStatsResponse {
-  private Integer totalLearningTime;
+  // private Integer totalLearningTime;
+  private Integer attendRate;
   private Integer exitQuizAverage;
   private Integer concentrateMyAverage;
   private List<SessionRecord> sessionRecords;

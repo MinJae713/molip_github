@@ -32,6 +32,7 @@ import com.edumax.molip.domain.course.exception.NoCourseException;
 import com.edumax.molip.domain.course.exception.NoZzimException;
 import com.edumax.molip.domain.course.repository.CourseApplyRepository;
 import com.edumax.molip.domain.course.repository.CourseCertificatedRepository;
+import com.edumax.molip.domain.course.repository.CourseLearnerAnalysisRepository;
 import com.edumax.molip.domain.course.repository.CourseRepository;
 import com.edumax.molip.domain.course.repository.ZzimRepository;
 import com.edumax.molip.domain.course.types.CourseStatus;
@@ -76,6 +77,7 @@ public class CourseServiceImpl implements CourseService {
   private final CourseLearnerRepository courseLearnerRepository;
   private final CourseCertificatedRepository courseCertificatedRepository;
   private final ZzimRepository zzimRepository;
+  private final CourseLearnerAnalysisRepository courseLearnerAnalysisRepository;
 
   private final WorkspaceRepository workspaceRepository;
   private final MemberRepository memberRepository;
@@ -454,19 +456,19 @@ public class CourseServiceImpl implements CourseService {
             .findByCourseAndWorkspaceMember(course, workspaceMember)
             .orElseThrow(NoCourseLearnerException::new);
 
-    Integer totalLearningTime = 0;
-    int exitQuizAverage = 0;
-    int concentrateMyAverage = 0;
+    //    Integer totalLearningTime = 0;
+    //    int exitQuizAverage = 0;
+    //    int concentrateMyAverage = 0;
     List<SessionRecord> sessionRecords = new ArrayList<>();
     List<CourseLearnerSession> courseLearnerSessions = courseLearner.getCourseLearnerSessions();
-    int finishedSessionCount = 0;
+    //    int finishedSessionCount = 0;
     for (CourseLearnerSession courseLearnerSession : courseLearnerSessions) {
       Session session = courseLearnerSession.getSession();
       Long sessionId = session.getSessionId();
       Integer learningTime = courseLearnerSession.getAttendanceTime();
-      totalLearningTime += learningTime;
+      //      totalLearningTime += learningTime;
       int concentrate = Math.round(courseLearnerSession.getAvgConcentrate());
-      concentrateMyAverage += concentrate; // 세션별 몰입도
+      //      concentrateMyAverage += concentrate; // 세션별 몰입도
       Optional<LearnerAnalysis> learnerAnalysis =
           learnerAnalysisRepository.findById(session.getSessionId());
 
@@ -474,7 +476,7 @@ public class CourseServiceImpl implements CourseService {
       boolean isProceed = learnerAnalysis.isPresent();
       if (isProceed) {
         concentrateTotalAverage = Math.round(learnerAnalysis.orElse(null).getAvgConcentrate());
-        finishedSessionCount++;
+        //        finishedSessionCount++;
       }
 
       String title = session.getTitle();
@@ -484,7 +486,7 @@ public class CourseServiceImpl implements CourseService {
       if (exitQuiz == null) {
         exitQuiz = 0;
       }
-      exitQuizAverage += exitQuiz; // 세션별 퇴실 퀴즈 점수
+      //      exitQuizAverage += exitQuiz; // 세션별 퇴실 퀴즈 점수
       sessionRecords.add(
           SessionRecord.builder()
               .sessionId(sessionId)
@@ -498,15 +500,22 @@ public class CourseServiceImpl implements CourseService {
               .isProceed(isProceed)
               .build());
     }
-    if (finishedSessionCount > 0) {
-      exitQuizAverage /= finishedSessionCount; // 세션별 퇴실 퀴즈 평균
-      concentrateMyAverage /= finishedSessionCount; // 세션별 몰입도 평균
-    }
+    //    if (finishedSessionCount > 0) {
+    //      exitQuizAverage /= finishedSessionCount; // 세션별 퇴실 퀴즈 평균
+    //      concentrateMyAverage /= finishedSessionCount; // 세션별 몰입도 평균
+    //    }
+
+    CourseLearnerAnalysis analysis =
+        courseLearnerAnalysisRepository
+            .findByCourseCourseIdAndMemberId(
+                course.getCourseId(), workspaceMember.getMember().getId())
+            .orElse(null);
+
     return GetMyCourseStatsResponseLearner.builder()
         .courseId(course.getCourseId())
-        .totalLearningTime(totalLearningTime)
-        .exitQuizAverage(exitQuizAverage)
-        .concentrateMyAverage(concentrateMyAverage)
+        .attendRate(analysis != null ? analysis.getSumAttendance() : 0)
+        .exitQuizAverage(analysis != null ? Math.round(analysis.getSumQuizCorrect()) : 0)
+        .concentrateMyAverage(analysis != null ? Math.round(analysis.getSumConcentrate()) : 0)
         .sessionRecords(sessionRecords)
         .build();
   }

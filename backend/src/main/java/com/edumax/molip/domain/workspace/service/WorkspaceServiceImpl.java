@@ -332,14 +332,11 @@ public class WorkspaceServiceImpl implements WorkspaceService {
               CourseCategory category = course.getCategory();
               String subCategory = course.getSubCategory();
               List<Session> sessions = course.getSessions();
-              int currentLessons = 0;
-              for (Session session : sessions) {
-                currentLessons +=
-                    learnerAnalysisRepository.findById(session.getSessionId()).isPresent() ? 1 : 0;
-              }
-              Integer totalLessons = sessions.size();
+              int currentLessons = course.getEndSessionCount();
               LocalDateTime dDay = course.getCreatedAt();
+              Integer totalLessons = sessions.size();
               CourseStatus status = course.getStatus();
+
               // learner 고유
               Boolean isLiked =
                   zzimRepository
@@ -389,14 +386,11 @@ public class WorkspaceServiceImpl implements WorkspaceService {
               CourseCategory category = course.getCategory();
               String subCategory = course.getSubCategory();
               List<Session> sessions = course.getSessions();
-              int currentLessons = 0;
-              for (Session session : sessions) {
-                currentLessons +=
-                    learnerAnalysisRepository.findById(session.getSessionId()).isPresent() ? 1 : 0;
-              }
+              int currentLessons = course.getEndSessionCount();
               Integer totalLessons = sessions.size();
               LocalDateTime dDay = course.getCreatedAt();
               CourseStatus status = course.getStatus();
+
               // trainer 고유
               WorkspaceMember learner = course.getLeaner();
               Boolean isOwn = null;
@@ -437,7 +431,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                   .status(status)
                   .isOwn(isOwn)
                   .trainerName(trainerName)
-                  .progressRate(progressRate)
+                  .progressRate(progressRate * 100)
                   .startDate(startDate)
                   .learnersCount(learnersCount)
                   .build();

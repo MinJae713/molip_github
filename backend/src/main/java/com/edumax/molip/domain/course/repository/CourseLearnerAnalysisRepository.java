@@ -4,6 +4,7 @@ import com.edumax.molip.domain.course.entity.Course;
 import com.edumax.molip.domain.course.entity.CourseLearnerAnalysis;
 import jakarta.persistence.LockModeType;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -28,6 +29,8 @@ public interface CourseLearnerAnalysisRepository
     WHERE cla.course.id = :courseId
     """)
   List<Object[]> findSumByCourseId(@Param("courseId") Long courseId);
+
+  Optional<CourseLearnerAnalysis> findByCourseCourseIdAndMemberId(Long courseId, Long memberId);
 
   Long countByCourseCourseId(Long courseId);
 }
