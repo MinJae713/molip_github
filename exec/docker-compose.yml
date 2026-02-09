@@ -1,0 +1,120 @@
+services:
+  # Janus Gateway
+  janus:
+    build:
+      context: ./janus
+      args:
+        JANUS_VERSION: 1.3.3
+    container_name: classroom-janus
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      - JANUS_OPTS=-F
+      - TZ=Asia/Seoul # [추가] 타임존 설정
+    volumes:
+      - /etc/localtime:/etc/localtime:ro # [추가] 호스트 시간 동기화
+
+  # Nginx (정식 인증서 적용)
+  nginx:
+    image: nginx:stable
+    container_name: classroom-nginx
+    network_mode: host
+    restart: unless-stopped
+    environment: # [추가] Nginx 로그 시간 동기화용
+      - TZ=Asia/Seoul
+    volumes:
+      - /home/ubuntu/nginx/vue:/usr/share/nginx/html
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt/live/i14a309.p.ssafy.io/fullchain.pem:/etc/nginx/certs/fullchain.pem:ro
+      - /etc/letsencrypt/live/i14a309.p.ssafy.io/privkey.pem:/etc/nginx/certs/privkey.pem:ro
+      - /etc/localtime:/etc/localtime:ro # [추가] 호스트 시간 동기화
+
+  # MySQL Database
+  molip-db:
+    image: mysql:8.0
+    container_name: molip-mysql
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      - MYSQL_DATABASE=molip
+      - MYSQL_USER=ssafy
+      - MYSQL_PASSWORD=edumax1!
+      - MYSQL_ROOT_PASSWORD=edumax1!
+      - TZ=Asia/Seoul
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/conf.d:/etc/mysql/conf.d
+      - /etc/localtime:/etc/localtime:ro # [추가] 호스트 시간 동기화
+
+  # Spring Boot API
+  molip-api:
+    image: pneum44/molip-api:latest
+    container_name: molip-backend
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      - molip-db
+      - molip-redis
+    environment:
+      - DB_URL=jdbc:mysql://localhost:3306/molip?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      - DB_USERNAME=ssafy
+      - DB_PASSWORD=edumax1!
+      - JWT_SECRET=molip_secret_key_edumax_djmax_letsgo_A309
+      - REDIS_HOST=localhost
+      - REDIS_PORT=6379
+      - GRPC_HOST=localhost
+      - GRPC_PORT=50051
+      - MONGO_URL=mongodb+srv://S14P13A309:URXcDNnpno@ssafy.ngivl.mongodb.net/S14P13A309?authSource=admin
+      - TZ=Asia/Seoul # [추가] JVM 타임존 설정
+    volumes:
+      - /etc/localtime:/etc/localtime:ro # [추가] 호스트 시간 동기화
+
+  # Redis
+  molip-redis:
+    image: redis:8.4.0
+    container_name: molip-redis
+    network_mode: host
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    environment: # [추가] Redis 로그 시간 동기화용
+      - TZ=Asia/Seoul
+    volumes:
+      - redis-data:/data
+      - /etc/localtime:/etc/localtime:ro # [추가] 호스트 시간 동기화
+
+  # Jenkins
+  jenkins:
+    image: jenkins/jenkins:lts-jdk21
+    container_name: molip-jenkins
+    restart: unless-stopped
+    user: root
+    # network_mode: host 환경에서는 ports 설정이 무시되므로 아래 environment 설정이 핵심입니다.
+    environment:
+      - TZ=Asia/Seoul
+      - JENKINS_OPTS=--httpPort=9999 --prefix=/jenkins
+    volumes:
+      - ~/jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/libexec/docker/cli-plugins:/usr/local/lib/docker/cli-plugins:ro
+      - /usr/bin/docker:/usr/bin/docker-compose
+      - /usr/bin/docker:/usr/bin/docker
+      - /home/ubuntu:/home/ubuntu
+    network_mode: host
+
+  # FastAPI & gRPC Server
+  molip-fastapi:
+    image: pneum44/molip-ai:latest
+    container_name: molip-fastapi
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      - OPENAI_API_KEY=S14P12A309-f4455846-0a75-4bab-bf5e-5b603acbd7c3
+      - GRPC_PORT=50051
+      - FASTAPI_PORT=8000
+      - GPT_BASE_URL=https://gms.ssafy.io/gmsapi/api.openai.com/v1
+      - TZ=Asia/Seoul
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+
+volumes:
+  redis-data:

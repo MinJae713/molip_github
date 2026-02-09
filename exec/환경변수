@@ -1,0 +1,20 @@
+<!-- backend -->
+
+DB_URL=jdbc:mysql://localhost:3306/molip?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&rewriteBatchedStatements=true
+DB_USERNAME=root
+DB_PASSWORD=edumax1!
+JWT_SECRET=molip_secret_key_edumax_djmax_letsgo_A309
+REDIS_HOST=localhost
+REDIS_PORT=6379
+GRPC_HOST=70.12.246.43
+GRPC_PORT=50051
+MONGO_URL=mongodb+srv://S14P13A309:URXcDNnpno@ssafy.ngivl.mongodb.net/S14P13A309?authSource=admin
+TZ=Asia/Seoul
+
+<!-- AI -->
+
+OPENAI_API_KEY=S14P12A309-f4455846-0a75-4bab-bf5e-5b603acbd7c3
+GRPC_PORT=50051
+FASTAPI_PORT=8000
+GPT_BASE_URL=https://gms.ssafy.io/gmsapi/api.openai.com/v1
+TZ=Asia/Seoul
